@@ -1,0 +1,243 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  customer
+  admin
+}
+
+enum ApplicationStatus {
+  draft
+  pending_payment
+  paid
+  issued
+  rejected
+}
+
+enum PolicyStatus {
+  active
+  expired
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  successful
+  failed
+}
+
+enum ClaimStatus {
+  submitted
+  in_review
+  approved
+  rejected
+}
+
+enum ProductStatus {
+  active
+  inactive
+}
+
+model User {
+  id                 String         @id @default(uuid())
+  firstName          String
+  lastName           String
+  email              String         @unique
+  phone              String?
+  alternativePhone   String?
+  passwordHash       String
+  role               Role           @default(customer)
+  emailVerified      Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  applications       Application[]
+  policies           Policy[]
+  claims             Claim[]
+  notifications      Notification[]
+  auditLogs          AuditLog[]
+  claimComments      ClaimComment[]
+  claimStatusHistory ClaimStatusHistory[]
+  emailVerifications EmailVerification[]
+  passwordResets     PasswordReset[]
+}
+
+model EmailVerification {
+  id        String    @id @default(uuid())
+  userId    String
+  otpCode   String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id])
+}
+
+model Product {
+  id                  String        @id @default(uuid())
+  name                String
+  category            String
+  description         String
+  premiumAmount       Decimal
+  premiumFrequency    String        @default("annual")
+  durationMonths      Int           @default(12)
+  coverageHighlights  String
+  exclusions          String?
+  requiredDocuments   String?
+  status              ProductStatus @default(active)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  applications        Application[]
+  policies            Policy[]
+}
+
+model Application {
+  id            String            @id @default(uuid())
+  userId        String
+  productId     String
+  status        ApplicationStatus @default(draft)
+  formData      Json?
+  stepCompleted Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  user          User              @relation(fields: [userId], references: [id])
+  product       Product           @relation(fields: [productId], references: [id])
+  kycDocuments  KycDocument[]
+  payments      Payment[]
+  policy        Policy?
+}
+
+model KycDocument {
+  id            String      @id @default(uuid())
+  applicationId String
+  documentType  String
+  fileUrl       String
+  fileName      String
+  uploadedAt    DateTime    @default(now())
+  application   Application @relation(fields: [applicationId], references: [id])
+}
+
+model Policy {
+  id            String        @id @default(uuid())
+  applicationId String        @unique
+  userId        String
+  productId     String
+  policyNumber  String        @unique
+  issueDate     DateTime      @default(now())
+  startDate     DateTime
+  expiryDate    DateTime
+  premiumPaid   Decimal
+  policyPdfUrl  String?
+  status        PolicyStatus  @default(active)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  application   Application   @relation(fields: [applicationId], references: [id])
+  user          User          @relation(fields: [userId], references: [id])
+  product       Product       @relation(fields: [productId], references: [id])
+  claims        Claim[]
+}
+
+model Payment {
+  id                String        @id @default(uuid())
+  applicationId     String
+  gatewayReference  String?       @unique
+  amount            Decimal
+  currency          String        @default("NGN")
+  status            PaymentStatus @default(pending)
+  webhookReceivedAt DateTime?
+  gatewayResponse   Json?
+  createdAt         DateTime      @default(now())
+  application       Application   @relation(fields: [applicationId], references: [id])
+}
+
+model Claim {
+  id                  String               @id @default(uuid())
+  policyId            String
+  userId              String
+  claimReference      String               @unique
+  claimType           String
+  incidentDate        DateTime
+  incidentLocation    String
+  description         String
+  estimatedAmount     Decimal?
+  policeReportFiled   Boolean              @default(false)
+  policeReportNumber  String?
+  status              ClaimStatus          @default(submitted)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  policy              Policy               @relation(fields: [policyId], references: [id])
+  user                User                 @relation(fields: [userId], references: [id])
+  documents           ClaimDocument[]
+  statusHistory       ClaimStatusHistory[]
+  comments            ClaimComment[]
+}
+
+model ClaimDocument {
+  id           String   @id @default(uuid())
+  claimId      String
+  documentType String
+  fileUrl      String
+  fileName     String
+  uploadedAt   DateTime @default(now())
+  claim        Claim    @relation(fields: [claimId], references: [id])
+}
+
+model ClaimStatusHistory {
+  id        String      @id @default(uuid())
+  claimId   String
+  oldStatus ClaimStatus?
+  newStatus ClaimStatus
+  changedBy String
+  note      String?
+  changedAt DateTime    @default(now())
+  claim     Claim       @relation(fields: [claimId], references: [id])
+  user      User        @relation(fields: [changedBy], references: [id])
+}
+
+model ClaimComment {
+  id        String   @id @default(uuid())
+  claimId   String
+  userId    String
+  comment   String
+  fileUrl   String?
+  createdAt DateTime @default(now())
+  claim     Claim    @relation(fields: [claimId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Notification {
+  id            String   @id @default(uuid())
+  userId        String
+  message       String
+  type          String
+  read          Boolean  @default(false)
+  referenceType String?
+  referenceId   String?
+  createdAt     DateTime @default(now())
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String
+  action     String
+  entityType String
+  entityId   String
+  details    Json?
+  createdAt  DateTime @default(now())
+  actor      User     @relation(fields: [actorId], references: [id])
+}

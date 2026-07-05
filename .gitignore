@@ -1,0 +1,16 @@
+node_modules/
+.env
+.env.local
+.env*.local
+*.env
+.next/
+dist/
+build/
+.expo/
+*.log
+.DS_Store
+coverage/
+.turbo/
+
+# Local build guides and planning docs — not pushed to GitHub
+docs/

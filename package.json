@@ -1,0 +1,15 @@
+{
+  "name": "africover247",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "api": "npm run start:dev --workspace=apps/api",
+    "web": "npm run dev --workspace=apps/web",
+    "admin": "npm run dev --workspace=apps/admin",
+    "mobile": "npm run start --workspace=apps/mobile"
+  }
+}
