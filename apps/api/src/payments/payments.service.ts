@@ -10,6 +10,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PaystackService } from './paystack.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
+import { PoliciesService } from '../policies/policies.service';
 
 @Injectable()
 export class PaymentsService {
@@ -19,6 +20,7 @@ export class PaymentsService {
     private prisma: PrismaService,
     private paystackService: PaystackService,
     private configService: ConfigService,
+    private policiesService: PoliciesService,
   ) {}
 
   // --- Initiate payment ---
@@ -163,7 +165,7 @@ export class PaymentsService {
       `Payment ${paymentId} processed successfully — triggering policy generation`,
     );
 
-    // TODO: trigger policy generation here once PoliciesModule is built
+    await this.policiesService.generatePolicy(payment.applicationId);
   }
 
   // --- Handle failed charge ---

@@ -6,8 +6,10 @@ import {
   PaymentsStubController,
 } from './payments.controller';
 import { PaystackService } from './paystack.service';
+import { PoliciesModule } from '../policies/policies.module';
 
 @Module({
+  imports: [PoliciesModule],
   providers: [PaymentsService, PaystackService],
   controllers: [
     PaymentsController,

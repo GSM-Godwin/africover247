@@ -65,6 +65,7 @@ export class PaymentsStubController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post('simulate/:paymentId')
+  @HttpCode(HttpStatus.OK)
   simulate(@Param('paymentId') paymentId: string) {
     return this.paymentsService.simulateSuccessfulPayment(paymentId);
   }
