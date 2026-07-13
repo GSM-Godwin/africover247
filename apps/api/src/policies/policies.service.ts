@@ -9,6 +9,7 @@ import PDFDocument from 'pdfkit';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { StorageService } from '../storage/storage.service';
+import { ApplicationsService } from '../applications/applications.service';
 
 @Injectable()
 export class PoliciesService {
@@ -18,6 +19,7 @@ export class PoliciesService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private storageService: StorageService,
+    private applicationsService: ApplicationsService,
   ) {}
 
   // --- Generate policy number ---
@@ -189,6 +191,8 @@ export class PoliciesService {
       where: { id: applicationId },
       data: { status: 'issued' },
     });
+
+    await this.applicationsService.clearDraft(applicationId);
 
     await this.prisma.notification.create({
       data: {

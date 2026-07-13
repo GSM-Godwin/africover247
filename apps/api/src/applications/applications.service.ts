@@ -6,13 +6,17 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class ApplicationsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   // --- Create new application ---
 
@@ -87,7 +91,7 @@ export class ApplicationsService {
         ? dto.stepCompleted
         : application.stepCompleted;
 
-    return this.prisma.application.update({
+    const updated = await this.prisma.application.update({
       where: { id },
       data: {
         formData: mergedFormData as Prisma.InputJsonValue,
@@ -96,12 +100,16 @@ export class ApplicationsService {
       },
       include: { product: true },
     });
+
+    await this.redisService.saveDraft(id, mergedFormData);
+
+    return updated;
   }
 
   // --- Get draft for product ---
 
-  getDraft(userId: string, productId: string) {
-    return this.prisma.application.findFirst({
+  async getDraft(userId: string, productId: string) {
+    const application = await this.prisma.application.findFirst({
       where: {
         userId,
         productId,
@@ -113,6 +121,24 @@ export class ApplicationsService {
       },
       orderBy: { updatedAt: 'desc' },
     });
+
+    if (!application) return null;
+
+    const redisDraft = await this.redisService.getDraft(application.id);
+    if (redisDraft) {
+      return {
+        ...application,
+        formData: redisDraft,
+      };
+    }
+
+    return application;
+  }
+
+  // --- Clear Redis draft on terminal status ---
+
+  clearDraft(applicationId: string) {
+    return this.redisService.deleteDraft(applicationId);
   }
 
   // --- Admin: list all applications ---

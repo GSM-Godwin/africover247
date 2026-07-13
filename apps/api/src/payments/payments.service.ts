@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { PaystackService } from './paystack.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { PoliciesService } from '../policies/policies.service';
+import { ApplicationsService } from '../applications/applications.service';
 
 @Injectable()
 export class PaymentsService {
@@ -21,6 +22,7 @@ export class PaymentsService {
     private paystackService: PaystackService,
     private configService: ConfigService,
     private policiesService: PoliciesService,
+    private applicationsService: ApplicationsService,
   ) {}
 
   // --- Initiate payment ---
@@ -160,6 +162,8 @@ export class PaymentsService {
       where: { id: payment.applicationId },
       data: { status: 'paid' },
     });
+
+    await this.applicationsService.clearDraft(payment.applicationId);
 
     this.logger.log(
       `Payment ${paymentId} processed successfully — triggering policy generation`,

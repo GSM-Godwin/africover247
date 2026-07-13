@@ -15,11 +15,13 @@ import { ClaimsModule } from './claims/claims.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PoliciesModule } from './policies/policies.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    RedisModule,
     PrismaModule,
     EmailModule,
     AuthModule,
