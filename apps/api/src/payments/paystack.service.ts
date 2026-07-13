@@ -25,10 +25,20 @@ export class PaystackService {
     reference: string;
     callbackUrl: string;
     metadata?: object;
+    splitEnabled?: boolean;
+    subaccountCode?: string;
   }): Promise<{ authorizationUrl: string; reference: string }> {
+    const splitActive =
+      data.splitEnabled === true &&
+      !!data.subaccountCode &&
+      !data.subaccountCode.includes('placeholder');
+
     if (this.isStub) {
       this.logger.log(
         `[STUB] Paystack init for ${data.email} — amount: ₦${data.amount / 100}`,
+      );
+      this.logger.log(
+        `[STUB] Split payment: ${splitActive ? 'enabled' : 'disabled'}`,
       );
       return {
         authorizationUrl: `http://localhost:3000/payment/callback?reference=${data.reference}&trxref=${data.reference}`,
@@ -36,15 +46,23 @@ export class PaystackService {
       };
     }
 
+    const payload: Record<string, unknown> = {
+      email: data.email,
+      amount: data.amount,
+      reference: data.reference,
+      callback_url: data.callbackUrl,
+      metadata: data.metadata,
+    };
+
+    if (splitActive) {
+      payload.subaccount = data.subaccountCode;
+      payload.bearer = 'account';
+      payload.transaction_charge = 0;
+    }
+
     const response = await axios.post(
       `${PAYSTACK_BASE_URL}/transaction/initialize`,
-      {
-        email: data.email,
-        amount: data.amount,
-        reference: data.reference,
-        callback_url: data.callbackUrl,
-        metadata: data.metadata,
-      },
+      payload,
       {
         headers: {
           Authorization: `Bearer ${this.secretKey}`,

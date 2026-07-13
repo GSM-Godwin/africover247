@@ -76,6 +76,15 @@ export class PaymentsService {
       this.configService.get<string>('PAYMENT_CALLBACK_URL') ||
       'http://localhost:3000/payment/callback';
 
+    const splitEnabled =
+      this.configService.get<string>('SPLIT_PAYMENT_ENABLED') === 'true';
+    const subaccountCode =
+      this.configService.get<string>('PAYSTACK_SUBACCOUNT_CODE') || '';
+    const splitActive =
+      splitEnabled &&
+      !!subaccountCode &&
+      !subaccountCode.includes('placeholder');
+
     const { authorizationUrl } = await this.paystackService.initializeTransaction(
       {
         email: application.user.email,
@@ -87,6 +96,8 @@ export class PaymentsService {
           productName: application.product.name,
           userId,
         },
+        splitEnabled: splitActive,
+        subaccountCode,
       },
     );
 
