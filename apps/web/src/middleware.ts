@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 
 const PROTECTED = [
   "/dashboard",
-  "/products",
   "/apply",
   "/policies",
   "/claims",
@@ -26,6 +25,14 @@ export function middleware(request: NextRequest) {
     "/reset-password",
   ].some((path) => pathname.startsWith(path));
   if (isAuth && token) {
+    const redirect = request.nextUrl.searchParams.get("redirect");
+    const action = request.nextUrl.searchParams.get("action");
+    if (redirect) {
+      const destination = action
+        ? `${redirect}?action=${encodeURIComponent(action)}`
+        : redirect;
+      return NextResponse.redirect(new URL(destination, request.url));
+    }
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 

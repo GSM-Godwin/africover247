@@ -24,9 +24,12 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       const allowed = [
-        process.env.WEB_URL || 'http://localhost:3000',
-        process.env.ADMIN_URL || 'http://localhost:3002',
-      ];
+        process.env.WEB_URL,
+        process.env.ADMIN_URL,
+        'http://localhost:3000',
+        'http://localhost:3002',
+      ].filter(Boolean);
+
       if (!origin || allowed.includes(origin)) {
         callback(null, true);
       } else {

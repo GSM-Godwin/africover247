@@ -43,3 +43,16 @@ export function logout(): void {
   removeToken();
   removeUser();
 }
+
+export function getUserDisplayName(user: Record<string, unknown>): string {
+  const firstName = String(user.firstName ?? "");
+  const lastName = String(user.lastName ?? "");
+  const initial = lastName.charAt(0);
+  return initial ? `${firstName} ${initial}.` : firstName;
+}
+
+export function getUserInitials(user: Record<string, unknown>): string {
+  const firstName = String(user.firstName ?? "");
+  const lastName = String(user.lastName ?? "");
+  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}
