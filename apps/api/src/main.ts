@@ -22,20 +22,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new SecurityHeadersInterceptor());
 
   app.enableCors({
-    origin: (origin, callback) => {
-      const allowed = [
-        process.env.WEB_URL,
-        process.env.ADMIN_URL,
-        'http://localhost:3000',
-        'http://localhost:3002',
-      ].filter(Boolean);
-
-      if (!origin || allowed.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`CORS policy: origin ${origin} is not allowed`));
-      }
-    },
+    origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-paystack-signature'],
