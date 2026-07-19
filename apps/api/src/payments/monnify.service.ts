@@ -109,12 +109,28 @@ export class MonnifyService {
       return true;
     }
 
-    const hash = crypto
-      .createHmac('sha512', this.secretKey)
-      .update(body)
-      .digest('hex');
+    if (!signature) {
+      this.logger.warn('Monnify webhook: no signature header received');
+      return false;
+    }
 
-    return hash === signature;
+    try {
+      const hash = crypto
+        .createHmac('sha512', this.secretKey)
+        .update(body)
+        .digest('hex');
+
+      const isValid = hash === signature;
+      if (!isValid) {
+        this.logger.warn(`Monnify webhook signature mismatch`);
+        this.logger.warn(`Expected: ${hash}`);
+        this.logger.warn(`Received: ${signature}`);
+      }
+      return isValid;
+    } catch (error) {
+      this.logger.error('Monnify webhook signature verification error', error);
+      return false;
+    }
   }
 
   // --- Verify transaction ---

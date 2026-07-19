@@ -48,15 +48,14 @@ export class PaymentsWebhookController {
   constructor(private paymentsService: PaymentsService) {}
 
   @Post('webhook')
-  handleWebhook(
+  @HttpCode(200)
+  async handleWebhook(
     @Headers('monnify-signature') signature: string,
+    @Body() body: any,
     @Req() req: Request,
   ) {
-    const rawBody = JSON.stringify(req.body);
-    return this.paymentsService.handleWebhook(
-      rawBody,
-      signature || 'stub-signature',
-    );
+    const rawBody = JSON.stringify(body);
+    return this.paymentsService.handleWebhook(rawBody, signature || '');
   }
 }
 
