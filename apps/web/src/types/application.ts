@@ -10,6 +10,7 @@ export interface KycDocument {
 export interface ApplicationRecord {
   id: string;
   productId: string;
+  status: "draft" | "pending_payment" | "paid" | "issued" | "rejected";
   stepCompleted: number;
   formData: Record<string, unknown>;
   product: Product;

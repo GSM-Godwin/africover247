@@ -247,7 +247,7 @@ export function ProductDetailContent() {
                   )}
 
                   <p className="font-body text-slate/70 text-xs text-center bg-slate-100 rounded-full px-4 py-2 mt-auto">
-                    Secured by Paystack/Flutterwave
+                    Secured by Monnify
                   </p>
                 </div>
               </div>

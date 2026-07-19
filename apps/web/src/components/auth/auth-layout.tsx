@@ -29,7 +29,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           </blockquote>
 
           <p className="font-body text-paper/30 text-xs">
-            Secured by Paystack &amp; Cloudflare · NDPA-aware data handling
+            Secured by Monnify &amp; Cloudflare · NDPA-aware data handling
           </p>
         </div>
       </div>

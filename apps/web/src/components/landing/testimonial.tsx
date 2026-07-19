@@ -4,7 +4,7 @@ import { Reveal } from "@/components/shared/reveal";
 import { StaggerContainer, StaggerItem } from "@/components/shared/stagger-container";
 
 const trustBadges = [
-  "Secured by Paystack",
+  "Secured by Monnify",
   "Secured by Cloudflare",
   "NDPA-aware data handling",
 ];

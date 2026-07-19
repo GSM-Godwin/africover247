@@ -117,17 +117,25 @@ export function ApplicationWizardProvider({
   );
 
   const productName = application?.product?.name ?? "Insurance";
+  const isPaymentRoute = pathname.includes("/payment");
 
   return (
     <ApplicationWizardContext.Provider value={value}>
       <Navbar />
       <main className="pt-16 min-h-screen bg-[#F5F6F8]">
-        <div className="max-w-[800px] mx-auto px-6 sm:px-8 py-10 sm:py-12">
-          <h1 className="font-display font-bold text-midnight text-3xl sm:text-4xl mb-8">
-            Apply for {productName}
-          </h1>
-
-          <ApplicationStepper currentStep={currentStep} />
+        <div
+          className={`mx-auto px-6 sm:px-8 py-10 sm:py-12 ${
+            isPaymentRoute ? "max-w-lg" : "max-w-[800px]"
+          }`}
+        >
+          {!isPaymentRoute && (
+            <>
+              <h1 className="font-display font-bold text-midnight text-3xl sm:text-4xl mb-8">
+                Apply for {productName}
+              </h1>
+              <ApplicationStepper currentStep={currentStep} />
+            </>
+          )}
 
           <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-10">
             {loading ? (

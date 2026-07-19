@@ -15,7 +15,7 @@ const features = [
     icon: Shield,
     title: "Verified & Secure",
     description:
-      "Payments secured by Paystack. Your data stays yours.",
+      "Payments secured by Monnify. Your data stays yours.",
   },
   {
     icon: Smartphone,

@@ -10,6 +10,7 @@ interface WizardActionsProps {
   applicationId: string;
   loading?: boolean;
   submitDisabled?: boolean;
+  submitLabel?: string;
   error?: string;
   onSubmit: () => void;
   onSaveDraft?: () => void;
@@ -22,6 +23,7 @@ export function WizardActions({
   applicationId,
   loading,
   submitDisabled,
+  submitLabel = "Save & Continue",
   error,
   onSubmit,
   onSaveDraft,
@@ -72,7 +74,7 @@ export function WizardActions({
             className="bg-daybreak text-midnight font-body font-bold text-sm px-8 py-3 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center gap-2"
           >
             {loading && <Loader2 size={16} className="animate-spin" />}
-            {loading ? "Saving..." : "Save & Continue"}
+            {loading ? "Saving..." : submitLabel}
           </button>
         </div>
       </div>

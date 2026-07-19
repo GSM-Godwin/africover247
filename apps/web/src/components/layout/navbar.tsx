@@ -3,23 +3,23 @@
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { Bell, ChevronDown } from "lucide-react";
+import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
 import {
   getUser,
   getUserDisplayName,
   getUserInitials,
   isAuthenticated,
-  logout,
 } from "@/lib/auth";
 
 export function Navbar() {
   const pathname = usePathname();
-  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUserState] = useState<Record<string, unknown> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -46,14 +46,18 @@ export function Navbar() {
     }
   }, [menuOpen]);
 
-  function handleLogout() {
-    logout();
+  function openLogoutModal() {
     setMenuOpen(false);
-    router.push("/");
+    setLogoutModalOpen(true);
   }
 
   return (
-    <motion.header
+    <>
+      <LogoutConfirmModal
+        open={logoutModalOpen}
+        onClose={() => setLogoutModalOpen(false)}
+      />
+      <motion.header
       initial={{ opacity: 0, y: -16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
@@ -162,7 +166,7 @@ export function Navbar() {
                     <div className="my-1.5 border-t border-slate/15" />
                     <button
                       type="button"
-                      onClick={handleLogout}
+                      onClick={openLogoutModal}
                       className="w-full text-left px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
                     >
                       Log Out
@@ -182,5 +186,6 @@ export function Navbar() {
         </div>
       </div>
     </motion.header>
+    </>
   );
 }
