@@ -109,6 +109,13 @@ export class MonnifyService {
       return true;
     }
 
+    if (this.configService.get<string>('MONNIFY_ENV') !== 'production') {
+      this.logger.log(
+        '[SANDBOX] Monnify webhook signature verification bypassed',
+      );
+      return true;
+    }
+
     if (!signature) {
       this.logger.warn('Monnify webhook: no signature header received');
       return false;
@@ -119,10 +126,6 @@ export class MonnifyService {
         .createHmac('sha512', this.secretKey)
         .update(body)
         .digest('hex');
-
-      this.logger.log(`Signature check — computed: ${hash}`);
-      this.logger.log(`Signature check — received: ${signature}`);
-
       return hash === signature;
     } catch (error) {
       this.logger.error('Webhook signature verification error', error);
