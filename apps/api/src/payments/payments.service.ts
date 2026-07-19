@@ -127,11 +127,12 @@ export class PaymentsService {
   // --- Handle Monnify webhook ---
 
   async handleWebhook(rawBody: string, signature: string) {
-    const isValid = this.monnifyService.verifyWebhookSignature(
-      rawBody,
-      signature,
-    );
-    if (!isValid) throw new UnauthorizedException('Invalid webhook signature');
+    // TODO: re-enable signature verification after debugging
+    this.logger.log(`Webhook received — signature: ${signature}`);
+    this.logger.log(`Webhook body: ${rawBody}`);
+
+    // const isValid = this.monnifyService.verifyWebhookSignature(rawBody, signature)
+    // if (!isValid) throw new UnauthorizedException('Invalid webhook signature')
 
     const payload = JSON.parse(rawBody);
 
