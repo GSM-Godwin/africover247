@@ -120,15 +120,12 @@ export class MonnifyService {
         .update(body)
         .digest('hex');
 
-      const isValid = hash === signature;
-      if (!isValid) {
-        this.logger.warn(`Monnify webhook signature mismatch`);
-        this.logger.warn(`Expected: ${hash}`);
-        this.logger.warn(`Received: ${signature}`);
-      }
-      return isValid;
+      this.logger.log(`Signature check — computed: ${hash}`);
+      this.logger.log(`Signature check — received: ${signature}`);
+
+      return hash === signature;
     } catch (error) {
-      this.logger.error('Monnify webhook signature verification error', error);
+      this.logger.error('Webhook signature verification error', error);
       return false;
     }
   }

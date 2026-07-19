@@ -127,21 +127,23 @@ export class PaymentsService {
   // --- Handle Monnify webhook ---
 
   async handleWebhook(rawBody: string, signature: string) {
-    // TODO: re-enable signature verification after debugging
-    this.logger.log(`Webhook received — signature: ${signature}`);
-    this.logger.log(`Webhook body: ${rawBody}`);
-
-    // const isValid = this.monnifyService.verifyWebhookSignature(rawBody, signature)
-    // if (!isValid) throw new UnauthorizedException('Invalid webhook signature')
+    const isValid = this.monnifyService.verifyWebhookSignature(
+      rawBody,
+      signature,
+    );
+    if (!isValid) throw new UnauthorizedException('Invalid webhook signature');
 
     const payload = JSON.parse(rawBody);
 
-    if (payload.event === 'SUCCESSFUL_TRANSACTION') {
-      await this.handleSuccessfulCharge(payload.data);
+    const eventType = payload.eventType || payload.event;
+    const eventData = payload.eventData || payload.data;
+
+    if (eventType === 'SUCCESSFUL_TRANSACTION') {
+      await this.handleSuccessfulCharge(eventData);
     }
 
-    if (payload.event === 'FAILED_TRANSACTION') {
-      await this.handleFailedCharge(payload.data);
+    if (eventType === 'FAILED_TRANSACTION') {
+      await this.handleFailedCharge(eventData);
     }
 
     return { received: true };
@@ -151,8 +153,14 @@ export class PaymentsService {
 
   private async handleSuccessfulCharge(data: Record<string, unknown>) {
     const monnifyReference = (data.paymentReference || data.reference) as string;
-    const paymentId =
-      this.extractPaymentIdFromMonnifyReference(monnifyReference);
+
+    const paymentId = monnifyReference.includes('-')
+      ? monnifyReference.split('-').slice(0, 5).join('-')
+      : monnifyReference;
+
+    this.logger.log(
+      `Processing successful payment — monnifyReference: ${monnifyReference}, paymentId: ${paymentId}`,
+    );
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -185,9 +193,8 @@ export class PaymentsService {
     await this.applicationsService.clearDraft(payment.applicationId);
 
     this.logger.log(
-      `Payment ${paymentId} processed successfully — triggering policy generation`,
+      `Payment ${paymentId} processed — triggering policy generation`,
     );
-
     await this.policiesService.generatePolicy(payment.applicationId);
   }
 
@@ -252,8 +259,8 @@ export class PaymentsService {
     if (!payment) throw new NotFoundException('Payment not found');
 
     const stubWebhookPayload = JSON.stringify({
-      event: 'SUCCESSFUL_TRANSACTION',
-      data: {
+      eventType: 'SUCCESSFUL_TRANSACTION',
+      eventData: {
         paymentReference: paymentId,
         amountPaid: Number(payment.amount),
         paymentStatus: 'PAID',
