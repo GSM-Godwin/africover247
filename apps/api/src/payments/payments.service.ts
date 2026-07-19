@@ -5,6 +5,7 @@ import {
   UnauthorizedException,
   Logger,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -36,41 +37,54 @@ export class PaymentsService {
       },
     });
 
+    // TODO: remove after debugging
+    this.logger.log(
+      `DEBUG application: ${JSON.stringify({ id: application?.id, status: application?.status, userId: application?.userId })}`,
+    );
+
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId)
       throw new UnauthorizedException(
         'You do not have access to this application',
       );
 
+    if (!['draft', 'pending_payment'].includes(application.status)) {
+      this.logger.log(
+        `DEBUG: failing on status check — status is: "${application.status}"`,
+      );
+      throw new BadRequestException(
+        'This application has already been paid or is not eligible for payment',
+      );
+    }
+
     const existingPayment = await this.prisma.payment.findFirst({
       where: { applicationId: dto.applicationId, status: 'successful' },
     });
-    if (existingPayment)
+    this.logger.log(`DEBUG existingPayment: ${JSON.stringify(existingPayment)}`);
+    if (existingPayment) {
+      this.logger.log(`DEBUG: failing on existing payment check`);
       throw new BadRequestException('This application has already been paid');
-
-    if (!['draft', 'pending_payment'].includes(application.status)) {
-      throw new BadRequestException(
-        'This application has already been paid or is not eligible for payment',
-      );
     }
 
-    const pendingPayment = await this.prisma.payment.findFirst({
+    // --- Reuse existing pending payment or create new ---
+    let payment = await this.prisma.payment.findFirst({
       where: { applicationId: dto.applicationId, status: 'pending' },
+      orderBy: { createdAt: 'desc' },
     });
-    if (pendingPayment) {
-      throw new BadRequestException(
-        'This application has already been paid or is not eligible for payment',
-      );
+
+    if (!payment) {
+      payment = await this.prisma.payment.create({
+        data: {
+          applicationId: dto.applicationId,
+          amount: application.product.premiumAmount,
+          currency: 'NGN',
+          status: 'pending',
+        },
+      });
     }
 
-    const payment = await this.prisma.payment.create({
-      data: {
-        applicationId: dto.applicationId,
-        amount: application.product.premiumAmount,
-        currency: 'NGN',
-        status: 'pending',
-      },
-    });
+    // --- Generate fresh Monnify reference for this attempt ---
+    const monnifyReference = `${payment.id}-${Date.now()}`;
 
     const callbackUrl =
       this.configService.get<string>('PAYMENT_CALLBACK_URL') ||
@@ -79,7 +93,7 @@ export class PaymentsService {
     const { checkoutUrl } = await this.monnifyService.initializeTransaction({
       email: application.user.email,
       amount: Number(application.product.premiumAmount),
-      reference: payment.id,
+      reference: monnifyReference,
       name: `${application.user.firstName} ${application.user.lastName}`,
       callbackUrl,
       description: `${application.product.name} — AfriCover247`,
@@ -92,15 +106,22 @@ export class PaymentsService {
 
     await this.prisma.payment.update({
       where: { id: payment.id },
-      data: { gatewayReference: payment.id },
+      data: { gatewayReference: monnifyReference },
     });
 
     return {
       checkoutUrl,
       paymentId: payment.id,
+      monnifyReference,
       amount: application.product.premiumAmount,
       currency: 'NGN',
     };
+  }
+
+  private extractPaymentIdFromMonnifyReference(monnifyReference: string): string {
+    return monnifyReference.includes('-')
+      ? monnifyReference.split('-').slice(0, 5).join('-')
+      : monnifyReference;
   }
 
   // --- Handle Monnify webhook ---
@@ -128,14 +149,16 @@ export class PaymentsService {
   // --- Handle successful charge ---
 
   private async handleSuccessfulCharge(data: Record<string, unknown>) {
-    const paymentId = (data.paymentReference || data.reference) as string;
+    const monnifyReference = (data.paymentReference || data.reference) as string;
+    const paymentId =
+      this.extractPaymentIdFromMonnifyReference(monnifyReference);
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
     });
 
     if (!payment) {
-      this.logger.warn(`Payment not found for reference: ${paymentId}`);
+      this.logger.warn(`Payment not found for reference: ${monnifyReference}`);
       return;
     }
 
@@ -170,7 +193,9 @@ export class PaymentsService {
   // --- Handle failed charge ---
 
   private async handleFailedCharge(data: Record<string, unknown>) {
-    const paymentId = (data.paymentReference || data.reference) as string;
+    const monnifyReference = (data.paymentReference || data.reference) as string;
+    const paymentId =
+      this.extractPaymentIdFromMonnifyReference(monnifyReference);
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
