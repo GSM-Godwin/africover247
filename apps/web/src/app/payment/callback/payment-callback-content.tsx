@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { AlertCircle, Check, Download, Loader2, X } from "lucide-react";
+import { AlertCircle, Check, Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import api from "@/lib/api";
-import { initiateAndRedirect } from "@/lib/payment";
 import { PENDING_APPLICATION_ID_KEY } from "@/types/payment";
 import {
   isPaymentFailed,
@@ -16,7 +16,7 @@ import {
 import { formatPolicyDate, type PolicyRecord } from "@/types/policy";
 
 const POLL_INTERVAL_MS = 5000;
-const MAX_POLL_ATTEMPTS = 60;
+const MAX_POLL_DURATION_MS = 5 * 60 * 1000;
 const POLICY_FETCH_DELAY_MS = 1500;
 const POLICY_RETRY_ATTEMPTS = 3;
 const POLICY_RETRY_DELAY_MS = 1000;
@@ -25,20 +25,20 @@ type CallbackState =
   | "loading"
   | "success"
   | "failure"
-  | "timeout"
   | "missing_application";
 
 export function PaymentCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
+  const pollStartTime = useRef<number>(Date.now());
   const [applicationId, setApplicationId] = useState<string | null>(null);
   const [state, setState] = useState<CallbackState>("loading");
+  const [failureReason, setFailureReason] = useState<"failed" | "timeout" | null>(
+    null,
+  );
   const [policy, setPolicy] = useState<PolicyRecord | null>(null);
   const [policyPending, setPolicyPending] = useState(false);
-  const [retryLoading, setRetryLoading] = useState(false);
-  const [statusLoading, setStatusLoading] = useState(false);
-  const pollCount = useRef(0);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const productName = policy?.product?.name ?? "Insurance";
@@ -88,6 +88,7 @@ export function PaymentCallbackContent() {
 
       if (isPaymentFailed(status)) {
         stopPolling();
+        setFailureReason("failed");
         setState("failure");
         return true;
       }
@@ -127,11 +128,10 @@ export function PaymentCallbackContent() {
     setApplicationId(storedApplicationId);
 
     pollTimer.current = setInterval(async () => {
-      pollCount.current += 1;
-
-      if (pollCount.current > MAX_POLL_ATTEMPTS) {
+      if (Date.now() - pollStartTime.current > MAX_POLL_DURATION_MS) {
         stopPolling();
-        setState("timeout");
+        setFailureReason("timeout");
+        setState("failure");
         return;
       }
 
@@ -150,25 +150,84 @@ export function PaymentCallbackContent() {
     return () => stopPolling();
   }, [searchParams, checkStatus, stopPolling]);
 
-  async function handleManualCheck() {
-    if (!applicationId) return;
-    setStatusLoading(true);
-    try {
-      const resolved = await checkStatus(applicationId);
-      if (!resolved) setState("loading");
-    } finally {
-      setStatusLoading(false);
-    }
-  }
+  if (state === "failure") {
+    return (
+      <div className="min-h-screen bg-paper flex items-center justify-center px-6">
+        <div className="w-full max-w-md text-center">
+          <div className="w-16 h-16 rounded-full bg-alert-coral/10 flex items-center justify-center mx-auto mb-6">
+            <svg
+              className="w-8 h-8 text-alert-coral"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={1.5}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+          </div>
 
-  async function handleTryAgain() {
-    if (!applicationId) return;
-    setRetryLoading(true);
-    try {
-      await initiateAndRedirect(applicationId);
-    } catch {
-      setRetryLoading(false);
-    }
+          <h1 className="font-display font-bold text-midnight text-3xl mb-3">
+            Payment unsuccessful
+          </h1>
+
+          <p className="font-body text-slate text-base mb-2">
+            {failureReason === "timeout"
+              ? "We couldn't confirm your payment status. This can happen on slow connections."
+              : "Your payment could not be completed."}
+          </p>
+          <p className="font-body text-slate text-sm mb-8">
+            Your application has been saved — you can try again or go to your
+            dashboard.
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={async () => {
+                try {
+                  const applicationId = sessionStorage.getItem(
+                    PENDING_APPLICATION_ID_KEY,
+                  );
+                  if (!applicationId) {
+                    router.push("/dashboard");
+                    return;
+                  }
+                  const res = await api.post("/payments/initiate", {
+                    applicationId,
+                  });
+                  sessionStorage.setItem(
+                    PENDING_APPLICATION_ID_KEY,
+                    applicationId,
+                  );
+                  window.location.href = res.data.checkoutUrl;
+                } catch {
+                  toast.error(
+                    "Could not initiate payment. Please try from your dashboard.",
+                  );
+                }
+              }}
+              className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+            >
+              Try again
+            </button>
+
+            <button
+              onClick={() => router.push("/dashboard")}
+              className="w-full border border-slate/30 text-midnight font-body font-medium text-base py-4 rounded-lg hover:border-midnight transition-colors duration-200"
+            >
+              Go to Dashboard
+            </button>
+          </div>
+
+          <p className="font-body text-slate/50 text-xs mt-8">
+            Secured by Monnify · Your data is safe
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -220,62 +279,6 @@ export function PaymentCallbackContent() {
               </div>
             )}
 
-            {state === "timeout" && applicationId && (
-              <div className="text-center py-8">
-                <h1 className="font-display font-bold text-midnight text-2xl sm:text-3xl mb-3">
-                  This is taking longer than expected
-                </h1>
-                <p className="font-body text-slate text-base mb-8">
-                  Your payment may still be processing.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleManualCheck}
-                  disabled={statusLoading}
-                  className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 transition-colors duration-200 flex items-center justify-center gap-2 mb-4"
-                >
-                  {statusLoading && <Loader2 size={18} className="animate-spin" />}
-                  Check status
-                </button>
-                <Link
-                  href="/dashboard"
-                  className="font-body text-sm font-medium text-midnight underline underline-offset-2 hover:text-daybreak transition-colors"
-                >
-                  Go to Dashboard
-                </Link>
-              </div>
-            )}
-
-            {state === "failure" && applicationId && (
-              <div className="text-center py-8">
-                <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-alert-coral flex items-center justify-center">
-                  <X size={32} className="text-white" strokeWidth={2.5} />
-                </div>
-                <h1 className="font-display font-bold text-midnight text-2xl sm:text-3xl mb-3">
-                  Payment unsuccessful
-                </h1>
-                <p className="font-body text-slate text-base mb-8">
-                  Application saved. Try again
-                </p>
-                <button
-                  type="button"
-                  onClick={handleTryAgain}
-                  disabled={retryLoading}
-                  className="w-full max-w-xs mx-auto bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 transition-colors duration-200 flex items-center justify-center gap-2 mb-6"
-                >
-                  {retryLoading && <Loader2 size={18} className="animate-spin" />}
-                  Try again
-                </button>
-                <button
-                  type="button"
-                  onClick={() => router.push("/dashboard")}
-                  className="font-body text-sm font-medium text-midnight underline underline-offset-2 hover:text-daybreak transition-colors"
-                >
-                  Return to Dashboard
-                </button>
-              </div>
-            )}
-
             {state === "success" && applicationId && (
               <div className="text-center py-4">
                 <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-cover-green flex items-center justify-center">
@@ -287,7 +290,8 @@ export function PaymentCallbackContent() {
 
                 {policyPending || !policy ? (
                   <p className="font-body text-slate text-sm mb-8 px-4">
-                    Your policy is still being generated — check My Policies shortly
+                    Your policy is still being generated — check My Policies
+                    shortly
                   </p>
                 ) : (
                   <div className="border border-slate/20 rounded-xl p-5 mb-8 text-left">

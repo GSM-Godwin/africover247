@@ -27,5 +27,8 @@ export function isPaymentSuccessful(status: PaymentStatusResponse): boolean {
 }
 
 export function isPaymentFailed(status: PaymentStatusResponse): boolean {
-  return status.payment?.status === "failed";
+  return (
+    status.payment?.status === "failed" ||
+    status.applicationStatus === "rejected"
+  );
 }
