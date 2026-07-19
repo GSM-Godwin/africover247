@@ -15,7 +15,7 @@ import {
 } from "@/types/payment";
 import { formatPolicyDate, type PolicyRecord } from "@/types/policy";
 
-const POLL_INTERVAL_MS = 2000;
+const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_ATTEMPTS = 60;
 const POLICY_FETCH_DELAY_MS = 1500;
 const POLICY_RETRY_ATTEMPTS = 3;

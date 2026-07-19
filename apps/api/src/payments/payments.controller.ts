@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { PaymentsService } from './payments.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
@@ -32,6 +33,7 @@ export class PaymentsController {
     return this.paymentsService.initiatePayment(user.id, dto);
   }
 
+  @SkipThrottle()
   @Get('status/:applicationId')
   getStatus(
     @CurrentUser() user: { id: string },
