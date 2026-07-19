@@ -8,7 +8,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { PaystackService } from './paystack.service';
+import { MonnifyService } from './monnify.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { PoliciesService } from '../policies/policies.service';
 import { ApplicationsService } from '../applications/applications.service';
@@ -19,7 +19,7 @@ export class PaymentsService {
 
   constructor(
     private prisma: PrismaService,
-    private paystackService: PaystackService,
+    private monnifyService: MonnifyService,
     private configService: ConfigService,
     private policiesService: PoliciesService,
     private applicationsService: ApplicationsService,
@@ -76,30 +76,14 @@ export class PaymentsService {
       this.configService.get<string>('PAYMENT_CALLBACK_URL') ||
       'http://localhost:3000/payment/callback';
 
-    const splitEnabled =
-      this.configService.get<string>('SPLIT_PAYMENT_ENABLED') === 'true';
-    const subaccountCode =
-      this.configService.get<string>('PAYSTACK_SUBACCOUNT_CODE') || '';
-    const splitActive =
-      splitEnabled &&
-      !!subaccountCode &&
-      !subaccountCode.includes('placeholder');
-
-    const { authorizationUrl } = await this.paystackService.initializeTransaction(
-      {
-        email: application.user.email,
-        amount: Number(application.product.premiumAmount) * 100,
-        reference: payment.id,
-        callbackUrl,
-        metadata: {
-          applicationId: dto.applicationId,
-          productName: application.product.name,
-          userId,
-        },
-        splitEnabled: splitActive,
-        subaccountCode,
-      },
-    );
+    const { checkoutUrl } = await this.monnifyService.initializeTransaction({
+      email: application.user.email,
+      amount: Number(application.product.premiumAmount),
+      reference: payment.id,
+      name: `${application.user.firstName} ${application.user.lastName}`,
+      callbackUrl,
+      description: `${application.product.name} — AfriCover247`,
+    });
 
     await this.prisma.application.update({
       where: { id: dto.applicationId },
@@ -112,17 +96,17 @@ export class PaymentsService {
     });
 
     return {
-      checkoutUrl: authorizationUrl,
+      checkoutUrl,
       paymentId: payment.id,
       amount: application.product.premiumAmount,
       currency: 'NGN',
     };
   }
 
-  // --- Handle Paystack webhook ---
+  // --- Handle Monnify webhook ---
 
   async handleWebhook(rawBody: string, signature: string) {
-    const isValid = this.paystackService.verifyWebhookSignature(
+    const isValid = this.monnifyService.verifyWebhookSignature(
       rawBody,
       signature,
     );
@@ -130,11 +114,11 @@ export class PaymentsService {
 
     const payload = JSON.parse(rawBody);
 
-    if (payload.event === 'charge.success') {
+    if (payload.event === 'SUCCESSFUL_TRANSACTION') {
       await this.handleSuccessfulCharge(payload.data);
     }
 
-    if (payload.event === 'charge.failed') {
+    if (payload.event === 'FAILED_TRANSACTION') {
       await this.handleFailedCharge(payload.data);
     }
 
@@ -144,7 +128,7 @@ export class PaymentsService {
   // --- Handle successful charge ---
 
   private async handleSuccessfulCharge(data: Record<string, unknown>) {
-    const paymentId = data.reference as string;
+    const paymentId = (data.paymentReference || data.reference) as string;
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -186,7 +170,7 @@ export class PaymentsService {
   // --- Handle failed charge ---
 
   private async handleFailedCharge(data: Record<string, unknown>) {
-    const paymentId = data.reference as string;
+    const paymentId = (data.paymentReference || data.reference) as string;
 
     const payment = await this.prisma.payment.findUnique({
       where: { id: paymentId },
@@ -242,11 +226,11 @@ export class PaymentsService {
     if (!payment) throw new NotFoundException('Payment not found');
 
     const stubWebhookPayload = JSON.stringify({
-      event: 'charge.success',
+      event: 'SUCCESSFUL_TRANSACTION',
       data: {
-        reference: paymentId,
-        amount: Number(payment.amount) * 100,
-        status: 'success',
+        paymentReference: paymentId,
+        amountPaid: Number(payment.amount),
+        paymentStatus: 'PAID',
         stub: true,
       },
     });

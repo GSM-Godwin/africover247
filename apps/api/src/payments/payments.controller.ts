@@ -47,7 +47,7 @@ export class PaymentsWebhookController {
 
   @Post('webhook')
   handleWebhook(
-    @Headers('x-paystack-signature') signature: string,
+    @Headers('monnify-signature') signature: string,
     @Req() req: Request,
   ) {
     const rawBody = JSON.stringify(req.body);

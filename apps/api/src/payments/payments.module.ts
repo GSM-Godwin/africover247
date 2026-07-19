@@ -5,13 +5,13 @@ import {
   PaymentsWebhookController,
   PaymentsStubController,
 } from './payments.controller';
-import { PaystackService } from './paystack.service';
+import { MonnifyService } from './monnify.service';
 import { PoliciesModule } from '../policies/policies.module';
 import { ApplicationsModule } from '../applications/applications.module';
 
 @Module({
   imports: [PoliciesModule, ApplicationsModule],
-  providers: [PaymentsService, PaystackService],
+  providers: [PaymentsService, MonnifyService],
   controllers: [
     PaymentsController,
     PaymentsWebhookController,
