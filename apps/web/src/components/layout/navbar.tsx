@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, X } from "lucide-react";
+import { ChevronDown, Menu, User, X, type LucideIcon } from "lucide-react";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
 import { NotificationBellDropdown } from "@/components/layout/notification-bell-dropdown";
 import {
@@ -17,6 +17,7 @@ import {
 interface NavLinkItem {
   label: string;
   href: string;
+  icon?: LucideIcon;
 }
 
 function isNavLinkActive(pathname: string, href: string): boolean {
@@ -28,20 +29,23 @@ function DesktopNavLink({
   href,
   label,
   pathname,
+  icon: Icon,
 }: {
   href: string;
   label: string;
   pathname: string;
+  icon?: LucideIcon;
 }) {
   const isActive = isNavLinkActive(pathname, href);
 
   return (
     <Link
       href={href}
-      className={`relative group text-sm font-body font-medium transition-colors duration-150 ${
+      className={`relative group inline-flex items-center gap-1.5 text-sm font-body font-medium transition-colors duration-150 ${
         isActive ? "text-paper" : "text-paper/70 hover:text-paper"
       }`}
     >
+      {Icon && <Icon size={15} strokeWidth={2} aria-hidden />}
       {label}
       <span
         className={`absolute -bottom-1 left-0 h-0.5 bg-daybreak transition-all duration-200 ${
@@ -57,11 +61,13 @@ function MobileNavLink({
   label,
   pathname,
   onNavigate,
+  icon: Icon,
 }: {
   href: string;
   label: string;
   pathname: string;
   onNavigate: () => void;
+  icon?: LucideIcon;
 }) {
   const isActive = isNavLinkActive(pathname, href);
 
@@ -69,10 +75,11 @@ function MobileNavLink({
     <Link
       href={href}
       onClick={onNavigate}
-      className={`block py-3 font-body text-base font-medium transition-colors duration-150 ${
+      className={`flex items-center gap-2.5 py-3 font-body text-base font-medium transition-colors duration-150 ${
         isActive ? "text-daybreak" : "text-paper/80 hover:text-paper"
       }`}
     >
+      {Icon && <Icon size={18} strokeWidth={2} aria-hidden />}
       {label}
     </Link>
   );
@@ -191,6 +198,7 @@ export function Navbar() {
                 href={link.href}
                 label={link.label}
                 pathname={pathname}
+                icon={link.icon}
               />
             ))}
           </nav>
@@ -307,6 +315,7 @@ export function Navbar() {
                     label={link.label}
                     pathname={pathname}
                     onNavigate={closeMobileNav}
+                    icon={link.icon}
                   />
                 ))}
 

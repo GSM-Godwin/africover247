@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -52,7 +51,7 @@ export class UsersService {
       user.passwordHash,
     );
     if (!passwordMatch)
-      throw new UnauthorizedException('Current password is incorrect');
+      throw new BadRequestException('Current password is incorrect');
 
     const isSamePassword = await bcrypt.compare(
       dto.newPassword,
