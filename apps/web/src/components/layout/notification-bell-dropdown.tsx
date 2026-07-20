@@ -111,11 +111,11 @@ export function NotificationBellDropdown({
         aria-label="Notifications"
         aria-expanded={open}
         onClick={() => onOpenChange(!open)}
-        className="relative text-paper/70 hover:text-paper transition-colors duration-150"
+        className="relative pt-2 text-paper/70 hover:text-paper transition-colors duration-150"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-daybreak text-midnight font-body text-[10px] font-bold leading-[18px] text-center">
+          <span className="absolute -top-0.5 -right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-daybreak text-midnight font-body text-[10px] font-bold leading-[18px] text-center">
             {unreadCount > 99 ? "99+" : unreadCount}
           </span>
         )}
