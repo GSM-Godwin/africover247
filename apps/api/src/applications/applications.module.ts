@@ -5,9 +5,10 @@ import {
   AdminApplicationsController,
 } from './applications.controller';
 import { StorageModule } from '../storage/storage.module';
+import { KycModule } from '../kyc/kyc.module';
 
 @Module({
-  imports: [StorageModule],
+  imports: [StorageModule, KycModule],
   providers: [ApplicationsService],
   controllers: [ApplicationsController, AdminApplicationsController],
   exports: [ApplicationsService],

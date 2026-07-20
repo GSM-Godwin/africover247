@@ -16,6 +16,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PoliciesModule } from './policies/policies.module';
 import { RedisModule } from './redis/redis.module';
+import { KycModule } from './kyc/kyc.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { RedisModule } from './redis/redis.module';
     ProductsModule,
     HealthModule,
     StorageModule,
+    KycModule,
     ApplicationsModule,
     UsersModule,
     AdminModule,

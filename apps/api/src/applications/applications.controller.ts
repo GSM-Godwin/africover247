@@ -24,6 +24,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { StorageService } from '../storage/storage.service';
+import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('applications')
@@ -67,6 +68,18 @@ export class ApplicationsController {
     @Body() dto: UpdateApplicationDto,
   ) {
     return this.applicationsService.update(id, user.id, dto);
+  }
+
+  // --- Verify identity ---
+
+  @Post(':id/verify-identity')
+  @HttpCode(HttpStatus.OK)
+  verifyIdentity(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: VerifyIdentityDto,
+  ) {
+    return this.applicationsService.verifyIdentity(id, user.id, dto);
   }
 
   // --- Delete draft ---

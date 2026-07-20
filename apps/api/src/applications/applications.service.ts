@@ -12,12 +12,15 @@ import { RedisService } from '../redis/redis.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
 import { UpdateApplicationDto } from './dto/update-application.dto';
 import { StorageService } from '../storage/storage.service';
+import { KycService, type KycResult } from '../kyc/kyc.service';
+import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 
 @Injectable()
 export class ApplicationsService {
   constructor(
     private prisma: PrismaService,
     private redisService: RedisService,
+    private kycService: KycService,
   ) {}
 
   // --- Create new application ---
@@ -239,6 +242,65 @@ export class ApplicationsService {
     });
     if (!application) throw new NotFoundException('Application not found');
     return application;
+  }
+
+  // --- Verify identity ---
+
+  async verifyIdentity(
+    id: string,
+    userId: string,
+    dto: VerifyIdentityDto,
+  ): Promise<KycResult> {
+    const application = await this.findOne(id, userId);
+
+    let result: KycResult;
+
+    switch (dto.verificationType) {
+      case 'bvn':
+        result = await this.kycService.verifyBvn(dto.value);
+        break;
+      case 'nin':
+        result = await this.kycService.verifyNin(dto.value);
+        break;
+      case 'drivers_licence':
+        result = await this.kycService.verifyDriversLicence(
+          dto.value,
+          dto.dateOfBirth!,
+        );
+        break;
+      case 'passport':
+        result = await this.kycService.verifyPassport(
+          dto.value,
+          dto.lastName!,
+          dto.dateOfBirth!,
+        );
+        break;
+      default:
+        throw new BadRequestException('Unsupported verification type');
+    }
+
+    const existingFormData =
+      (application.formData as Record<string, unknown>) || {};
+
+    const updatedFormData = {
+      ...existingFormData,
+      kycVerification: {
+        type: dto.verificationType,
+        verified: result.verified,
+        verifiedAt: new Date().toISOString(),
+        message: result.message ?? null,
+      },
+    };
+
+    await this.prisma.application.update({
+      where: { id },
+      data: {
+        formData: updatedFormData as Prisma.InputJsonValue,
+        ...(result.verified ? { kycVerified: true } : {}),
+      },
+    });
+
+    return result;
   }
 
   // --- Add KYC document record ---
