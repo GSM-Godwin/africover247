@@ -52,6 +52,7 @@ export function DashboardContent() {
   const firstName = String(getUser()?.firstName ?? "there");
 
   const [draftApp, setDraftApp] = useState<ApplicationRecord | null>(null);
+  const [draftCount, setDraftCount] = useState(0);
   const [draftLoading, setDraftLoading] = useState(true);
 
   const [policies, setPolicies] = useState<PolicyRecord[]>([]);
@@ -87,12 +88,14 @@ export function DashboardContent() {
     setDraftLoading(true);
     try {
       const res = await api.get<ApplicationRecord[]>("/applications/my");
-      const inProgress = res.data.find(
+      const inProgress = res.data.filter(
         (app) => app.status === "draft" || app.status === "pending_payment",
       );
-      setDraftApp(inProgress ?? null);
+      setDraftApp(inProgress[0] ?? null);
+      setDraftCount(inProgress.length);
     } catch {
       setDraftApp(null);
+      setDraftCount(0);
     } finally {
       setDraftLoading(false);
     }
@@ -197,16 +200,26 @@ export function DashboardContent() {
                           this device
                         </p>
                       </div>
-                      <Link
-                        href={applyStepPath(
-                          draftApp.productId,
-                          draftApp.id,
-                          applicationStep(draftApp.stepCompleted),
+                      <div className="flex flex-col items-stretch sm:items-end gap-2 shrink-0">
+                        <Link
+                          href={applyStepPath(
+                            draftApp.productId,
+                            draftApp.id,
+                            applicationStep(draftApp.stepCompleted),
+                          )}
+                          className="bg-daybreak text-midnight font-body font-bold text-sm sm:text-base px-6 py-3.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 text-center"
+                        >
+                          Continue Application
+                        </Link>
+                        {draftCount > 1 && (
+                          <Link
+                            href="/applications/drafts"
+                            className="font-body text-sm font-semibold text-midnight underline underline-offset-2 hover:text-daybreak transition-colors text-center"
+                          >
+                            View all drafts ({draftCount})
+                          </Link>
                         )}
-                        className="shrink-0 bg-daybreak text-midnight font-body font-bold text-sm sm:text-base px-6 py-3.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 text-center"
-                      >
-                        Continue Application
-                      </Link>
+                      </div>
                     </div>
                   </Reveal>
                 )

@@ -13,6 +13,7 @@ export interface ApplicationRecord {
   status: "draft" | "pending_payment" | "paid" | "issued" | "rejected";
   stepCompleted: number;
   formData: Record<string, unknown>;
+  updatedAt: string;
   product: Product;
   kycDocuments?: KycDocument[];
 }

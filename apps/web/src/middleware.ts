@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 const PROTECTED = [
   "/dashboard",
   "/apply",
+  "/applications",
   "/policies",
   "/claims",
   "/notifications",
@@ -44,6 +45,7 @@ export const config = {
     "/dashboard/:path*",
     "/products/:path*",
     "/apply/:path*",
+    "/applications/:path*",
     "/policies/:path*",
     "/claims/:path*",
     "/notifications/:path*",

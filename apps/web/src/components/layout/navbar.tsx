@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Bell, ChevronDown } from "lucide-react";
+import { ChevronDown, Menu, X } from "lucide-react";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
+import { NotificationBellDropdown } from "@/components/layout/notification-bell-dropdown";
 import {
   getUser,
   getUserDisplayName,
@@ -13,14 +14,95 @@ import {
   isAuthenticated,
 } from "@/lib/auth";
 
+interface NavLinkItem {
+  label: string;
+  href: string;
+}
+
+function isNavLinkActive(pathname: string, href: string): boolean {
+  if (href === "/") return pathname === "/";
+  return pathname.startsWith(href);
+}
+
+function DesktopNavLink({
+  href,
+  label,
+  pathname,
+}: {
+  href: string;
+  label: string;
+  pathname: string;
+}) {
+  const isActive = isNavLinkActive(pathname, href);
+
+  return (
+    <Link
+      href={href}
+      className={`relative group text-sm font-body font-medium transition-colors duration-150 ${
+        isActive ? "text-paper" : "text-paper/70 hover:text-paper"
+      }`}
+    >
+      {label}
+      <span
+        className={`absolute -bottom-1 left-0 h-0.5 bg-daybreak transition-all duration-200 ${
+          isActive ? "w-full" : "w-0 group-hover:w-full"
+        }`}
+      />
+    </Link>
+  );
+}
+
+function MobileNavLink({
+  href,
+  label,
+  pathname,
+  onNavigate,
+}: {
+  href: string;
+  label: string;
+  pathname: string;
+  onNavigate: () => void;
+}) {
+  const isActive = isNavLinkActive(pathname, href);
+
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={`block py-3 font-body text-base font-medium transition-colors duration-150 ${
+        isActive ? "text-daybreak" : "text-paper/80 hover:text-paper"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
 export function Navbar() {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [authenticated, setAuthenticated] = useState(false);
   const [user, setUserState] = useState<Record<string, unknown> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [bellOpen, setBellOpen] = useState(false);
   const [logoutModalOpen, setLogoutModalOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  const navLinks = useMemo<NavLinkItem[]>(() => {
+    const links: NavLinkItem[] = [
+      { label: "Home", href: "/" },
+      { label: "Products", href: "/products" },
+      { label: "Claims", href: "/claims" },
+      { label: "About", href: "/about" },
+    ];
+
+    if (authenticated) {
+      links.splice(1, 0, { label: "Dashboard", href: "/dashboard" });
+    }
+
+    return links;
+  }, [authenticated]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -32,6 +114,8 @@ export function Navbar() {
     setAuthenticated(isAuthenticated());
     setUserState(getUser());
     setMenuOpen(false);
+    setMobileNavOpen(false);
+    setBellOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -46,9 +130,32 @@ export function Navbar() {
     }
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [mobileNavOpen]);
+
+  function closeMobileNav() {
+    setMobileNavOpen(false);
+  }
+
   function openLogoutModal() {
     setMenuOpen(false);
+    closeMobileNav();
     setLogoutModalOpen(true);
+  }
+
+  function toggleMobileNav() {
+    setMobileNavOpen((current) => {
+      if (!current) {
+        setMenuOpen(false);
+        setBellOpen(false);
+      }
+      return !current;
+    });
   }
 
   return (
@@ -58,134 +165,206 @@ export function Navbar() {
         onClose={() => setLogoutModalOpen(false)}
       />
       <motion.header
-      initial={{ opacity: 0, y: -16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className={`fixed top-0 left-0 right-0 z-50 h-16 transition-all duration-300 ${
-        scrolled
-          ? "bg-midnight/95 backdrop-blur-sm shadow-sm"
-          : "bg-midnight"
-      }`}
-    >
-      <div className="max-w-[1140px] mx-auto px-8 h-full flex items-center justify-between">
-        <Link href="/" className="flex items-baseline gap-0 shrink-0">
-          <span className="font-display font-bold text-paper text-xl leading-none">
-            AfriCover
-          </span>
-          <span className="font-mono font-medium text-daybreak text-xl leading-none">
-            247
-          </span>
-        </Link>
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: "easeOut" }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "bg-midnight/95 backdrop-blur-sm shadow-sm"
+            : "bg-midnight"
+        }`}
+      >
+        <div className="max-w-[1140px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between relative">
+          <Link href="/" className="flex items-baseline gap-0 shrink-0">
+            <span className="font-display font-bold text-paper text-xl leading-none">
+              AfriCover
+            </span>
+            <span className="font-mono font-medium text-daybreak text-xl leading-none">
+              247
+            </span>
+          </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          {[
-            { label: "Home", href: "/" },
-            { label: "Products", href: "/products" },
-            { label: "Claims", href: "/claims" },
-            { label: "About", href: "/about" },
-          ].map((link) => {
-            const isActive =
-              link.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(link.href);
-
-            return (
-              <Link
+          <nav className="hidden md:flex items-center gap-8">
+            {navLinks.map((link) => (
+              <DesktopNavLink
                 key={link.href}
                 href={link.href}
-                className={`relative group text-sm font-body font-medium transition-colors duration-150 ${
-                  isActive
-                    ? "text-paper"
-                    : "text-paper/70 hover:text-paper"
-                }`}
-              >
-                {link.label}
-                <span
-                  className={`absolute -bottom-1 left-0 h-0.5 bg-daybreak transition-all duration-200 ${
-                    isActive ? "w-full" : "w-0 group-hover:w-full"
-                  }`}
+                label={link.label}
+                pathname={pathname}
+              />
+            ))}
+          </nav>
+
+          <div className="flex items-center gap-2 sm:gap-4">
+            {authenticated && user ? (
+              <>
+                <NotificationBellDropdown
+                  open={bellOpen}
+                  onOpenChange={(open) => {
+                    setBellOpen(open);
+                    if (open) {
+                      setMenuOpen(false);
+                      closeMobileNav();
+                    }
+                  }}
                 />
-              </Link>
-            );
-          })}
-        </nav>
 
-        <div className="flex items-center gap-4">
-          {authenticated && user ? (
-            <>
-              <button
-                aria-label="Notifications"
-                className="relative text-paper/70 hover:text-paper transition-colors duration-150"
+                <div className="relative hidden md:block" ref={menuRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen((current) => {
+                        if (!current) setBellOpen(false);
+                        return !current;
+                      });
+                    }}
+                    className="flex items-center gap-2 text-paper/80 hover:text-paper transition-colors duration-150"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-daybreak flex items-center justify-center text-midnight text-xs font-body font-semibold">
+                      {getUserInitials(user)}
+                    </div>
+                    <span className="text-sm font-body">
+                      {getUserDisplayName(user)}
+                    </span>
+                    <ChevronDown
+                      size={14}
+                      className={`text-paper/60 transition-transform duration-150 ${
+                        menuOpen ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+
+                  {menuOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-[0_4px_24px_rgba(16,26,52,0.12)] py-1.5 z-50">
+                      <Link
+                        href="/account"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                      >
+                        My Account
+                      </Link>
+                      <Link
+                        href="/policies"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                      >
+                        My Policies
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        onClick={() => setMenuOpen(false)}
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <div className="my-1.5 border-t border-slate/15" />
+                      <button
+                        type="button"
+                        onClick={openLogoutModal}
+                        className="w-full text-left px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                      >
+                        Log Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden md:inline-flex bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
               >
-                <Bell size={20} />
-              </button>
+                Login
+              </Link>
+            )}
 
-              <div className="relative" ref={menuRef}>
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className="flex items-center gap-2 text-paper/80 hover:text-paper transition-colors duration-150"
-                >
-                  <div className="w-8 h-8 rounded-full bg-daybreak flex items-center justify-center text-midnight text-xs font-body font-semibold">
-                    {getUserInitials(user)}
-                  </div>
-                  <span className="hidden md:block text-sm font-body">
-                    {getUserDisplayName(user)}
-                  </span>
-                  <ChevronDown
-                    size={14}
-                    className={`text-paper/60 transition-transform duration-150 ${
-                      menuOpen ? "rotate-180" : ""
-                    }`}
-                  />
-                </button>
-
-                {menuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-[0_4px_24px_rgba(16,26,52,0.12)] py-1.5 z-50">
-                    <Link
-                      href="/account"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
-                    >
-                      My Account
-                    </Link>
-                    <Link
-                      href="/policies"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
-                    >
-                      My Policies
-                    </Link>
-                    <Link
-                      href="/dashboard"
-                      onClick={() => setMenuOpen(false)}
-                      className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                    <div className="my-1.5 border-t border-slate/15" />
-                    <button
-                      type="button"
-                      onClick={openLogoutModal}
-                      className="w-full text-left px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
-                    >
-                      Log Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <Link
-              href="/login"
-              className="bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+            <button
+              type="button"
+              aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileNavOpen}
+              onClick={toggleMobileNav}
+              className="md:hidden text-paper/80 hover:text-paper transition-colors duration-150 p-1"
             >
-              Login
-            </Link>
-          )}
+              {mobileNavOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
         </div>
-      </div>
-    </motion.header>
+
+        {mobileNavOpen && (
+          <>
+            <button
+              type="button"
+              aria-label="Close menu overlay"
+              onClick={closeMobileNav}
+              className="fixed inset-0 top-16 bg-midnight/60 md:hidden z-[55]"
+            />
+            <div className="absolute left-0 right-0 top-full bg-midnight border-t border-paper/10 shadow-lg md:hidden z-[56] max-h-[calc(100vh-4rem)] overflow-y-auto">
+              <nav className="px-4 sm:px-8 py-4">
+                {navLinks.map((link) => (
+                  <MobileNavLink
+                    key={link.href}
+                    href={link.href}
+                    label={link.label}
+                    pathname={pathname}
+                    onNavigate={closeMobileNav}
+                  />
+                ))}
+
+                <div className="border-t border-paper/10 mt-3 pt-3">
+                  {authenticated && user ? (
+                    <>
+                      <div className="flex items-center gap-3 py-3">
+                        <div className="w-9 h-9 rounded-full bg-daybreak flex items-center justify-center text-midnight text-xs font-body font-semibold">
+                          {getUserInitials(user)}
+                        </div>
+                        <span className="font-body text-sm font-medium text-paper">
+                          {getUserDisplayName(user)}
+                        </span>
+                      </div>
+                      <Link
+                        href="/account"
+                        onClick={closeMobileNav}
+                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                      >
+                        My Account
+                      </Link>
+                      <Link
+                        href="/policies"
+                        onClick={closeMobileNav}
+                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                      >
+                        My Policies
+                      </Link>
+                      <Link
+                        href="/dashboard"
+                        onClick={closeMobileNav}
+                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={openLogoutModal}
+                        className="w-full text-left py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                      >
+                        Log Out
+                      </button>
+                    </>
+                  ) : (
+                    <Link
+                      href="/login"
+                      onClick={closeMobileNav}
+                      className="inline-flex mt-2 bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+                    >
+                      Login
+                    </Link>
+                  )}
+                </div>
+              </nav>
+            </div>
+          </>
+        )}
+      </motion.header>
     </>
   );
 }

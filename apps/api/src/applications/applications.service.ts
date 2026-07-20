@@ -3,6 +3,8 @@ import {
   NotFoundException,
   ForbiddenException,
   ConflictException,
+  BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -139,6 +141,42 @@ export class ApplicationsService {
 
   clearDraft(applicationId: string) {
     return this.redisService.deleteDraft(applicationId);
+  }
+
+  // --- Delete draft application ---
+
+  async deleteDraft(applicationId: string, userId: string) {
+    const application = await this.prisma.application.findUnique({
+      where: { id: applicationId },
+    });
+
+    if (!application) throw new NotFoundException('Application not found');
+
+    if (application.userId !== userId) {
+      throw new UnauthorizedException(
+        'You do not have access to this application',
+      );
+    }
+
+    if (!['draft', 'pending_payment'].includes(application.status)) {
+      throw new BadRequestException('Only draft applications can be deleted');
+    }
+
+    await this.prisma.kycDocument.deleteMany({
+      where: { applicationId },
+    });
+
+    await this.prisma.payment.deleteMany({
+      where: { applicationId },
+    });
+
+    await this.redisService.deleteDraft(applicationId);
+
+    await this.prisma.application.delete({
+      where: { id: applicationId },
+    });
+
+    return { deleted: true, applicationId };
   }
 
   // --- Admin: list all applications ---

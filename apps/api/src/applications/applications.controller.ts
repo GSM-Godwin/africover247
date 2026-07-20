@@ -69,6 +69,16 @@ export class ApplicationsController {
     return this.applicationsService.update(id, user.id, dto);
   }
 
+  // --- Delete draft ---
+
+  @Delete(':id')
+  deleteDraft(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.applicationsService.deleteDraft(id, user.id);
+  }
+
   // --- Document upload ---
 
   @Post(':id/documents')
