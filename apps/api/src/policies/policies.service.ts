@@ -8,6 +8,7 @@ import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationsService } from '../applications/applications.service';
 
@@ -18,6 +19,7 @@ export class PoliciesService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private smsService: SmsService,
     private storageService: StorageService,
     private applicationsService: ApplicationsService,
   ) {}
@@ -209,6 +211,13 @@ export class PoliciesService {
       policyNumber,
       policyPdfUrl || 'Policy document will be available shortly',
     );
+
+    if (application.user.phone) {
+      await this.smsService.sendPolicyIssuedSms(
+        application.user.phone,
+        policyNumber,
+      );
+    }
 
     this.logger.log(
       `Policy ${policyNumber} issued for application ${applicationId}`,

@@ -17,6 +17,7 @@ import { PaymentsModule } from './payments/payments.module';
 import { PoliciesModule } from './policies/policies.module';
 import { RedisModule } from './redis/redis.module';
 import { KycModule } from './kyc/kyc.module';
+import { SmsModule } from './sms/sms.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { KycModule } from './kyc/kyc.module';
     HealthModule,
     StorageModule,
     KycModule,
+    SmsModule,
     ApplicationsModule,
     UsersModule,
     AdminModule,

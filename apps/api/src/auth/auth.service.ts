@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -23,6 +24,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private emailService: EmailService,
+    private smsService: SmsService,
   ) {}
 
   // --- Helpers ---
@@ -72,6 +74,9 @@ export class AuthService {
     });
 
     await this.emailService.sendOtpEmail(user.email, otp);
+    if (user.phone) {
+      await this.smsService.sendOtpSms(user.phone, otp);
+    }
     return {
       message:
         'Registration successful. Please check your email for a verification code.',

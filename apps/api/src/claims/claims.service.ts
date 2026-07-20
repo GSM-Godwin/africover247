@@ -7,6 +7,7 @@ import {
 import { ClaimStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { SmsService } from '../sms/sms.service';
 import { AdminService } from '../admin/admin.service';
 import { StorageService } from '../storage/storage.service';
 import { CreateClaimDto } from './dto/create-claim.dto';
@@ -18,6 +19,7 @@ export class ClaimsService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private smsService: SmsService,
     private adminService: AdminService,
     private storageService: StorageService,
   ) {}
@@ -232,6 +234,14 @@ export class ClaimsService {
       dto.status,
       dto.note,
     );
+
+    if (claim.user.phone) {
+      await this.smsService.sendClaimStatusSms(
+        claim.user.phone,
+        claim.claimReference,
+        dto.status,
+      );
+    }
 
     return updated;
   }
