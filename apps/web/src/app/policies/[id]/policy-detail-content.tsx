@@ -145,7 +145,7 @@ export function PolicyDetailContent() {
                       type="button"
                       onClick={handleDownload}
                       disabled={!policy.policyPdfUrl}
-                      className="w-full bg-daybreak text-midnight font-body font-bold text-sm py-3.5 rounded-lg hover:bg-[#D4921A] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
+                      className="w-full bg-daybreak text-midnight font-body font-bold text-sm py-3.5 rounded-lg hover:bg-[#C4700E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
                     >
                       <Download size={16} />
                       Download Policy PDF

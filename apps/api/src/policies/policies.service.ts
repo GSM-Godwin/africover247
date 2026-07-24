@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import PDFDocument from 'pdfkit';
+import { join } from 'path';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
@@ -55,14 +56,23 @@ export class PoliciesService {
       doc.on('end', () => resolve(Buffer.concat(chunks)));
       doc.on('error', reject);
 
-      doc.fontSize(20).font('Helvetica-Bold').text('AfriCover247', { align: 'center' });
+      const logoPath = join(__dirname, '..', 'assets', 'afriglobal_logo.png');
+      doc.image(logoPath, 40, 30, { width: 120 });
+      doc.y = 90;
+
+      doc.fillColor('#15679b');
       doc.fontSize(12).font('Helvetica').text('Digital Insurance Portal', { align: 'center' });
+      doc.fillColor('#000000');
       doc.fontSize(10).text('Powered by AfriGlobal Insurance Brokers Limited', { align: 'center' });
       doc.moveDown();
+      doc.strokeColor('#F68B1E');
       doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+      doc.strokeColor('#000000');
       doc.moveDown();
 
+      doc.fillColor('#15679b');
       doc.fontSize(16).font('Helvetica-Bold').text('INSURANCE POLICY CERTIFICATE');
+      doc.fillColor('#000000');
       doc.moveDown(0.5);
       doc.fontSize(11).font('Helvetica');
       doc.text(`Policy Number: ${data.policyNumber}`);

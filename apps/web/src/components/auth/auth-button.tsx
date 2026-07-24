@@ -22,7 +22,7 @@ export function AuthButton({
       type={type}
       onClick={onClick}
       disabled={disabled || loading}
-      className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
+      className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#C4700E] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
     >
       {loading && <Loader2 size={18} className="animate-spin" />}
       {loading ? "Please wait..." : children}

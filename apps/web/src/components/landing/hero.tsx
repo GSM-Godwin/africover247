@@ -32,7 +32,7 @@ function StatItem({
 export function Hero() {
   return (
     <section className="relative bg-midnight min-h-screen flex flex-col justify-center pt-16 overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-midnight via-midnight to-[#1a2d5a] pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-br from-midnight via-midnight to-midnight/80 pointer-events-none" />
 
       <div className="relative max-w-[1140px] mx-auto px-6 sm:px-8 w-full">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-16 lg:py-24">
@@ -78,7 +78,7 @@ export function Hero() {
             >
               <Link
                 href="/register"
-                className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-semibold text-sm px-5 py-3 rounded-md hover:bg-[#D4921A] transition-colors duration-200"
+                className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-semibold text-sm px-5 py-3 rounded-md hover:bg-[#C4700E] transition-colors duration-200"
               >
                 <ArrowRight size={16} />
                 Get Started

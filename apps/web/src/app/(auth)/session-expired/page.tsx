@@ -12,7 +12,7 @@ export default function SessionExpiredPage() {
 
       <Link
         href="/login"
-        className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 flex items-center justify-center"
+        className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#C4700E] transition-colors duration-200 flex items-center justify-center"
       >
         Login again
       </Link>

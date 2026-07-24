@@ -58,7 +58,7 @@ export function DraftApplicationListCard({
               application.id,
               applicationStep(application.stepCompleted),
             )}
-            className="bg-daybreak text-midnight font-body font-bold text-sm px-5 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 text-center"
+            className="bg-daybreak text-midnight font-body font-bold text-sm px-5 py-3 rounded-lg hover:bg-[#C4700E] transition-colors duration-200 text-center"
           >
             Continue
           </Link>

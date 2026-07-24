@@ -58,7 +58,7 @@ export default function ClaimsPage() {
             </h1>
             <Link
               href="/claims/new"
-              className="inline-flex items-center justify-center bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 shrink-0"
+              className="inline-flex items-center justify-center bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] transition-colors duration-200 shrink-0"
             >
               File a Claim
             </Link>
@@ -84,7 +84,7 @@ export default function ClaimsPage() {
               <button
                 type="button"
                 onClick={fetchClaims}
-                className="bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+                className="bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
               >
                 Retry
               </button>
@@ -99,7 +99,7 @@ export default function ClaimsPage() {
               {claims.length === 0 && (
                 <Link
                   href="/claims/new"
-                  className="inline-flex items-center justify-center bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+                  className="inline-flex items-center justify-center bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
                 >
                   File a Claim
                 </Link>

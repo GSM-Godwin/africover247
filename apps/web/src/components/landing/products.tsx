@@ -107,7 +107,7 @@ export function Products() {
                     </Link>
                     <Link
                       href="/register"
-                      className="flex-1 text-center bg-daybreak text-midnight font-body font-semibold text-sm px-4 py-2.5 rounded-md hover:bg-[#D4921A] transition-colors duration-200"
+                      className="flex-1 text-center bg-daybreak text-midnight font-body font-semibold text-sm px-4 py-2.5 rounded-md hover:bg-[#C4700E] transition-colors duration-200"
                     >
                       Get Covered
                     </Link>

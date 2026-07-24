@@ -209,7 +209,7 @@ export function PaymentCallbackContent() {
                   );
                 }
               }}
-              className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+              className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
             >
               Try again
             </button>
@@ -250,7 +250,7 @@ export function PaymentCallbackContent() {
                 </p>
                 <Link
                   href="/policies"
-                  className="inline-block w-full max-w-xs bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 mb-4"
+                  className="inline-block w-full max-w-xs bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#C4700E] transition-colors duration-200 mb-4"
                 >
                   Go to My Policies
                 </Link>
@@ -321,7 +321,7 @@ export function PaymentCallbackContent() {
                   <button
                     type="button"
                     onClick={() => router.push("/dashboard")}
-                    className="flex-1 bg-daybreak text-midnight font-body font-bold text-sm py-3.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+                    className="flex-1 bg-daybreak text-midnight font-body font-bold text-sm py-3.5 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
                   >
                     Go to Dashboard
                   </button>

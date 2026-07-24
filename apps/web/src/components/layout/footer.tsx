@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 const links = {
   Product: [
@@ -23,16 +24,17 @@ export function Footer() {
       <div className="max-w-[1140px] mx-auto px-6 sm:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-baseline gap-0 mb-3">
-              <span className="font-display font-bold text-paper text-lg leading-none">
-                AfriCover
-              </span>
-              <span className="font-mono font-medium text-paper text-lg leading-none">
-                247
-              </span>
+            <div className="mb-3">
+              <Image
+                src="/afriglobal_logo.png"
+                alt="AfriGlobal Insurance Brokers"
+                width={140}
+                height={40}
+                className="h-8 w-auto object-contain brightness-0 invert"
+              />
             </div>
-            <p className="font-body text-paper/50 text-sm leading-relaxed max-w-[180px]">
-              The always-on front door to insurance in Lagos.
+            <p className="font-body text-paper/50 text-sm leading-relaxed max-w-[200px]">
+              AfriGlobal Insurance Brokers Limited
             </p>
           </div>
 

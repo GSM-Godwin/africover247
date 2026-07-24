@@ -240,7 +240,7 @@ export function ProductDetailContent() {
                     className={`w-full font-body font-bold text-base py-4 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2 mb-4 ${
                       product.pricingType === "quote_based"
                         ? "border border-midnight text-midnight hover:bg-midnight/5"
-                        : "bg-daybreak text-midnight hover:bg-[#D4921A]"
+                        : "bg-daybreak text-midnight hover:bg-[#C4700E]"
                     }`}
                   >
                     {coverLoading && (
