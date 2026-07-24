@@ -141,12 +141,21 @@ export class PoliciesService {
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + application.product.durationMonths);
 
+    if (application.product.premiumAmount == null) {
+      this.logger.error(
+        `Application ${applicationId} product has no premium amount for policy generation`,
+      );
+      return;
+    }
+
+    const premiumAmount = application.product.premiumAmount;
+
     const pdfBuffer = await this.generatePdfBuffer({
       policyNumber,
       issueDate,
       startDate,
       expiryDate,
-      premiumPaid: Number(application.product.premiumAmount),
+      premiumPaid: Number(premiumAmount),
       customerName: `${application.user.firstName} ${application.user.lastName}`,
       customerEmail: application.user.email,
       customerPhone: application.user.phone || '',
@@ -183,7 +192,7 @@ export class PoliciesService {
         issueDate,
         startDate,
         expiryDate,
-        premiumPaid: application.product.premiumAmount,
+        premiumPaid: premiumAmount,
         policyPdfUrl,
         status: 'active',
       },

@@ -17,12 +17,6 @@ export function formatNaira(amount: string | number): string {
   return `₦${value.toLocaleString("en-NG")}`;
 }
 
-export function premiumSuffix(frequency: string): string {
-  if (frequency.toLowerCase() === "annual") return "/year";
-  if (frequency.toLowerCase() === "monthly") return "/month";
-  return `/${frequency}`;
-}
-
 export function productDisplayTitle(name: string): string {
   if (/insurance/i.test(name)) return name;
   return `${name} Insurance`;

@@ -3,8 +3,15 @@
 const FILTERS = [
   { label: "All", value: null },
   { label: "Motor", value: "motor" },
+  { label: "Property", value: "property" },
+  { label: "Engineering", value: "engineering" },
+  { label: "Life", value: "life" },
+  { label: "Financial", value: "financial" },
+  { label: "Liability", value: "liability" },
+  { label: "Marine", value: "marine" },
+  { label: "Agriculture", value: "agriculture" },
+  { label: "Travel", value: "travel" },
   { label: "Health", value: "health" },
-  { label: "SSLAG/SSPP", value: "sslag" },
 ] as const;
 
 interface FilterPillsProps {
@@ -44,7 +51,5 @@ export function matchesCategoryFilter(
   filter: string | null,
 ): boolean {
   if (!filter) return true;
-  const cat = category.toLowerCase();
-  if (filter === "sslag") return cat.includes("sslag");
-  return cat.includes(filter);
+  return category.toLowerCase().includes(filter);
 }

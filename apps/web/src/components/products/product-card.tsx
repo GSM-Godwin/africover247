@@ -3,21 +3,39 @@
 import Link from "next/link";
 import { Zap } from "lucide-react";
 import type { Product } from "@/types/product";
-import {
-  formatNaira,
-  premiumSuffix,
-  splitLines,
-} from "@/lib/utils";
+import { splitLines } from "@/lib/utils";
 
 interface ProductCardProps {
   product: Product;
+}
+
+export function getPriceDisplay(product: Product): string {
+  if (product.pricingType === "fixed" && product.premiumAmount) {
+    return `₦${parseFloat(product.premiumAmount).toLocaleString("en-NG")}/year`;
+  }
+  if (
+    product.pricingType === "calculable" &&
+    product.rate &&
+    product.calculationBasis
+  ) {
+    const ratePercent = parseFloat(product.rate) * 100;
+    return `${ratePercent}% of ${product.calculationBasis}`;
+  }
+  return "Request a Quote";
+}
+
+export function getCtaLabel(pricingType: string): string {
+  if (pricingType === "quote_based") return "Get a Quote";
+  return "Get Covered";
 }
 
 export function ProductCard({ product }: ProductCardProps) {
   const highlights = splitLines(product.coverageHighlights);
   const highlightLine = highlights.slice(0, 2).join(" + ");
   const bullets = highlights.slice(0, 2);
-  const priceLabel = `From ${formatNaira(product.premiumAmount)}${premiumSuffix(product.premiumFrequency)}`;
+  const priceLabel = getPriceDisplay(product);
+  const ctaLabel = getCtaLabel(product.pricingType);
+  const isQuoteBased = product.pricingType === "quote_based";
 
   return (
     <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-7 h-full flex flex-col">
@@ -58,9 +76,13 @@ export function ProductCard({ product }: ProductCardProps) {
         </Link>
         <Link
           href={`/products/${product.id}`}
-          className="flex-1 text-center bg-daybreak text-midnight font-body font-bold text-sm px-4 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
+          className={`flex-1 text-center font-body font-bold text-sm px-4 py-3 rounded-lg transition-colors duration-200 ${
+            isQuoteBased
+              ? "border border-midnight text-midnight hover:bg-midnight/5"
+              : "bg-daybreak text-midnight hover:bg-[#D4921A]"
+          }`}
         >
-          Get Covered
+          {ctaLabel}
         </Link>
       </div>
     </div>

@@ -1,5 +1,4 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { ProductStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -30,7 +29,18 @@ export class ProductsService {
   }
 
   create(dto: CreateProductDto) {
-    return this.prisma.product.create({ data: dto });
+    return this.prisma.product.create({
+      data: {
+        name: dto.name,
+        category: dto.category,
+        description: dto.description,
+        premiumAmount: dto.premiumAmount,
+        durationMonths: dto.durationMonths,
+        coverageHighlights: dto.coverageHighlights,
+        exclusions: dto.exclusions ?? '',
+        requiredDocuments: dto.requiredDocuments ?? '',
+      },
+    });
   }
 
   async update(id: string, dto: UpdateProductDto) {
@@ -42,7 +52,7 @@ export class ProductsService {
     await this.findOne(id);
     return this.prisma.product.update({
       where: { id },
-      data: { status: status as ProductStatus },
+      data: { status },
     });
   }
 }

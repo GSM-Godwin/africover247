@@ -39,9 +39,20 @@ enum ClaimStatus {
   rejected
 }
 
-enum ProductStatus {
-  active
-  inactive
+enum PricingType {
+  fixed
+  calculable
+  quote_based
+}
+
+enum QuoteStatus {
+  pending_review
+  quote_sent
+  countered_by_customer
+  countered_by_admin
+  accepted
+  rejected
+  expired
 }
 
 model User {
@@ -60,6 +71,7 @@ model User {
   policies           Policy[]
   claims             Claim[]
   notifications      Notification[]
+  quotes             Quote[]        @relation("CustomerQuotes")
   auditLogs          AuditLog[]
   claimComments      ClaimComment[]
   claimStatusHistory ClaimStatusHistory[]
@@ -88,21 +100,48 @@ model PasswordReset {
 }
 
 model Product {
-  id                  String        @id @default(uuid())
-  name                String
-  category            String
-  description         String
-  premiumAmount       Decimal
-  premiumFrequency    String        @default("annual")
-  durationMonths      Int           @default(12)
-  coverageHighlights  String
-  exclusions          String?
-  requiredDocuments   String?
-  status              ProductStatus @default(active)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  applications        Application[]
-  policies            Policy[]
+  id                 String        @id @default(uuid())
+  name               String
+  category           String
+  description        String
+  pricingType        PricingType   @default(fixed)
+  premiumAmount      Decimal?
+  rate               Decimal?
+  rateMin            Decimal?
+  rateMax            Decimal?
+  calculationBasis   String?
+  assetFields        Json?
+  durationMonths     Int           @default(12)
+  coverageHighlights String
+  exclusions         String
+  requiredDocuments  String
+  status             String        @default("active")
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  applications       Application[]
+  policies           Policy[]
+  quotes             Quote[]
+}
+
+model Quote {
+  id                    String      @id @default(uuid())
+  customerId            String
+  productId             String
+  status                QuoteStatus @default(pending_review)
+  customerDetails       Json
+  adminQuoteAmount      Decimal?
+  adminNote             String?
+  customerCounterAmount Decimal?
+  customerNote          String?
+  negotiationHistory    Json        @default("[]")
+  finalAmount           Decimal?
+  roundsUsed            Int         @default(0)
+  expiresAt             DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  customer              User        @relation("CustomerQuotes", fields: [customerId], references: [id])
+  product               Product     @relation(fields: [productId], references: [id])
+  notifications         Notification[]
 }
 
 model Application {
@@ -111,6 +150,7 @@ model Application {
   productId     String
   status        ApplicationStatus @default(draft)
   formData      Json?
+  assetDetails  Json?
   stepCompleted Int               @default(0)
   kycVerified   Boolean           @default(false)
   createdAt     DateTime          @default(now())
@@ -198,15 +238,15 @@ model ClaimDocument {
 }
 
 model ClaimStatusHistory {
-  id        String      @id @default(uuid())
+  id        String       @id @default(uuid())
   claimId   String
   oldStatus ClaimStatus?
   newStatus ClaimStatus
   changedBy String
   note      String?
-  changedAt DateTime    @default(now())
-  claim     Claim       @relation(fields: [claimId], references: [id])
-  user      User        @relation(fields: [changedBy], references: [id])
+  changedAt DateTime     @default(now())
+  claim     Claim        @relation(fields: [claimId], references: [id])
+  user      User         @relation(fields: [changedBy], references: [id])
 }
 
 model ClaimComment {
@@ -228,8 +268,10 @@ model Notification {
   read          Boolean  @default(false)
   referenceType String?
   referenceId   String?
+  quoteId       String?
   createdAt     DateTime @default(now())
   user          User     @relation(fields: [userId], references: [id])
+  quote         Quote?   @relation(fields: [quoteId], references: [id])
 }
 
 model AuditLog {

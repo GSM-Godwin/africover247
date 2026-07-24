@@ -72,11 +72,19 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    if (application.product.premiumAmount == null) {
+      throw new BadRequestException(
+        'This product requires a calculated or quoted premium before payment',
+      );
+    }
+
+    const premiumAmount = application.product.premiumAmount;
+
     if (!payment) {
       payment = await this.prisma.payment.create({
         data: {
           applicationId: dto.applicationId,
-          amount: application.product.premiumAmount,
+          amount: premiumAmount,
           currency: 'NGN',
           status: 'pending',
         },
@@ -92,7 +100,7 @@ export class PaymentsService {
 
     const { checkoutUrl } = await this.monnifyService.initializeTransaction({
       email: application.user.email,
-      amount: Number(application.product.premiumAmount),
+      amount: Number(premiumAmount),
       reference: monnifyReference,
       name: `${application.user.firstName} ${application.user.lastName}`,
       callbackUrl,
@@ -113,7 +121,7 @@ export class PaymentsService {
       checkoutUrl,
       paymentId: payment.id,
       monnifyReference,
-      amount: application.product.premiumAmount,
+      amount: premiumAmount,
       currency: 'NGN',
     };
   }

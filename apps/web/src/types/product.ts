@@ -3,13 +3,16 @@ export interface Product {
   name: string;
   category: string;
   description: string;
-  premiumAmount: string | number;
-  premiumFrequency: string;
+  pricingType: "fixed" | "calculable" | "quote_based";
+  premiumAmount: string | null;
+  rate: string | null;
+  rateMin: string | null;
+  rateMax: string | null;
+  calculationBasis: string | null;
+  assetFields: string | null;
   durationMonths: number;
   coverageHighlights: string;
-  exclusions: string | null;
-  requiredDocuments: string | null;
+  exclusions: string;
+  requiredDocuments: string;
   status: string;
-  createdAt: string;
-  updatedAt: string;
 }

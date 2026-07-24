@@ -8,8 +8,11 @@ import { Navbar } from "@/components/layout/navbar";
 import api from "@/lib/api";
 import { isAuthenticated } from "@/lib/auth";
 import {
+  getCtaLabel,
+  getPriceDisplay,
+} from "@/components/products/product-card";
+import {
   applicationStep,
-  formatNaira,
   productDisplayTitle,
   splitLines,
 } from "@/lib/utils";
@@ -222,22 +225,30 @@ export function ProductDetailContent() {
 
                 <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-8 flex flex-col">
                   <p className="font-mono font-bold text-midnight text-4xl mb-2">
-                    {formatNaira(product.premiumAmount)}
+                    {getPriceDisplay(product)}
                   </p>
                   <p className="font-body text-slate text-sm mb-8">
-                    per year · {product.durationMonths}-month policy
+                    {product.pricingType === "fixed"
+                      ? `per year · ${product.durationMonths}-month policy`
+                      : `${product.durationMonths}-month policy`}
                   </p>
 
                   <button
                     type="button"
                     onClick={handleGetCovered}
                     disabled={coverLoading}
-                    className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2 mb-4"
+                    className={`w-full font-body font-bold text-base py-4 rounded-lg disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2 mb-4 ${
+                      product.pricingType === "quote_based"
+                        ? "border border-midnight text-midnight hover:bg-midnight/5"
+                        : "bg-daybreak text-midnight hover:bg-[#D4921A]"
+                    }`}
                   >
                     {coverLoading && (
                       <Loader2 size={18} className="animate-spin" />
                     )}
-                    {coverLoading ? "Please wait..." : "Get Covered"}
+                    {coverLoading
+                      ? "Please wait..."
+                      : getCtaLabel(product.pricingType)}
                   </button>
 
                   {coverError && (
