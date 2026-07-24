@@ -1423,7 +1423,18 @@ async function main() {
   ];
 
   for (const product of products) {
-    await prisma.product.create({ data: product });
+    const item = product as any;
+    await prisma.product.create({
+      data: {
+        ...item,
+        premiumAmount: item.premiumAmount ?? null,
+        rate: item.rate ?? null,
+        rateMin: item.rateMin ?? null,
+        rateMax: item.rateMax ?? null,
+        calculationBasis: item.calculationBasis ?? null,
+        assetFields: item.assetFields ?? null,
+      } as any,
+    });
   }
 
   console.log(`Seeded ${products.length} products`);

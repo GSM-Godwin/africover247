@@ -52,7 +52,7 @@ export class ProductsService {
     await this.findOne(id);
     return this.prisma.product.update({
       where: { id },
-      data: { status },
+      data: { status: status as any },
     });
   }
 }

@@ -2,6 +2,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+const prismaAny = prisma as any;
+
 async function main() {
   console.log('Clearing test data...');
 
@@ -26,7 +28,7 @@ async function main() {
   await prisma.application.deleteMany({});
   console.log('Applications cleared');
 
-  await prisma.quote.deleteMany({});
+  await prismaAny.quote.deleteMany({});
   console.log('Quotes cleared');
 
   await prisma.product.deleteMany({});
