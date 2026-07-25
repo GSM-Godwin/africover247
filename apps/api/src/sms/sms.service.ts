@@ -117,4 +117,17 @@ export class SmsService {
       return;
     }
   }
+
+  async sendNotificationSms(phone: string, message: string): Promise<void> {
+    if (this.isStub) {
+      this.logger.log(`[STUB] SMS to ${phone}: ${message}`);
+      return;
+    }
+
+    try {
+      await this.sendSms(phone, message);
+    } catch {
+      return;
+    }
+  }
 }

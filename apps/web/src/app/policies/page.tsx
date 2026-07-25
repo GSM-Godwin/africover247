@@ -78,7 +78,7 @@ export default function PoliciesPage() {
               <button
                 type="button"
                 onClick={fetchPolicies}
-                className="bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
+                className="bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
               >
                 Retry
               </button>

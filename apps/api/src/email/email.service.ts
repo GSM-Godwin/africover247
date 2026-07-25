@@ -93,4 +93,25 @@ export class EmailService {
       this.logger.error(`Failed to send claim status email to ${to}`, error);
     }
   }
+
+  async sendEmail(params: {
+    to: string;
+    subject: string;
+    html: string;
+  }): Promise<void> {
+    try {
+      if (!this.resend) {
+        this.logger.log(`[STUB] Email to ${params.to}: ${params.subject}`);
+        return;
+      }
+      await this.resend.emails.send({
+        from: this.configService.get<string>('EMAIL_FROM'),
+        to: params.to,
+        subject: params.subject,
+        html: params.html,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to send email to ${params.to}`, error);
+    }
+  }
 }

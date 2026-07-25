@@ -79,7 +79,7 @@ export function ProductCard({ product }: ProductCardProps) {
           className={`flex-1 text-center font-body font-bold text-sm px-4 py-3 rounded-lg transition-colors duration-200 ${
             isQuoteBased
               ? "border border-midnight text-midnight hover:bg-midnight/5"
-              : "bg-daybreak text-midnight hover:bg-[#C4700E]"
+              : "bg-daybreak text-midnight hover:bg-[#D4921A]"
           }`}
         >
           {ctaLabel}

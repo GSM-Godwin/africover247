@@ -23,7 +23,7 @@ export function CtaBand() {
         <Reveal delay={0.22}>
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-semibold text-sm px-6 py-3.5 rounded-md hover:bg-[#C4700E] group transition-colors duration-200"
+            className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-semibold text-sm px-6 py-3.5 rounded-md hover:bg-[#D4921A] group transition-colors duration-200"
           >
             <ArrowRight
               size={16}

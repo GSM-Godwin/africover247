@@ -16,7 +16,8 @@ export function PolicyCardStack() {
       <div className="absolute inset-0 -z-10 translate-x-4 translate-y-4 rounded-2xl bg-daybreak/10 blur-2xl scale-110 pointer-events-none" />
 
       <div
-        className="absolute top-0 right-10 rotate-[17deg] scale-[0.96] transition-all duration-300 ease-out group-hover:rotate-[10deg] group-hover:translate-x-2 group-hover:-translate-y-1 w-[260px] sm:w-[290px] h-[180px] rounded-xl bg-midnight/70"
+        className="absolute top-0 right-10 rotate-[17deg] scale-[0.96] transition-all duration-300 ease-out group-hover:rotate-[10deg] group-hover:translate-x-2 group-hover:-translate-y-1 w-[260px] sm:w-[290px] h-[180px] rounded-xl"
+        style={{ backgroundColor: "#33436F" }}
       />
 
       <motion.div

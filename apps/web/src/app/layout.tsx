@@ -21,9 +21,9 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AfriCover247 — AfriGlobal Digital Insurance Portal",
+  title: "AfriCover247 — Digital Insurance",
   description:
-    "Browse, buy, and manage your AfriGlobal insurance policy entirely online. No office visits, no paperwork.",
+    "Apply, pay, and manage your insurance policy entirely on your phone.",
 };
 
 export default function RootLayout({

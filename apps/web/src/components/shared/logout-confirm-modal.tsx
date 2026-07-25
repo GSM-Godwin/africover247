@@ -71,7 +71,7 @@ export function LogoutConfirmModal({ open, onClose }: LogoutConfirmModalProps) {
           <button
             type="button"
             onClick={handleConfirmLogout}
-            className="font-body font-bold text-midnight text-sm bg-daybreak rounded-lg px-5 py-2.5 hover:bg-[#C4700E] transition-colors duration-200"
+            className="font-body font-bold text-midnight text-sm bg-daybreak rounded-lg px-5 py-2.5 hover:bg-[#D4921A] transition-colors duration-200"
           >
             Log Out
           </button>

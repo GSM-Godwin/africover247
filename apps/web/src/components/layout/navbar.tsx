@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ChevronDown, Menu, User, X, type LucideIcon } from "lucide-react";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
@@ -183,15 +182,13 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-[1140px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between relative">
-          <Link href="/" className="flex items-center shrink-0">
-            <Image
-              src="/afriglobal_logo.png"
-              alt="AfriGlobal Insurance Brokers"
-              width={140}
-              height={40}
-              className="h-8 w-auto object-contain"
-              priority
-            />
+          <Link href="/" className="flex items-baseline gap-0 shrink-0">
+            <span className="font-display font-bold text-paper text-xl leading-none">
+              AfriCover
+            </span>
+            <span className="font-mono font-medium text-daybreak text-xl leading-none">
+              247
+            </span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -283,7 +280,7 @@ export function Navbar() {
             ) : (
               <Link
                 href="/login"
-                className="hidden md:inline-flex bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
+                className="hidden md:inline-flex bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
               >
                 Login
               </Link>
@@ -366,7 +363,7 @@ export function Navbar() {
                     <Link
                       href="/login"
                       onClick={closeMobileNav}
-                      className="inline-flex mt-2 bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#C4700E] transition-colors duration-200"
+                      className="inline-flex mt-2 bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
                     >
                       Login
                     </Link>

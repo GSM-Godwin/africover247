@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 import { PolicyCardStack } from "@/components/shared/policy-card-stack";
 
 interface AuthLayoutProps {
@@ -10,15 +9,13 @@ export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="min-h-screen flex">
       <div className="hidden lg:flex lg:w-1/2 bg-midnight flex-col justify-between p-10 xl:p-14">
-        <Link href="/" className="flex items-center">
-          <Image
-            src="/afriglobal_logo.png"
-            alt="AfriGlobal Insurance Brokers"
-            width={160}
-            height={48}
-            className="h-10 w-auto object-contain brightness-0 invert"
-            priority
-          />
+        <Link href="/" className="flex items-baseline gap-0">
+          <span className="font-display font-bold text-paper text-xl leading-none">
+            AfriCover
+          </span>
+          <span className="font-mono font-medium text-daybreak text-xl leading-none">
+            247
+          </span>
         </Link>
 
         <div className="flex justify-center items-center flex-1 py-12">

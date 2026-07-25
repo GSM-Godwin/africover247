@@ -233,7 +233,7 @@ export function AccountContent() {
                 <button
                   type="submit"
                   disabled={profileLoading}
-                  className="w-full sm:w-auto min-h-[44px] bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto min-h-[44px] bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
                 >
                   {profileLoading && (
                     <Loader2 size={18} className="animate-spin" />
@@ -283,7 +283,7 @@ export function AccountContent() {
                 <button
                   type="submit"
                   disabled={passwordLoading}
-                  className="w-full sm:w-auto min-h-[44px] bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#C4700E] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
+                  className="w-full sm:w-auto min-h-[44px] bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2"
                 >
                   {passwordLoading && (
                     <Loader2 size={18} className="animate-spin" />

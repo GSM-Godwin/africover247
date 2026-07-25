@@ -207,7 +207,7 @@ export function DashboardContent() {
                             draftApp.id,
                             applicationStep(draftApp.stepCompleted),
                           )}
-                          className="bg-daybreak text-midnight font-body font-bold text-sm sm:text-base px-6 py-3.5 rounded-lg hover:bg-[#C4700E] transition-colors duration-200 text-center"
+                          className="bg-daybreak text-midnight font-body font-bold text-sm sm:text-base px-6 py-3.5 rounded-lg hover:bg-[#D4921A] transition-colors duration-200 text-center"
                         >
                           Continue Application
                         </Link>

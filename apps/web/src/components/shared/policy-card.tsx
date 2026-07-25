@@ -1,7 +1,5 @@
 "use client";
 
-import Image from "next/image";
-
 interface PolicyCardProps {
   cardholderName: string;
   policyNumber: string;
@@ -46,19 +44,15 @@ export function PolicyCard({
   return (
     <div
       className={`
-        bg-midnight border border-white/10 rounded-xl p-5 w-[260px] sm:w-[290px]
+        bg-[#0d1f3c] border border-white/10 rounded-xl p-5 w-[260px] sm:w-[290px]
         ${className}
       `}
     >
       <div className="flex items-center justify-between mb-5">
         <div className="w-8 h-5 bg-daybreak rounded-sm" />
-        <Image
-          src="/afriglobal_logo.png"
-          alt="AfriGlobal"
-          width={80}
-          height={24}
-          className="h-5 w-auto object-contain brightness-0 invert"
-        />
+        <span className="font-display font-bold text-paper text-sm tracking-wide">
+          AfriCover<span className="font-mono">247</span>
+        </span>
       </div>
 
       <p className="font-body text-paper/40 text-[10px] uppercase tracking-widest mb-0.5">

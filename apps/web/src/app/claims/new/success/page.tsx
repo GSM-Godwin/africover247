@@ -42,7 +42,7 @@ export default function ClaimSuccessPage() {
         </Link>
         <Link
           href="/dashboard"
-          className="flex-1 bg-daybreak text-midnight font-body font-bold text-sm rounded-lg py-3.5 hover:bg-[#C4700E] transition-colors duration-200 text-center"
+          className="flex-1 bg-daybreak text-midnight font-body font-bold text-sm rounded-lg py-3.5 hover:bg-[#D4921A] transition-colors duration-200 text-center"
         >
           Back to Dashboard
         </Link>
