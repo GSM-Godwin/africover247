@@ -43,7 +43,8 @@ export default function VerifyEmailPage() {
       setRole(res.data.user.role);
       sessionStorage.removeItem("pending_verification_email");
       sessionStorage.removeItem("pending_registration");
-      router.push("/dashboard");
+      const role = res.data.user?.role;
+      router.push(role === "admin" ? "/admin" : "/dashboard");
     } catch {
       toast.error("Invalid or expired code. Please try again.");
     } finally {

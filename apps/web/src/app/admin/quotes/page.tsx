@@ -45,7 +45,7 @@ export default function AdminQuotesPage() {
   ).length;
 
   return (
-    <div>
+    <div className="p-6 sm:p-8 max-w-7xl">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="font-display font-bold text-midnight text-2xl">

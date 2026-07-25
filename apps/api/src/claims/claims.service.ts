@@ -280,7 +280,11 @@ export class ClaimsService {
       where,
       include: {
         user: { select: { firstName: true, lastName: true, email: true } },
-        policy: { select: { policyNumber: true } },
+        policy: {
+          include: {
+            product: { select: { name: true, category: true } },
+          },
+        },
       },
       orderBy: { createdAt: 'desc' },
       skip,

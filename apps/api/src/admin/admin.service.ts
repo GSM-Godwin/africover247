@@ -103,10 +103,10 @@ export class AdminService {
       take: limit,
       orderBy: { createdAt: 'asc' },
       include: {
-        user: { select: { firstName: true, lastName: true } },
+        user: { select: { firstName: true, lastName: true, email: true } },
         policy: {
           include: {
-            product: { select: { name: true } },
+            product: { select: { name: true, category: true } },
           },
         },
       },
@@ -145,7 +145,7 @@ export class AdminService {
 
   // --- Get audit logs with filters ---
 
-  getAuditLogs(filters: {
+  async getAuditLogs(filters: {
     search?: string;
     actorId?: string;
     from?: string;
@@ -175,14 +175,19 @@ export class AdminService {
       ];
     }
 
-    return this.prisma.auditLog.findMany({
+    const logs = await this.prisma.auditLog.findMany({
       where,
       include: {
-        actor: { select: { firstName: true, lastName: true, email: true } },
+        actor: { select: { firstName: true, lastName: true, role: true } },
       },
       orderBy: { createdAt: 'desc' },
       skip,
       take: limit,
     });
+
+    return logs.map(({ actor, ...log }) => ({
+      ...log,
+      user: actor,
+    }));
   }
 }

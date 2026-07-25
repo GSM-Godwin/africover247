@@ -24,14 +24,6 @@ export function LoginForm() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
 
-  function getPostLoginPath(): string {
-    const redirect = searchParams.get("redirect");
-    const action = searchParams.get("action");
-    if (!redirect) return "/dashboard";
-    if (action) return `${redirect}?action=${encodeURIComponent(action)}`;
-    return redirect;
-  }
-
   const {
     register,
     handleSubmit,
@@ -45,7 +37,20 @@ export function LoginForm() {
       setToken(res.data.accessToken);
       setUser(res.data.user);
       setRole(res.data.user.role);
-      router.push(getPostLoginPath());
+
+      const role = res.data.user.role;
+      const redirect = searchParams.get("redirect");
+      const action = searchParams.get("action");
+
+      if (redirect) {
+        const destination = action
+          ? `${redirect}?action=${encodeURIComponent(action)}`
+          : redirect;
+        router.push(destination);
+        return;
+      }
+
+      router.push(role === "admin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } }).response
         ?.status;
