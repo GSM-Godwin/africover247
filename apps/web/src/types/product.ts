@@ -1,3 +1,5 @@
+import type { AssetField } from "./asset-field";
+
 export interface Product {
   id: string;
   name: string;
@@ -9,7 +11,7 @@ export interface Product {
   rateMin: string | null;
   rateMax: string | null;
   calculationBasis: string | null;
-  assetFields: string | null;
+  assetFields: string | AssetField[] | null;
   durationMonths: number;
   coverageHighlights: string;
   exclusions: string;

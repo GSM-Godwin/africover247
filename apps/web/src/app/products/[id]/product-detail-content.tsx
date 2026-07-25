@@ -11,6 +11,7 @@ import {
   getCtaLabel,
   getPriceDisplay,
 } from "@/components/products/product-card";
+import { AssetDetailsModal } from "@/components/products/asset-details-modal";
 import {
   applicationStep,
   productDisplayTitle,
@@ -55,6 +56,7 @@ export function ProductDetailContent() {
   const [notFound, setNotFound] = useState(false);
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState("");
+  const [showAssetModal, setShowAssetModal] = useState(false);
   const autoCoverRan = useRef(false);
 
   const fetchProduct = useCallback(async () => {
@@ -81,6 +83,16 @@ export function ProductDetailContent() {
       router.push(
         `/login?redirect=${encodeURIComponent(`/products/${product.id}`)}&action=get-covered`,
       );
+      return;
+    }
+
+    if (product.pricingType === "quote_based") {
+      router.push(`/quotes/new?productId=${product.id}`);
+      return;
+    }
+
+    if (product.pricingType === "calculable") {
+      setShowAssetModal(true);
       return;
     }
 
@@ -266,6 +278,14 @@ export function ProductDetailContent() {
           )}
         </div>
       </main>
+
+      {product && (
+        <AssetDetailsModal
+          open={showAssetModal}
+          onClose={() => setShowAssetModal(false)}
+          product={product}
+        />
+      )}
     </>
   );
 }

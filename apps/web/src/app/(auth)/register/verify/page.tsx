@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { OtpInput } from "@/components/auth/otp-input";
 import { AuthButton } from "@/components/auth/auth-button";
 import api from "@/lib/api";
-import { setToken, setUser } from "@/lib/auth";
+import { setToken, setUser, setRole } from "@/lib/auth";
 
 export default function VerifyEmailPage() {
   const router = useRouter();
@@ -40,6 +40,7 @@ export default function VerifyEmailPage() {
       const res = await api.post("/auth/verify-email", { email, otp });
       setToken(res.data.accessToken);
       setUser(res.data.user);
+      setRole(res.data.user.role);
       sessionStorage.removeItem("pending_verification_email");
       sessionStorage.removeItem("pending_registration");
       router.push("/dashboard");

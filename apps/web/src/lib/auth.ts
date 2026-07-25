@@ -11,6 +11,14 @@ export function setToken(token: string): void {
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
 }
 
+export function setRole(role: string): void {
+  document.cookie = `africover_role=${role}; path=/; max-age=${60 * 60 * 24 * 7}`;
+}
+
+export function removeRole(): void {
+  document.cookie = `africover_role=; path=/; max-age=0`;
+}
+
 export function removeToken(): void {
   localStorage.removeItem(TOKEN_KEY);
   document.cookie = `${TOKEN_KEY}=; path=/; max-age=0`;
@@ -42,6 +50,7 @@ export function isAuthenticated(): boolean {
 export function logout(): void {
   removeToken();
   removeUser();
+  removeRole();
 }
 
 export function getUserDisplayName(user: Record<string, unknown>): string {

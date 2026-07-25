@@ -44,7 +44,12 @@ export class ApplicationsService {
         productId: dto.productId,
         status: 'draft',
         stepCompleted: 0,
-        formData: {},
+        formData: dto.assetDetails
+          ? ({ assetDetails: dto.assetDetails } as Prisma.InputJsonValue)
+          : {},
+        assetDetails: (dto.assetDetails ?? undefined) as
+          | Prisma.InputJsonValue
+          | undefined,
       },
       include: { product: true },
     });

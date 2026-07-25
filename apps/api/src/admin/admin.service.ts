@@ -9,9 +9,8 @@ export class AdminService {
   // --- Dashboard metrics ---
 
   async getMetrics() {
-    const now = new Date();
-    const startOfWeek = new Date(now);
-    startOfWeek.setDate(now.getDate() - 7);
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
     const [
       totalApplications,
@@ -21,6 +20,9 @@ export class AdminService {
       totalClaims,
       newThisWeek,
       totalUsers,
+      applicationsThisWeek,
+      newCustomersThisWeek,
+      revenueResult,
     ] = await Promise.all([
       this.prisma.application.count(),
       this.prisma.application.count({
@@ -32,10 +34,25 @@ export class AdminService {
       }),
       this.prisma.claim.count(),
       this.prisma.application.count({
-        where: { createdAt: { gte: startOfWeek } },
+        where: { createdAt: { gte: oneWeekAgo } },
       }),
       this.prisma.user.count({ where: { role: 'customer' } }),
+      this.prisma.application.count({
+        where: { createdAt: { gte: oneWeekAgo } },
+      }),
+      this.prisma.user.count({
+        where: {
+          role: 'customer',
+          createdAt: { gte: oneWeekAgo },
+        },
+      }),
+      this.prisma.payment.aggregate({
+        where: { status: 'successful' },
+        _sum: { amount: true },
+      }),
     ]);
+
+    const totalRevenue = Number(revenueResult._sum.amount || 0);
 
     return {
       totalApplications,
@@ -45,6 +62,9 @@ export class AdminService {
       totalClaims,
       newThisWeek,
       totalUsers,
+      applicationsThisWeek,
+      newCustomersThisWeek,
+      totalRevenue,
     };
   }
 
@@ -56,7 +76,7 @@ export class AdminService {
       orderBy: { createdAt: 'desc' },
       include: {
         actor: {
-          select: { firstName: true, lastName: true, email: true },
+          select: { firstName: true, lastName: true },
         },
       },
     });
@@ -68,7 +88,10 @@ export class AdminService {
       entityId: log.entityId,
       details: log.details,
       createdAt: log.createdAt,
-      actor: `${log.actor.firstName} ${log.actor.lastName}`,
+      user: {
+        firstName: log.actor.firstName,
+        lastName: log.actor.lastName,
+      },
     }));
   }
 
@@ -80,8 +103,12 @@ export class AdminService {
       take: limit,
       orderBy: { createdAt: 'asc' },
       include: {
-        user: { select: { firstName: true, lastName: true, email: true } },
-        policy: { select: { policyNumber: true } },
+        user: { select: { firstName: true, lastName: true } },
+        policy: {
+          include: {
+            product: { select: { name: true } },
+          },
+        },
       },
     });
   }

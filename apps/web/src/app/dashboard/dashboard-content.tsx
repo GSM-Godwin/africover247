@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
+import { QuotesSection } from "@/components/dashboard/quotes-section";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
 import { Reveal } from "@/components/shared/reveal";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -49,6 +50,8 @@ function ViewLink({ href }: { href: string }) {
 
 export function DashboardContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const quotesSectionRef = useRef<HTMLElement>(null);
   const firstName = String(getUser()?.firstName ?? "there");
 
   const [draftApp, setDraftApp] = useState<ApplicationRecord | null>(null);
@@ -153,8 +156,18 @@ export function DashboardContent() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  useEffect(() => {
+    if (searchParams.get("tab") !== "quotes") return;
+    quotesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [searchParams]);
+
   function handleNotificationClick(notification: NotificationRecord) {
     api.patch(`/notifications/${notification.id}/read`).catch(() => {});
+
+    if (notification.referenceType === "quote" && notification.referenceId) {
+      router.push(`/quotes/${notification.referenceId}`);
+      return;
+    }
 
     if (notification.referenceType === "policy" && notification.referenceId) {
       router.push(`/policies/${notification.referenceId}`);
@@ -307,6 +320,19 @@ export function DashboardContent() {
                       ))}
                     </div>
                   )}
+                </section>
+              </Reveal>
+
+              <Reveal delay={0.17}>
+                <section
+                  ref={quotesSectionRef}
+                  id="quotes"
+                  className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-8"
+                >
+                  <h2 className="font-display font-bold text-midnight text-lg mb-5">
+                    My Quotes
+                  </h2>
+                  <QuotesSection />
                 </section>
               </Reveal>
             </div>

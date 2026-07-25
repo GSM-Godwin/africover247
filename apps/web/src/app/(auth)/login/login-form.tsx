@@ -10,7 +10,7 @@ import { toast } from "sonner";
 import { AuthInput } from "@/components/auth/auth-input";
 import { AuthButton } from "@/components/auth/auth-button";
 import api from "@/lib/api";
-import { setToken, setUser } from "@/lib/auth";
+import { setToken, setUser, setRole } from "@/lib/auth";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -44,6 +44,7 @@ export function LoginForm() {
       const res = await api.post("/auth/login", data);
       setToken(res.data.accessToken);
       setUser(res.data.user);
+      setRole(res.data.user.role);
       router.push(getPostLoginPath());
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } }).response
