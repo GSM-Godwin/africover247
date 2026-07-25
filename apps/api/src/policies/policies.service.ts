@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -338,5 +339,36 @@ export class PoliciesService {
     });
     if (!policy) throw new NotFoundException('Policy not found');
     return policy;
+  }
+
+  async cancelPolicy(policyId: string) {
+    const policy = await this.prisma.policy.findUnique({
+      where: { id: policyId },
+      include: { user: true, product: true },
+    });
+
+    if (!policy) throw new NotFoundException('Policy not found');
+    if (policy.status !== 'active') {
+      throw new BadRequestException('Only active policies can be cancelled');
+    }
+
+    await this.prisma.policy.update({
+      where: { id: policyId },
+      data: { status: 'cancelled' },
+    });
+
+    await this.prisma.notification.create({
+      data: {
+        userId: policy.userId,
+        message: `Your policy ${policy.policyNumber} has been cancelled. Please contact AfriGlobal for more information.`,
+        type: 'policy_cancelled',
+        referenceType: 'policy',
+        referenceId: policyId,
+      },
+    });
+
+    this.logger.log(`Policy ${policy.policyNumber} cancelled by admin`);
+
+    return { cancelled: true, policyNumber: policy.policyNumber };
   }
 }

@@ -242,7 +242,18 @@ export class ApplicationsService {
         },
         product: true,
         kycDocuments: true,
-        policy: true,
+        payments: {
+          select: { id: true, status: true, amount: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        },
+        policy: {
+          select: {
+            id: true,
+            policyNumber: true,
+            status: true,
+            policyPdfUrl: true,
+          },
+        },
       },
     });
     if (!application) throw new NotFoundException('Application not found');

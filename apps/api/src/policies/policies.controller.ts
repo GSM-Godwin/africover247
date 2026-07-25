@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { PoliciesService } from './policies.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -45,5 +45,10 @@ export class AdminPoliciesController {
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.policiesService.findOneAdmin(id);
+  }
+
+  @Patch(':id/cancel')
+  cancelPolicy(@Param('id') id: string) {
+    return this.policiesService.cancelPolicy(id);
   }
 }
