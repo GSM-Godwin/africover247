@@ -1,6 +1,7 @@
 "use client";
 
-import { motion, useReducedMotion } from "framer-motion";
+import { useRef } from "react";
+import { motion, useReducedMotion, useInView } from "framer-motion";
 
 interface StaggerContainerProps {
   children: React.ReactNode;
@@ -14,9 +15,15 @@ export function StaggerContainer({
   className,
 }: StaggerContainerProps) {
   const shouldReduceMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, {
+    once: true,
+    margin: "0px 0px -50px 0px",
+  });
 
   return (
     <motion.div
+      ref={ref}
       variants={{
         hidden: {},
         show: {
@@ -26,8 +33,7 @@ export function StaggerContainer({
         },
       }}
       initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, amount: 0.2 }}
+      animate={isInView ? "show" : "hidden"}
       className={className}
     >
       {children}

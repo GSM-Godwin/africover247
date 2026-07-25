@@ -36,7 +36,7 @@ export default function RootLayout({
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-paper text-midnight font-body antialiased">
         {children}
         <Toaster position="top-right" richColors />
       </body>
