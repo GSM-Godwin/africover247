@@ -15,6 +15,7 @@ export type AuthStackParamList = {
 }
 
 const Stack = createStackNavigator<AuthStackParamList>()
+const StackNavigator = Stack.Navigator as React.ComponentType<any>
 
 interface AuthStackProps {
   onLoginSuccess: () => void
@@ -22,7 +23,7 @@ interface AuthStackProps {
 
 export function AuthStack({ onLoginSuccess }: AuthStackProps) {
   return (
-    <Stack.Navigator
+    <StackNavigator
       screenOptions={{
         headerShown: false,
         cardStyle: { backgroundColor: '#FFFFFF' },
@@ -39,6 +40,6 @@ export function AuthStack({ onLoginSuccess }: AuthStackProps) {
       <Stack.Screen name="ResetPassword">
         {(props) => <ResetPasswordScreen {...props} />}
       </Stack.Screen>
-    </Stack.Navigator>
+    </StackNavigator>
   )
 }

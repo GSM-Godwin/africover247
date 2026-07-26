@@ -9,6 +9,7 @@ import { AccountScreen } from '../screens/account/AccountScreen'
 import { Colors } from '../constants'
 
 const Tab = createBottomTabNavigator()
+const TabNavigator = Tab.Navigator as React.ComponentType<any>
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
@@ -28,7 +29,7 @@ function TabLabel({ label, focused }: { label: string; focused: boolean }) {
 
 export function AppTabs() {
   return (
-    <Tab.Navigator
+    <TabNavigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
@@ -75,7 +76,7 @@ export function AppTabs() {
           tabBarLabel: ({ focused }) => <TabLabel label="Account" focused={focused} />,
         }}
       />
-    </Tab.Navigator>
+    </TabNavigator>
   )
 }
 

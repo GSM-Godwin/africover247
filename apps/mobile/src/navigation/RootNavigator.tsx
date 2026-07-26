@@ -10,6 +10,10 @@ import { ONBOARDING_KEY } from '../constants'
 
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app'
 
+const NavContainer = NavigationContainer as React.ComponentType<{
+  children?: React.ReactNode
+}>
+
 export function RootNavigator() {
   const [appState, setAppState] = useState<AppState>('splash')
 
@@ -46,12 +50,12 @@ export function RootNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavContainer>
       {appState === 'auth' ? (
         <AuthStack onLoginSuccess={handleLoginSuccess} />
       ) : (
         <AppTabs />
       )}
-    </NavigationContainer>
+    </NavContainer>
   )
 }

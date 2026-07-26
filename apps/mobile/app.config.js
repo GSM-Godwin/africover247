@@ -3,12 +3,13 @@ export default {
     name: "AfriCover247",
     slug: "africover247",
     version: "1.0.0",
+    sdkVersion: "54.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
     splash: {
-      image: "./assets/splash.png",
+      image: "./assets/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#ffffff"
+      backgroundColor: "#15679b"
     },
     ios: {
       supportsTablet: false,
@@ -16,13 +17,17 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#ffffff"
+        foregroundImage: "./assets/android-icon-foreground.png",
+        backgroundImage: "./assets/android-icon-background.png",
+        backgroundColor: "#15679b"
       },
       package: "com.africover247.app"
     },
+    plugins: [
+      "expo-secure-store"
+    ],
     extra: {
-      apiUrl: process.env.API_URL || "http://localhost:3001"
+      apiUrl: process.env.API_URL || "https://africover247.onrender.com"
     }
   }
 }
