@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import api from "@/lib/api";
 import type { QuoteRecord } from "@/types/quote";
 
@@ -29,7 +30,7 @@ export default function AdminQuotesPage() {
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("");
 
-  useEffect(() => {
+  const fetchQuotes = useCallback(() => {
     setLoading(true);
     const params = activeFilter ? `?status=${activeFilter}` : "";
     api
@@ -38,6 +39,12 @@ export default function AdminQuotesPage() {
       .catch(() => setQuotes([]))
       .finally(() => setLoading(false));
   }, [activeFilter]);
+
+  useEffect(() => {
+    fetchQuotes();
+  }, [fetchQuotes]);
+
+  useAutoRefresh(fetchQuotes, { intervalMs: 20000 });
 
   const pendingCount = quotes.filter(
     (q) =>

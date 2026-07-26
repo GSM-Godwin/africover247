@@ -66,13 +66,13 @@ function NewQuoteForm() {
         productId,
         customerDetails: values,
       });
+      setLoading(false);
       toast.success("Quote request submitted successfully");
       router.push("/dashboard?tab=quotes");
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not submit quote request.");
-    } finally {
       setLoading(false);
     }
   }

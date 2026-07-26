@@ -43,6 +43,7 @@ export default function QuoteDetailPage() {
         applicationId: string;
         amount: number;
       }>(`/quotes/${id}/accept`);
+      setSubmitting(false);
       toast.success("Quote accepted! Proceeding to payment...");
       router.push(
         `/apply/${quote!.product.id}/${res.data.applicationId}/payment`,
@@ -51,7 +52,6 @@ export default function QuoteDetailPage() {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not accept quote.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -60,13 +60,13 @@ export default function QuoteDetailPage() {
     setSubmitting(true);
     try {
       await api.post(`/quotes/${id}/reject`);
+      setSubmitting(false);
       toast.success("Quote declined.");
       router.push("/dashboard?tab=quotes");
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not reject quote.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -82,6 +82,7 @@ export default function QuoteDetailPage() {
         counterAmount: parseFloat(counterAmount),
         note: counterNote || undefined,
       });
+      setSubmitting(false);
       toast.success("Counter-offer submitted.");
       setShowCounterForm(false);
       setCounterAmount("");
@@ -92,7 +93,6 @@ export default function QuoteDetailPage() {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not submit counter-offer.");
-    } finally {
       setSubmitting(false);
     }
   }

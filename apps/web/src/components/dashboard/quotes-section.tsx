@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import Link from "next/link";
 import {
   Clock,
@@ -78,13 +79,18 @@ export function QuotesSection() {
   const [quotes, setQuotes] = useState<QuoteRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    api
+  const fetchQuotes = useCallback(() => {
+    return api
       .get<QuoteRecord[]>("/quotes/my")
       .then((res) => setQuotes(res.data))
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    fetchQuotes().finally(() => setLoading(false));
+  }, [fetchQuotes]);
+
+  useAutoRefresh(fetchQuotes, { intervalMs: 15000 });
 
   if (loading) {
     return (

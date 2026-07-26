@@ -8,6 +8,7 @@ import { QuotesSection } from "@/components/dashboard/quotes-section";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
 import { Reveal } from "@/components/shared/reveal";
 import { StatusBadge } from "@/components/shared/status-badge";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import api from "@/lib/api";
 import { getUser } from "@/lib/auth";
 import {
@@ -155,6 +156,17 @@ export function DashboardContent() {
   useEffect(() => {
     fetchNotifications();
   }, [fetchNotifications]);
+
+  const fetchDashboardData = useCallback(async () => {
+    await Promise.all([
+      fetchDraft(),
+      fetchPolicies(),
+      fetchClaims(),
+      fetchNotifications(),
+    ]);
+  }, [fetchDraft, fetchPolicies, fetchClaims, fetchNotifications]);
+
+  useAutoRefresh(fetchDashboardData, { intervalMs: 30000 });
 
   useEffect(() => {
     if (searchParams.get("tab") !== "quotes") return;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -14,6 +14,7 @@ import {
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import api from "@/lib/api";
 
 interface Metrics {
@@ -144,29 +145,31 @@ export function AdminDashboardContent() {
   const [loading, setLoading] = useState(true);
   const [pendingQuoteCount, setPendingQuoteCount] = useState(0);
 
-  useEffect(() => {
-    Promise.all([
-      api.get("/admin/dashboard/metrics"),
-      api.get("/admin/dashboard/recent-applications"),
-      api.get("/admin/dashboard/pending-claims"),
-      api.get("/admin/dashboard/activity"),
-    ])
-      .then(([metricsRes, appsRes, claimsRes, activityRes]) => {
-        setMetrics(metricsRes.data);
-        setRecentApps(appsRes.data);
-        setPendingClaims(claimsRes.data);
-        setActivity(activityRes.data);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+  const fetchAll = useCallback(async () => {
+    await Promise.all([
+      api
+        .get("/admin/dashboard/metrics")
+        .then((res) => setMetrics(res.data)),
+      api
+        .get("/admin/dashboard/recent-applications")
+        .then((res) => setRecentApps(res.data)),
+      api
+        .get("/admin/dashboard/pending-claims")
+        .then((res) => setPendingClaims(res.data)),
+      api
+        .get("/admin/dashboard/activity")
+        .then((res) => setActivity(res.data)),
+      api
+        .get("/admin/quotes?status=pending_review")
+        .then((res) => setPendingQuoteCount(res.data.length)),
+    ]).catch(() => {});
   }, []);
 
   useEffect(() => {
-    api
-      .get("/admin/quotes?status=pending_review")
-      .then((res) => setPendingQuoteCount(res.data.length))
-      .catch(() => {});
-  }, []);
+    fetchAll().finally(() => setLoading(false));
+  }, [fetchAll]);
+
+  useAutoRefresh(fetchAll, { intervalMs: 30000 });
 
   return (
     <div className="p-6 sm:p-8 max-w-7xl">

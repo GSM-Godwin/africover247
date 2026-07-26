@@ -42,16 +42,16 @@ export default function AdminQuoteDetailPage() {
         quoteAmount: parseFloat(quoteAmount),
         note: note || undefined,
       });
+      setSubmitting(false);
       toast.success("Quote sent to customer.");
-      const res = await api.get<QuoteRecord>(`/admin/quotes/${id}`);
-      setQuote(res.data);
       setQuoteAmount("");
       setNote("");
+      const res = await api.get<QuoteRecord>(`/admin/quotes/${id}`);
+      setQuote(res.data);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not send quote.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -60,13 +60,13 @@ export default function AdminQuoteDetailPage() {
     setSubmitting(true);
     try {
       await api.post(`/admin/quotes/${id}/accept-counter`);
+      setSubmitting(false);
       toast.success("Counter-offer accepted. Application created.");
       router.push("/admin/quotes");
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not accept counter.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -82,16 +82,16 @@ export default function AdminQuoteDetailPage() {
         counterAmount: parseFloat(quoteAmount),
         note: note || undefined,
       });
+      setSubmitting(false);
       toast.success("Counter-offer sent to customer.");
-      const res = await api.get<QuoteRecord>(`/admin/quotes/${id}`);
-      setQuote(res.data);
       setQuoteAmount("");
       setNote("");
+      const res = await api.get<QuoteRecord>(`/admin/quotes/${id}`);
+      setQuote(res.data);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not send counter.");
-    } finally {
       setSubmitting(false);
     }
   }
@@ -102,13 +102,13 @@ export default function AdminQuoteDetailPage() {
       await api.post(`/admin/quotes/${id}/reject`, {
         reason: rejectReason || undefined,
       });
+      setSubmitting(false);
       toast.success("Quote rejected.");
       router.push("/admin/quotes");
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not reject quote.");
-    } finally {
       setSubmitting(false);
     }
   }

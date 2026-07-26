@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Bell } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import api from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
 import type { NotificationRecord } from "@/types/notification";
@@ -50,6 +51,8 @@ export function NotificationBellDropdown({
   useEffect(() => {
     fetchUnreadCount();
   }, [fetchUnreadCount]);
+
+  useAutoRefresh(fetchUnreadCount, { intervalMs: 15000 });
 
   useEffect(() => {
     if (open) {
