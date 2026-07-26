@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.ts",
   "dependencies": {
+    "@expo/vector-icons": "^15.0.3",
     "@hookform/resolvers": "3.9.0",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-navigation/bottom-tabs": "^6.6.1",
@@ -31,7 +32,7 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.0",
-    "@types/react": "18.3.12",
+    "@types/react": "~19.1.0",
     "typescript": "5.7.3"
   },
   "scripts": {
@@ -46,7 +47,7 @@
     "metro-resolver": "~0.81.0"
   },
   "overrides": {
-    "@types/react": "~18.3.12",
+    "@types/react": "~19.1.0",
     "react-hook-form": "7.53.0"
   }
 }

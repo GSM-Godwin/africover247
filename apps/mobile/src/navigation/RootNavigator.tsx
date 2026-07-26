@@ -5,7 +5,7 @@ import { SplashScreen } from '../screens/SplashScreen'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { AuthStack } from './AuthStack'
 import { AppTabs } from './AppTabs'
-import { isAuthenticated } from '../services/auth'
+import { isAuthenticated, logout } from '../services/auth'
 import { ONBOARDING_KEY } from '../constants'
 
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app'
@@ -41,6 +41,11 @@ export function RootNavigator() {
     setAppState('app')
   }, [])
 
+  const handleLogout = useCallback(async () => {
+    await logout()
+    setAppState('auth')
+  }, [])
+
   if (appState === 'splash') {
     return <SplashScreen onFinish={handleSplashFinish} />
   }
@@ -54,7 +59,7 @@ export function RootNavigator() {
       {appState === 'auth' ? (
         <AuthStack onLoginSuccess={handleLoginSuccess} />
       ) : (
-        <AppTabs />
+        <AppTabs onLogout={handleLogout} />
       )}
     </NavContainer>
   )

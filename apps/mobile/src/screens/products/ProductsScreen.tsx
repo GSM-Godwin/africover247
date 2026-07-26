@@ -1,24 +1,233 @@
-import React from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import React, { useEffect, useState } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
+import { Card } from '../../components/ui'
 import { Colors } from '../../constants'
+import api from '../../services/api'
+import type { Product } from '../../types'
 
-export function ProductsScreen() {
+const CATEGORIES = ['All', 'Motor', 'Property', 'Life', 'Health', 'Marine', 'Engineering', 'Financial', 'Liability', 'Agriculture', 'Travel']
+
+const PRICING_TYPE_CONFIG: Record<
+  Product['pricingType'],
+  { label: string; color: string }
+> = {
+  fixed: { label: 'Fixed Price', color: Colors.primary },
+  calculable: { label: 'Rate Based', color: Colors.success },
+  quote_based: { label: 'Get a Quote', color: Colors.accent },
+}
+
+function getPriceDisplay(product: Product): string {
+  if (product.pricingType === 'fixed' && product.premiumAmount) {
+    return `₦${parseFloat(product.premiumAmount).toLocaleString('en-NG')}/yr`
+  }
+  if (product.pricingType === 'calculable' && product.rate) {
+    return `${parseFloat(product.rate) * 100}% of value`
+  }
+  return 'Request a Quote'
+}
+
+export function ProductsScreen({ navigation }: any) {
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [activeCategory, setActiveCategory] = useState('All')
+
+  useEffect(() => {
+    api.get('/products')
+      .then((res) => setProducts(res.data))
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [])
+
+  const filtered = products.filter((p) => {
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory
+    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    return matchesCategory && matchesSearch
+  })
+
+  function renderProduct({ item }: { item: Product }) {
+    const config = PRICING_TYPE_CONFIG[item.pricingType]
+    return (
+      <TouchableOpacity
+        onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
+        activeOpacity={0.7}
+      >
+        <Card style={styles.productCard} padding={16}>
+          <View style={styles.productHeader}>
+            <View style={[styles.categoryBadge, { backgroundColor: Colors.primaryLight }]}>
+              <Text style={styles.categoryText}>{item.category}</Text>
+            </View>
+            <View style={[styles.pricingBadge, { backgroundColor: config.color + '15' }]}>
+              <Text style={[styles.pricingText, { color: config.color }]}>
+                {config.label}
+              </Text>
+            </View>
+          </View>
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productDesc} numberOfLines={2}>{item.description}</Text>
+          <View style={styles.productFooter}>
+            <Text style={styles.productPrice}>{getPriceDisplay(item)}</Text>
+            <View style={styles.ctaButton}>
+              <Text style={styles.ctaText}>
+                {item.pricingType === 'quote_based' ? 'Get Quote' : 'Get Covered'}
+              </Text>
+              <Ionicons name="arrow-forward" size={14} color={Colors.white} />
+            </View>
+          </View>
+        </Card>
+      </TouchableOpacity>
+    )
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <Text style={styles.emoji}>🛡️</Text>
-        <Text style={styles.title}>Products</Text>
-        <Text style={styles.subtitle}>Coming soon — Phase 2</Text>
+
+      {/* --- Header --- */}
+      <View style={styles.header}>
+        <Text style={styles.title}>Insurance Products</Text>
+        <Text style={styles.subtitle}>Find the right cover for you</Text>
       </View>
+
+      {/* --- Search --- */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search-outline" size={18} color={Colors.textSecondary} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search products..."
+          placeholderTextColor={Colors.textSecondary + '80'}
+          value={search}
+          onChangeText={setSearch}
+        />
+      </View>
+
+      {/* --- Category filters --- */}
+      <View style={styles.categoriesContainer}>
+        <FlatList
+          data={CATEGORIES}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoriesRow}
+          keyExtractor={(item) => item}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={[
+                styles.categoryPill,
+                activeCategory === item && styles.categoryPillActive,
+              ]}
+              onPress={() => setActiveCategory(item)}
+            >
+              <Text
+                style={[
+                  styles.categoryPillText,
+                  activeCategory === item && styles.categoryPillTextActive,
+                ]}
+              >
+                {item}
+              </Text>
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+
+      {/* --- Products list --- */}
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator color={Colors.primary} size="large" />
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          renderItem={renderProduct}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Ionicons name="shield-outline" size={40} color={Colors.border} />
+              <Text style={styles.emptyText}>No products found</Text>
+            </View>
+          }
+        />
+      )}
+
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  emoji: { fontSize: 48, marginBottom: 16 },
-  title: { fontSize: 22, fontWeight: '700', color: Colors.text, marginBottom: 8 },
-  subtitle: { fontSize: 14, color: Colors.textSecondary },
+  header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.text },
+  subtitle: { fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.text },
+  categoriesContainer: {
+    height: 52,
+    justifyContent: 'center',
+  },
+  categoriesRow: {
+    paddingHorizontal: 20,
+    gap: 8,
+    alignItems: 'center',
+  },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  categoryPillActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  categoryPillText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  categoryPillTextActive: { color: Colors.white, fontWeight: '700' },
+  list: { paddingHorizontal: 20, paddingBottom: 24, gap: 12 },
+  productCard: { marginBottom: 0 },
+  productHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  categoryBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  categoryText: { fontSize: 11, color: Colors.primary, fontWeight: '600' },
+  pricingBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  pricingText: { fontSize: 11, fontWeight: '600' },
+  productName: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 6 },
+  productDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 14 },
+  productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  productPrice: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+  ctaButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.accent,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  ctaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  emptyState: { alignItems: 'center', paddingTop: 48 },
+  emptyText: { fontSize: 14, color: Colors.textSecondary, marginTop: 12 },
 })

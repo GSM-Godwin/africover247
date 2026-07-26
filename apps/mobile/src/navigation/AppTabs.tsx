@@ -1,81 +1,104 @@
 import React from 'react'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { Text, StyleSheet, View } from 'react-native'
+import { View, StyleSheet } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
-import { ProductsScreen } from '../screens/products/ProductsScreen'
 import { ClaimsScreen } from '../screens/claims/ClaimsScreen'
 import { NotificationsScreen } from '../screens/notifications/NotificationsScreen'
 import { AccountScreen } from '../screens/account/AccountScreen'
+import { ProductsStack } from './ProductsStack'
 import { Colors } from '../constants'
 
 const Tab = createBottomTabNavigator()
 const TabNavigator = Tab.Navigator as React.ComponentType<any>
 
-function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
+type IoniconName = React.ComponentProps<typeof Ionicons>['name']
+
+function TabIcon({
+  name,
+  focused,
+}: {
+  name: IoniconName
+  focused: boolean
+}) {
   return (
     <View style={[styles.iconContainer, focused && styles.iconActive]}>
-      <Text style={styles.emoji}>{emoji}</Text>
+      <Ionicons
+        name={name}
+        size={22}
+        color={focused ? Colors.primary : Colors.textSecondary}
+      />
     </View>
   )
 }
 
-function TabLabel({ label, focused }: { label: string; focused: boolean }) {
-  return (
-    <Text style={[styles.label, focused && styles.labelActive]}>
-      {label}
-    </Text>
-  )
+interface AppTabsProps {
+  onLogout: () => void
 }
 
-export function AppTabs() {
+export function AppTabs({ onLogout }: AppTabsProps) {
   return (
     <TabNavigator
       screenOptions={{
         headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarLabelStyle: styles.label,
       }}
     >
       <Tab.Screen
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" focused={focused} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Home" focused={focused} />,
+          tabBarLabel: 'Home',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'home' : 'home-outline'} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
         name="Products"
-        component={ProductsScreen}
+        component={ProductsStack}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🛡️" focused={focused} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Products" focused={focused} />,
+          tabBarLabel: 'Products',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'shield' : 'shield-outline'} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
         name="Claims"
         component={ClaimsScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📋" focused={focused} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Claims" focused={focused} />,
+          tabBarLabel: 'Claims',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'document-text' : 'document-text-outline'} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
         name="Notifications"
         component={NotificationsScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🔔" focused={focused} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Alerts" focused={focused} />,
+          tabBarLabel: 'Alerts',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} />
+          ),
         }}
       />
       <Tab.Screen
         name="Account"
-        component={AccountScreen}
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" focused={focused} />,
-          tabBarLabel: ({ focused }) => <TabLabel label="Account" focused={focused} />,
+          tabBarLabel: 'Account',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'person' : 'person-outline'} focused={focused} />
+          ),
         }}
-      />
+      >
+        {(props) => <AccountScreen {...props} onLogout={onLogout} />}
+      </Tab.Screen>
     </TabNavigator>
   )
 }
@@ -95,24 +118,18 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   iconContainer: {
-    width: 36,
+    width: 40,
     height: 36,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   iconActive: {
-    backgroundColor: Colors.primaryLight,
+    backgroundColor: '#EBF4FA',
   },
-  emoji: { fontSize: 20 },
   label: {
     fontSize: 11,
-    color: Colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
     marginTop: 2,
-  },
-  labelActive: {
-    color: Colors.primary,
-    fontWeight: '700',
   },
 })
