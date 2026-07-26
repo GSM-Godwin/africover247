@@ -132,7 +132,7 @@ export default function AdminQuoteDetailPage() {
     : [];
 
   return (
-    <div className="max-w-3xl">
+    <div className="p-6 sm:p-8 max-w-4xl">
       <button
         type="button"
         onClick={() => router.push("/admin/quotes")}
@@ -163,7 +163,8 @@ export default function AdminQuoteDetailPage() {
         </span>
       </div>
 
-      <div className="bg-white border border-slate/20 rounded-xl p-6 mb-4">
+      <div className="space-y-4">
+      <div className="bg-white border border-slate/20 rounded-xl p-6">
         <h2 className="font-body font-semibold text-midnight text-base mb-4">
           Customer Details
         </h2>
@@ -184,7 +185,7 @@ export default function AdminQuoteDetailPage() {
       </div>
 
       {history.length > 0 && (
-        <div className="bg-white border border-slate/20 rounded-xl p-6 mb-4">
+        <div className="bg-white border border-slate/20 rounded-xl p-6">
           <h2 className="font-body font-semibold text-midnight text-base mb-4">
             Negotiation History
           </h2>
@@ -369,6 +370,7 @@ export default function AdminQuoteDetailPage() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }
