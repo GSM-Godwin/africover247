@@ -26,6 +26,44 @@ export class QuotesService {
     private smsService: SmsService,
   ) {}
 
+  private async sendPushNotification(
+    userId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { pushToken: true },
+      });
+
+      if (!user?.pushToken) return;
+
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify({
+          to: user.pushToken,
+          title,
+          body,
+          data,
+          sound: 'default',
+          priority: 'high',
+          channelId: 'default',
+        }),
+      });
+
+      this.logger.log(`[Push] Notification sent to user ${userId}`);
+    } catch (err) {
+      this.logger.warn(`[Push] Failed to send notification: ${err}`);
+    }
+  }
+
   // --- Create quote request ---
 
   async createQuote(userId: string, dto: CreateQuoteDto) {
@@ -205,6 +243,13 @@ export class QuotesService {
         quoteId,
       },
     });
+
+    await this.sendPushNotification(
+      quote.customerId,
+      'Quote Ready — AfriCover247',
+      `AfriGlobal has sent you a quote for ${quote.product.name}. ₦${dto.quoteAmount.toLocaleString()}/year`,
+      { referenceType: 'quote', referenceId: quoteId, type: 'quote_sent' },
+    );
 
     await this.emailService.sendEmail({
       to: quote.customer.email,
@@ -528,6 +573,13 @@ export class QuotesService {
       },
     });
 
+    await this.sendPushNotification(
+      quote.customerId,
+      'Counter-Offer — AfriCover247',
+      `AfriGlobal countered your offer for ${quote.product.name}. ₦${dto.counterAmount.toLocaleString()}/year`,
+      { referenceType: 'quote', referenceId: quoteId, type: 'quote_countered' },
+    );
+
     await this.emailService.sendEmail({
       to: quote.customer.email,
       subject: `Counter-offer — ${quote.product.name}`,
@@ -629,6 +681,13 @@ export class QuotesService {
         quoteId,
       },
     });
+
+    await this.sendPushNotification(
+      quote.customerId,
+      'Quote Accepted — AfriCover247',
+      `AfriGlobal accepted your counter-offer for ${quote.product.name}. Proceed to payment.`,
+      { referenceType: 'quote', referenceId: quoteId, type: 'quote_accepted' },
+    );
 
     await this.emailService.sendEmail({
       to: quote.customer.email,

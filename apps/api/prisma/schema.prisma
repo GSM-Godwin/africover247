@@ -65,6 +65,8 @@ model User {
   passwordHash       String
   role               Role           @default(customer)
   emailVerified      Boolean        @default(false)
+  pushToken          String?
+  pushPlatform       String?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   applications       Application[]

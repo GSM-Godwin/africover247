@@ -8,6 +8,15 @@ export interface User {
   emailVerified: boolean
 }
 
+export interface AssetField {
+  key: string
+  label: string
+  type: 'text' | 'number' | 'date' | 'select' | 'textarea'
+  required: boolean
+  hint?: string
+  options?: string[]
+}
+
 export interface Product {
   id: string
   name: string
@@ -56,12 +65,23 @@ export interface Claim {
   }
 }
 
+export interface NegotiationEntry {
+  actor: 'customer' | 'admin'
+  action: string
+  amount?: number
+  note?: string
+  timestamp: string
+}
+
 export interface Quote {
   id: string
   status: string
   adminQuoteAmount: string | null
   customerCounterAmount: string | null
   finalAmount: string | null
+  adminNote: string | null
+  customerNote: string | null
+  negotiationHistory: NegotiationEntry[]
   roundsUsed: number
   expiresAt: string | null
   createdAt: string

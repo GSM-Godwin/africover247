@@ -43,6 +43,15 @@ export class UsersController {
   ) {
     return this.usersService.changePassword(user.id, dto);
   }
+
+  @Post('me/push-token')
+  savePushToken(
+    @CurrentUser() user: { id: string },
+    @Body('pushToken') pushToken: string,
+    @Body('platform') platform: string,
+  ) {
+    return this.usersService.savePushToken(user.id, pushToken, platform);
+  }
 }
 
 @UseGuards(JwtAuthGuard, RolesGuard)

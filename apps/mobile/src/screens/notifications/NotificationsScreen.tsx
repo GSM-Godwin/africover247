@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { useNotifications } from '../../contexts/NotificationContext'
 import type { Notification } from '../../types'
 
 const TYPE_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
@@ -25,10 +26,11 @@ const TYPE_ICON: Record<string, React.ComponentProps<typeof Ionicons>['name']> =
   quote_rejected: 'close-circle',
 }
 
-export function NotificationsScreen() {
+export function NotificationsScreen({ navigation }: any) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const { refreshUnreadCount } = useNotifications()
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -53,6 +55,7 @@ export function NotificationsScreen() {
       setNotifications((prev) =>
         prev.map((n) => (n.id === id ? { ...n, read: true } : n))
       )
+      await refreshUnreadCount()
     } catch {}
   }
 
@@ -60,6 +63,7 @@ export function NotificationsScreen() {
     try {
       await api.patch('/notifications/read-all')
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+      await refreshUnreadCount()
     } catch {}
   }
 
@@ -67,10 +71,23 @@ export function NotificationsScreen() {
 
   function renderNotification({ item }: { item: Notification }) {
     const iconName = TYPE_ICON[item.type] || 'notifications'
+
+    function handleTap() {
+      if (!item.read) markAsRead(item.id)
+
+      if (item.referenceType === 'quote' && item.referenceId) {
+        navigation.navigate('Products', { screen: 'QuotesList' } as never)
+      } else if (item.referenceType === 'claim' && item.referenceId) {
+        navigation.navigate('Claims' as never)
+      } else if (item.referenceType === 'policy' && item.referenceId) {
+        navigation.navigate('Home' as never)
+      }
+    }
+
     return (
       <TouchableOpacity
         style={[styles.notifItem, !item.read && styles.notifUnread]}
-        onPress={() => !item.read && markAsRead(item.id)}
+        onPress={handleTap}
         activeOpacity={0.7}
       >
         <View style={[

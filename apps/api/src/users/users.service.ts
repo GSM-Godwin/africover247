@@ -68,6 +68,17 @@ export class UsersService {
     return { message: 'Password changed successfully' };
   }
 
+  async savePushToken(userId: string, pushToken: string, platform: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        pushToken,
+        pushPlatform: platform,
+      },
+    });
+    return { saved: true };
+  }
+
   // --- Admin: get all users ---
 
   findAll(search?: string) {

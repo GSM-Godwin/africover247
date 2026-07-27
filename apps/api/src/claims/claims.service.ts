@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ForbiddenException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { ClaimStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -16,6 +17,8 @@ import { AddCommentDto } from './dto/add-comment.dto';
 
 @Injectable()
 export class ClaimsService {
+  private readonly logger = new Logger(ClaimsService.name);
+
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
@@ -23,6 +26,44 @@ export class ClaimsService {
     private adminService: AdminService,
     private storageService: StorageService,
   ) {}
+
+  private async sendPushNotification(
+    userId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { pushToken: true },
+      });
+
+      if (!user?.pushToken) return;
+
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify({
+          to: user.pushToken,
+          title,
+          body,
+          data,
+          sound: 'default',
+          priority: 'high',
+          channelId: 'default',
+        }),
+      });
+
+      this.logger.log(`[Push] Notification sent to user ${userId}`);
+    } catch (err) {
+      this.logger.warn(`[Push] Failed to send notification: ${err}`);
+    }
+  }
 
   // --- Generate claim reference ---
 
@@ -84,6 +125,13 @@ export class ClaimsService {
         referenceId: claim.id,
       },
     });
+
+    await this.sendPushNotification(
+      userId,
+      'Claim Submitted — AfriCover247',
+      `Your claim for ${policy.policyNumber} has been submitted successfully.`,
+      { referenceType: 'claim', referenceId: claim.id, type: 'claim_submitted' },
+    );
 
     await this.emailService.sendClaimStatusEmail(
       policy.user.email,
@@ -227,6 +275,13 @@ export class ClaimsService {
         referenceId: claimId,
       },
     });
+
+    await this.sendPushNotification(
+      claim.userId,
+      'Claim Update — AfriCover247',
+      `Your claim ${claim.claimReference} status has been updated to ${dto.status.replace(/_/g, ' ')}.`,
+      { referenceType: 'claim', referenceId: claimId, type: 'claim_status_updated' },
+    );
 
     await this.emailService.sendClaimStatusEmail(
       claim.user.email,

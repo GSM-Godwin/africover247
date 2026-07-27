@@ -25,6 +25,44 @@ export class PoliciesService {
     private applicationsService: ApplicationsService,
   ) {}
 
+  private async sendPushNotification(
+    userId: string,
+    title: string,
+    body: string,
+    data: Record<string, string>,
+  ): Promise<void> {
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { pushToken: true },
+      });
+
+      if (!user?.pushToken) return;
+
+      await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'Accept-Encoding': 'gzip, deflate',
+        },
+        body: JSON.stringify({
+          to: user.pushToken,
+          title,
+          body,
+          data,
+          sound: 'default',
+          priority: 'high',
+          channelId: 'default',
+        }),
+      });
+
+      this.logger.log(`[Push] Notification sent to user ${userId}`);
+    } catch (err) {
+      this.logger.warn(`[Push] Failed to send notification: ${err}`);
+    }
+  }
+
   // --- Generate policy number ---
 
   private generatePolicyNumber(): string {
@@ -220,6 +258,13 @@ export class PoliciesService {
       application.user.email,
       policyNumber,
       policyPdfUrl || 'Policy document will be available shortly',
+    );
+
+    await this.sendPushNotification(
+      application.userId,
+      'Policy Issued — AfriCover247',
+      `Your policy ${policy.policyNumber} is ready. Check your email for the certificate.`,
+      { referenceType: 'policy', referenceId: policy.id, type: 'policy_issued' },
     );
 
     if (application.user.phone) {

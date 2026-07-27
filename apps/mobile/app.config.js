@@ -13,7 +13,10 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.africover247.app"
+      bundleIdentifier: "com.africover247.app",
+      infoPlist: {
+        UIBackgroundModes: ["fetch", "remote-notification"]
+      }
     },
     android: {
       adaptiveIcon: {
@@ -21,13 +24,27 @@ export default {
         backgroundImage: "./assets/android-icon-background.png",
         backgroundColor: "#15679b"
       },
-      package: "com.africover247.app"
+      package: "com.africover247.app",
+      permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
     },
     plugins: [
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          icon: "./assets/android-icon-foreground.png",
+          color: "#15679b",
+          sounds: [],
+          androidMode: "default",
+          androidCollapsedTitle: "AfriCover247"
+        }
+      ]
     ],
     extra: {
-      apiUrl: process.env.API_URL || "https://africover247.onrender.com"
+      apiUrl: process.env.API_URL || "https://africover247.onrender.com",
+      eas: {
+        projectId: "1c5e61d2-65d1-4b21-8150-e983b402a3bc"
+      }
     }
   }
 }
