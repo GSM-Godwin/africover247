@@ -13,10 +13,7 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.africover247.app",
-      infoPlist: {
-        UIBackgroundModes: ["fetch", "remote-notification"]
-      }
+      bundleIdentifier: "com.africover247.app"
     },
     android: {
       adaptiveIcon: {
@@ -24,8 +21,7 @@ export default {
         backgroundImage: "./assets/android-icon-background.png",
         backgroundColor: "#15679b"
       },
-      package: "com.africover247.app",
-      permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
+      package: "com.africover247.app"
     },
     plugins: [
       "expo-secure-store"

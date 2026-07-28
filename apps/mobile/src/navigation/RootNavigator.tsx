@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useRef } from 'react'
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
-import * as Notifications from 'expo-notifications'
 import { SplashScreen } from '../screens/SplashScreen'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { AuthStack } from './AuthStack'
@@ -41,8 +40,8 @@ export function RootNavigator() {
   }, [])
 
   const handleNotificationTap = useCallback(
-    (notification: Notifications.Notification) => {
-      const data = notification.request.content.data as any
+    (notification: any) => {
+      const data = notification?.request?.content?.data as any
       if (!navigationRef.current) return
 
       const referenceType = data?.referenceType

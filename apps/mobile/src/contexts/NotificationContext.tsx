@@ -1,18 +1,5 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-  useRef,
-} from 'react'
-import * as Notifications from 'expo-notifications'
-import {
-  registerForPushNotifications,
-  savePushToken,
-  getUnreadCount,
-  updateBadgeCount,
-} from '../services/notifications'
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react'
+import api from '../services/api'
 import { getToken } from '../services/auth'
 
 interface NotificationContextValue {
@@ -32,25 +19,24 @@ export function useNotifications() {
 interface NotificationProviderProps {
   children: React.ReactNode
   isAuthenticated: boolean
-  onNotificationTap: (notification: Notifications.Notification) => void
+  onNotificationTap: (notification: any) => void
 }
 
 export function NotificationProvider({
   children,
   isAuthenticated,
-  onNotificationTap,
+  onNotificationTap: _onNotificationTap,
 }: NotificationProviderProps) {
   const [unreadCount, setUnreadCount] = useState(0)
-  const notificationListener = useRef<Notifications.EventSubscription | undefined>(undefined)
-  const responseListener = useRef<Notifications.EventSubscription | undefined>(undefined)
   const pollInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   const refreshUnreadCount = useCallback(async () => {
     const token = await getToken()
     if (!token) return
-    const count = await getUnreadCount()
-    setUnreadCount(count)
-    await updateBadgeCount(count)
+    try {
+      const res = await api.get('/notifications/unread-count')
+      setUnreadCount(res.data.count || 0)
+    } catch {}
   }, [])
 
   useEffect(() => {
@@ -60,37 +46,13 @@ export function NotificationProvider({
       return
     }
 
-    try {
-      registerForPushNotifications().then(async (token) => {
-        if (token) await savePushToken(token)
-      }).catch(() => {})
-    } catch {}
-
     refreshUnreadCount()
-
     pollInterval.current = setInterval(refreshUnreadCount, 15000)
-
-    try {
-      notificationListener.current = Notifications.addNotificationReceivedListener(
-        () => {
-          refreshUnreadCount()
-        }
-      )
-      responseListener.current = Notifications.addNotificationResponseReceivedListener(
-        (response) => {
-          onNotificationTap(response.notification)
-        }
-      )
-    } catch {}
 
     return () => {
       clearInterval(pollInterval.current)
-      try {
-        notificationListener.current?.remove()
-        responseListener.current?.remove()
-      } catch {}
     }
-  }, [isAuthenticated, refreshUnreadCount, onNotificationTap])
+  }, [isAuthenticated, refreshUnreadCount])
 
   return (
     <NotificationContext.Provider value={{ unreadCount, refreshUnreadCount }}>
