@@ -60,30 +60,35 @@ export function NotificationProvider({
       return
     }
 
-    registerForPushNotifications().then(async (token) => {
-      if (token) await savePushToken(token)
-    })
+    try {
+      registerForPushNotifications().then(async (token) => {
+        if (token) await savePushToken(token)
+      }).catch(() => {})
+    } catch {}
 
     refreshUnreadCount()
 
     pollInterval.current = setInterval(refreshUnreadCount, 15000)
 
-    notificationListener.current = Notifications.addNotificationReceivedListener(
-      () => {
-        refreshUnreadCount()
-      }
-    )
-
-    responseListener.current = Notifications.addNotificationResponseReceivedListener(
-      (response) => {
-        onNotificationTap(response.notification)
-      }
-    )
+    try {
+      notificationListener.current = Notifications.addNotificationReceivedListener(
+        () => {
+          refreshUnreadCount()
+        }
+      )
+      responseListener.current = Notifications.addNotificationResponseReceivedListener(
+        (response) => {
+          onNotificationTap(response.notification)
+        }
+      )
+    } catch {}
 
     return () => {
       clearInterval(pollInterval.current)
-      notificationListener.current?.remove()
-      responseListener.current?.remove()
+      try {
+        notificationListener.current?.remove()
+        responseListener.current?.remove()
+      } catch {}
     }
   }, [isAuthenticated, refreshUnreadCount, onNotificationTap])
 

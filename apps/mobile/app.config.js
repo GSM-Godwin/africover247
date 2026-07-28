@@ -28,20 +28,10 @@ export default {
       permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
     },
     plugins: [
-      "expo-secure-store",
-      [
-        "expo-notifications",
-        {
-          icon: "./assets/android-icon-foreground.png",
-          color: "#15679b",
-          sounds: [],
-          androidMode: "default",
-          androidCollapsedTitle: "AfriCover247"
-        }
-      ]
+      "expo-secure-store"
     ],
     extra: {
-      apiUrl: process.env.API_URL || "https://africover247.onrender.com",
+      apiUrl: "https://africover247.onrender.com",
       eas: {
         projectId: "1c5e61d2-65d1-4b21-8150-e983b402a3bc"
       }
