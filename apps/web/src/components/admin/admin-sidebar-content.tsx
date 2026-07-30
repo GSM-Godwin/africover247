@@ -14,6 +14,7 @@ import {
   LogOut,
   MessageSquare,
   Car,
+  Mail,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -26,6 +27,7 @@ const NAV_ITEMS = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/vehicle-lookup", label: "Vehicle Lookup", icon: Car },
+  { href: "/admin/contact", label: "Contact Messages", icon: Mail },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 

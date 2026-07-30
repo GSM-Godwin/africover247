@@ -156,25 +156,25 @@ export function AccountContent() {
   }
 
   return (
-    <div className="px-4 sm:px-6 lg:px-8 py-10 sm:py-12">
-      <div className="max-w-2xl">
+    <div className="space-y-8">
+      <div>
         <h1 className="font-display font-bold text-midnight text-2xl sm:text-3xl mb-2">
           Account Settings
         </h1>
-        <p className="font-body text-slate text-base mb-8">
+        <p className="font-body text-slate text-base">
           Manage your profile and security settings
         </p>
+      </div>
 
-        <div className="space-y-6">
-          <section className="bg-white border border-slate/20 rounded-lg p-5 sm:p-6">
-            <h2 className="font-body font-semibold text-midnight text-base mb-6">
-              Personal Information
-            </h2>
+      <div className="bg-white rounded-2xl border border-slate/10 p-6 sm:p-8">
+        <h2 className="font-body font-semibold text-midnight text-base mb-6">
+          Personal Information
+        </h2>
 
-            <form
-              onSubmit={profileForm.handleSubmit(onProfileSubmit)}
-              className="space-y-6"
-            >
+        <form
+          onSubmit={profileForm.handleSubmit(onProfileSubmit)}
+          className="space-y-6"
+        >
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <AuthInput
                   label="First name"
@@ -242,17 +242,17 @@ export function AccountContent() {
                 </button>
               </div>
             </form>
-          </section>
+      </div>
 
-          <section className="bg-white border border-slate/20 rounded-lg p-5 sm:p-6">
-            <h2 className="font-body font-semibold text-midnight text-base mb-6">
-              Change Password
-            </h2>
+      <div className="bg-white rounded-2xl border border-slate/10 p-6 sm:p-8">
+        <h2 className="font-body font-semibold text-midnight text-base mb-6">
+          Change Password
+        </h2>
 
-            <form
-              onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
-              className="space-y-6"
-            >
+        <form
+          onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+          className="space-y-6"
+        >
               <AuthInput
                 label="Current password"
                 type="password"
@@ -292,8 +292,6 @@ export function AccountContent() {
                 </button>
               </div>
             </form>
-          </section>
-        </div>
       </div>
     </div>
   );

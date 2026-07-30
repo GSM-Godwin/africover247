@@ -23,17 +23,30 @@ export default function ContactPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!form.name || !form.email || !form.subject || !form.message) return;
     setLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    setSubmitted(true);
-    setLoading(false);
+    try {
+      await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "https://africover247.onrender.com"}/contact`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(form),
+        },
+      );
+      setSubmitted(true);
+    } catch {
+      alert("Could not send message. Please try again or email us directly.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <>
       <Navbar />
 
-      <section className="bg-midnight text-white py-16 px-6 pt-36">
+      <section className="bg-midnight text-white py-16 px-6 pt-[50px]">
         <div className="max-w-3xl mx-auto text-center">
           <p className="font-body text-daybreak text-sm font-semibold uppercase tracking-widest mb-3">
             Get in Touch

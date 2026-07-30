@@ -286,3 +286,14 @@ model AuditLog {
   createdAt  DateTime @default(now())
   actor      User     @relation(fields: [actorId], references: [id])
 }
+
+model ContactMessage {
+  id        String   @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}

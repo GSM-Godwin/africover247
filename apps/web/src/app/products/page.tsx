@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import {
@@ -15,11 +16,16 @@ import { StaggerContainer, StaggerItem } from "@/components/shared/stagger-conta
 import api from "@/lib/api";
 import type { Product } from "@/types/product";
 
-export default function ProductsPage() {
+function ProductsContent() {
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(
+    categoryParam ? categoryParam.toLowerCase() : null,
+  );
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -38,6 +44,10 @@ export default function ProductsPage() {
     fetchProducts();
   }, [fetchProducts]);
 
+  useEffect(() => {
+    setActiveFilter(categoryParam ? categoryParam.toLowerCase() : null);
+  }, [categoryParam]);
+
   const filteredProducts = useMemo(
     () =>
       allProducts.filter((product) =>
@@ -49,7 +59,7 @@ export default function ProductsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-20 min-h-screen bg-[#F5F6F8]">
+      <main className="pt-[50px] min-h-screen bg-[#F5F6F8]">
         <div className="max-w-[1140px] mx-auto px-6 sm:px-8 py-10 sm:py-12">
           <div className="mb-8">
             <h1 className="font-display font-bold text-midnight text-3xl sm:text-4xl mb-2">
@@ -109,5 +119,19 @@ export default function ProductsPage() {
       </main>
       <Footer />
     </>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-8 h-8 border-2 border-daybreak border-t-transparent rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   );
 }

@@ -21,9 +21,59 @@ const ibmPlexMono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AfriCover247 — Digital Insurance",
+  title: {
+    default: "AfriCover247 — Digital Insurance by AfriGlobal",
+    template: "%s — AfriCover247",
+  },
   description:
-    "Apply, pay, and manage your insurance policy entirely on your phone.",
+    "Browse, apply, and manage your insurance policy entirely online. Motor, Health, Property and more — powered by AfriGlobal Insurance Brokers Limited, NAICOM licensed.",
+  keywords: [
+    "insurance Nigeria",
+    "motor insurance",
+    "health insurance",
+    "AfriGlobal",
+    "NAICOM",
+    "online insurance",
+    "digital insurance",
+    "AfriCover247",
+  ],
+  authors: [{ name: "AfriGlobal Insurance Brokers Limited" }],
+  creator: "AfriGlobal Insurance Brokers Limited",
+  publisher: "AfriGlobal Insurance Brokers Limited",
+  metadataBase: new URL("https://africover247.com"),
+  openGraph: {
+    type: "website",
+    locale: "en_NG",
+    url: "https://africover247.com",
+    siteName: "AfriCover247",
+    title: "AfriCover247 — Digital Insurance by AfriGlobal",
+    description:
+      "Browse, apply, and manage your insurance policy entirely online. Powered by AfriGlobal Insurance Brokers Limited.",
+    images: [
+      {
+        url: "/afriglobal_logo.png",
+        width: 1200,
+        height: 630,
+        alt: "AfriCover247 — AfriGlobal Insurance Brokers",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AfriCover247 — Digital Insurance by AfriGlobal",
+    description:
+      "Browse, apply, and manage your insurance policy entirely online.",
+    images: ["/afriglobal_logo.png"],
+  },
+  icons: {
+    icon: "/afriglobal_logo.png",
+    shortcut: "/afriglobal_logo.png",
+    apple: "/afriglobal_logo.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

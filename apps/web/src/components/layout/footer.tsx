@@ -1,10 +1,12 @@
+import Image from "next/image";
 import Link from "next/link";
 
 const links = {
-  Product: [
-    { label: "Motor", href: "/products/motor" },
-    { label: "Health", href: "/products/health" },
-    { label: "SSLAG / SSPP", href: "/products/sslag" },
+  Insurance: [
+    { label: "Motor Insurance", href: "/products?category=Motor" },
+    { label: "Property Insurance", href: "/products?category=Property" },
+    { label: "Health Insurance", href: "/products?category=Health" },
+    { label: "All Products", href: "/products" },
   ],
   Company: [
     { label: "About Us", href: "/about" },
@@ -24,13 +26,16 @@ export function Footer() {
       <div className="max-w-[1140px] mx-auto px-6 sm:px-8">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 md:col-span-1">
-            <div className="flex items-baseline gap-0 mb-3">
-              <span className="font-display font-bold text-paper text-lg leading-none">
-                AfriCover
-              </span>
-              <span className="font-mono font-medium text-paper text-lg leading-none">
-                247
-              </span>
+            <div className="mb-3">
+              <div className="bg-white rounded-xl px-3 py-2 inline-flex">
+                <Image
+                  src="/afriglobal_logo.png"
+                  alt="AfriGlobal Insurance Brokers"
+                  width={130}
+                  height={40}
+                  className="h-8 w-auto object-contain"
+                />
+              </div>
             </div>
             <p className="font-body text-paper/50 text-sm leading-relaxed max-w-[180px]">
               The always-on front door to insurance in Lagos.

@@ -31,7 +31,7 @@ function StatItem({
 
 export function Hero() {
   return (
-    <section className="relative bg-midnight min-h-screen flex flex-col justify-center pt-16 overflow-hidden">
+    <section className="relative bg-midnight min-h-screen flex flex-col justify-center pt-[50px] overflow-hidden">
       <div className="absolute inset-0 bg-gradient-to-br from-midnight via-midnight to-[#1a2d5a] pointer-events-none" />
 
       <div className="relative max-w-[1140px] mx-auto px-6 sm:px-8 w-full">
@@ -118,7 +118,7 @@ export function Hero() {
           transition={{ duration: 0.4, delay: 0.7 }}
           className="border-t border-paper/10 py-8"
         >
-          <div className="grid grid-cols-3 gap-8 max-w-lg mx-auto lg:mx-0">
+          <div className="flex items-center justify-center gap-8 flex-wrap">
             <StatItem value="50K+" label="Policies Issued" delay={0.75} />
             <StatItem value="24/7" label="Claim Tracking" delay={0.85} />
             <StatItem value="4.8★" label="Customer Rating" delay={0.95} />

@@ -88,7 +88,7 @@ export default function InsurersPage() {
   return (
     <>
       <Navbar />
-      <div className="min-h-screen bg-paper pt-20">
+      <div className="min-h-screen bg-paper pt-[50px]">
       <div className="bg-midnight text-white py-16 px-6">
         <div className="max-w-4xl mx-auto text-center">
           <p className="font-body text-white/60 text-sm uppercase tracking-widest mb-3">

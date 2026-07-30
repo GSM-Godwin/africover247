@@ -66,3 +66,7 @@ body {
 :root {
   --vh: 1vh;
 }
+
+.navbar-offset {
+  padding-top: 50px;
+}
