@@ -188,7 +188,7 @@ export function Navbar() {
               alt="AfriGlobal Insurance Brokers"
               width={220}
               height={70}
-              className="h-24 w-auto object-contain"
+              className="h-12 w-auto object-contain"
               priority
             />
           </Link>

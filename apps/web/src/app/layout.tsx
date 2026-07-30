@@ -40,11 +40,11 @@ export const metadata: Metadata = {
   authors: [{ name: "AfriGlobal Insurance Brokers Limited" }],
   creator: "AfriGlobal Insurance Brokers Limited",
   publisher: "AfriGlobal Insurance Brokers Limited",
-  metadataBase: new URL("https://africover247.com"),
+  metadataBase: new URL("https://africover247.com.ng"),
   openGraph: {
     type: "website",
     locale: "en_NG",
-    url: "https://africover247.com",
+    url: "https://africover247.com.ng",
     siteName: "AfriCover247",
     title: "AfriCover247 — Digital Insurance by AfriGlobal",
     description:
@@ -64,11 +64,6 @@ export const metadata: Metadata = {
     description:
       "Browse, apply, and manage your insurance policy entirely online.",
     images: ["/afriglobal_logo.png"],
-  },
-  icons: {
-    icon: "/afriglobal_logo.png",
-    shortcut: "/afriglobal_logo.png",
-    apple: "/afriglobal_logo.png",
   },
   robots: {
     index: true,
