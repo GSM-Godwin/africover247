@@ -18,7 +18,7 @@ export function AdminTopbar({ onMenuClick }: AdminTopbarProps) {
             alt="AfriGlobal"
             width={130}
             height={42}
-            className="h-32 -my-10 pt-6 w-auto object-contain"
+            className="h-9 w-auto object-contain"
             priority
           />
         </div>

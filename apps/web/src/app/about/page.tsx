@@ -29,7 +29,7 @@ export default function AboutPage() {
               alt="AfriGlobal Insurance Brokers"
               width={220}
               height={70}
-              className="h-32 -my-10 pt-6 w-auto object-contain"
+              className="h-16 w-auto object-contain"
             />
           </div>
           <h1 className="font-display font-bold text-4xl sm:text-5xl mb-6 leading-tight">

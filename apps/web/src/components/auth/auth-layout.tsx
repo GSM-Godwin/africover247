@@ -17,7 +17,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
               alt="AfriGlobal Insurance Brokers"
               width={200}
               height={64}
-              className="h-32 -my-10 pt-6 w-auto object-contain"
+              className="h-14 w-auto object-contain"
               priority
             />
           </div>

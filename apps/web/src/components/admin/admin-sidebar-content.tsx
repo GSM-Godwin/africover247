@@ -52,7 +52,7 @@ export function AdminSidebarContent({ onNavigate }: AdminSidebarContentProps) {
               alt="AfriGlobal Insurance Brokers"
               width={160}
               height={52}
-              className="h-32 -my-10 pt-6 w-auto object-contain"
+              className="h-11 w-auto object-contain"
               priority
             />
           </div>
