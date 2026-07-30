@@ -24,6 +24,7 @@ import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { StorageService } from '../storage/storage.service';
+import { KycService } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -32,6 +33,7 @@ export class ApplicationsController {
   constructor(
     private applicationsService: ApplicationsService,
     private storageService: StorageService,
+    private kycService: KycService,
   ) {}
 
   @Post()
@@ -54,6 +56,12 @@ export class ApplicationsController {
     @Param('productId') productId: string,
   ) {
     return this.applicationsService.getDraft(user.id, productId);
+  }
+
+  @Post('verify-vehicle')
+  @HttpCode(HttpStatus.OK)
+  verifyVehicle(@Body('plateNumber') plateNumber: string) {
+    return this.kycService.verifyVehicle(plateNumber);
   }
 
   @Get(':id')
@@ -108,16 +116,16 @@ export class ApplicationsController {
 
     await this.applicationsService.findOne(id, user.id);
 
-    const { url, publicId } = await this.storageService.uploadFile(
-      file,
-      'africover247/kyc',
+    const { url } = await this.storageService.uploadDocument(
+      file.buffer,
+      file.originalname,
+      file.mimetype,
     );
 
     return this.applicationsService.addDocument(id, {
       documentType,
       fileUrl: url,
       fileName: file.originalname,
-      publicId,
     });
   }
 

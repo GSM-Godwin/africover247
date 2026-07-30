@@ -73,7 +73,7 @@ export class AuthService {
       data: { userId: user.id, otpCode: otp, expiresAt },
     });
 
-    await this.emailService.sendOtpEmail(user.email, otp);
+    await this.emailService.sendOtpEmail(user.email, otp, user.firstName);
     if (user.phone) {
       await this.smsService.sendOtpSms(user.phone, otp);
     }
@@ -158,7 +158,11 @@ export class AuthService {
       await this.prisma.passwordReset.create({
         data: { userId: user.id, token: otp, expiresAt },
       });
-      await this.emailService.sendPasswordResetEmail(user.email, otp);
+      await this.emailService.sendEmail({
+        to: user.email,
+        subject: 'Reset your AfriCover247 password',
+        html: `<p>Your password reset code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
+      });
     }
 
     return {

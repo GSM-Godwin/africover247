@@ -256,6 +256,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 20,
+    backgroundColor: Colors.white,
   },
   greeting: { fontSize: 14, color: Colors.textSecondary, fontWeight: '400' },
   name: { fontSize: 22, fontWeight: '800', color: Colors.text, marginTop: 2 },

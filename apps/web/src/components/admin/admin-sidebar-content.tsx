@@ -13,6 +13,7 @@ import {
   ScrollText,
   LogOut,
   MessageSquare,
+  Car,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/customers", label: "Customers", icon: Users },
+  { href: "/admin/vehicle-lookup", label: "Vehicle Lookup", icon: Car },
   { href: "/admin/audit", label: "Audit Log", icon: ScrollText },
 ];
 
@@ -44,16 +46,18 @@ export function AdminSidebarContent({ onNavigate }: AdminSidebarContentProps) {
     <>
       <div className="hidden lg:block px-5 py-5 border-b border-white/10">
         <Link href="/admin" onClick={onNavigate}>
-          <Image
-            src="/afriglobal_logo.png"
-            alt="AfriGlobal Insurance Brokers"
-            width={140}
-            height={40}
-            className="h-8 w-auto object-contain brightness-0 invert"
-            priority
-          />
+          <div className="bg-white rounded-xl px-4 py-3 inline-flex">
+            <Image
+              src="/afriglobal_logo.png"
+              alt="AfriGlobal Insurance Brokers"
+              width={160}
+              height={52}
+              className="h-32 -my-10 pt-6 w-auto object-contain"
+              priority
+            />
+          </div>
         </Link>
-        <p className="font-body text-white/40 text-xs mt-1.5">Admin Dashboard</p>
+        <p className="font-body text-white/40 text-xs mt-2">Admin Dashboard</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">

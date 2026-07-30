@@ -108,6 +108,13 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
       />
 
       <View style={styles.bottom}>
+        {activeIndex === 0 && (
+          <Text style={styles.poweredBy}>
+            Powered by{' '}
+            <Text style={styles.poweredByBrand}>AfriGlobal Insurance Brokers Limited</Text>
+          </Text>
+        )}
+
         <View style={styles.dots}>
           {SLIDES.map((_, index) => {
             const inputRange = [
@@ -240,6 +247,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingBottom: 32,
     paddingTop: 16,
+  },
+  poweredBy: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  poweredByBrand: {
+    color: Colors.primary,
+    fontWeight: '700',
   },
   dots: {
     flexDirection: 'row',

@@ -60,6 +60,19 @@ export function Hero() {
             </motion.h1>
 
             <motion.p
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.3, ease: "easeOut" }}
+              className="font-body text-sm text-paper/60 mt-2 mb-6"
+            >
+              Powered by{" "}
+              <span className="font-semibold text-paper">
+                AfriGlobal Insurance Brokers Limited
+              </span>{" "}
+              · NAICOM Licensed
+            </motion.p>
+
+            <motion.p
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}

@@ -37,6 +37,8 @@ function AssetModal({
 }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [premium, setPremium] = useState<number | null>(null)
+  const [lookingUp, setLookingUp] = useState(false)
+  const [lookupMessage, setLookupMessage] = useState('')
   const fields = parseAssetFields(product.assetFields)
   const rate = product.rate ? parseFloat(product.rate) : null
 
@@ -55,6 +57,36 @@ function AssetModal({
         const raw = parseFloat(next[valueField.key] || '0')
         setPremium(raw > 0 ? raw * rate : null)
       }
+    }
+  }
+
+  async function handleVehicleLookup(plateNumber: string) {
+    if (!plateNumber || plateNumber.length < 5) return
+    setLookingUp(true)
+    setLookupMessage('')
+    try {
+      const res = await api.post('/applications/verify-vehicle', {
+        plateNumber: plateNumber.toUpperCase(),
+      })
+      const { verified, data, message } = res.data
+
+      if (verified && data) {
+        const updates: Record<string, string> = {}
+        if (data.make) updates.vehicleMake = data.make
+        if (data.model) updates.vehicleModel = data.model
+        if (data.year) updates.vehicleYear = String(data.year)
+        if (data.colour) updates.vehicleColour = data.colour
+        if (data.engineNumber) updates.engineNumber = data.engineNumber
+        if (data.chassisNumber) updates.chassisNumber = data.chassisNumber
+        setValues((prev) => ({ ...prev, ...updates }))
+        setLookupMessage('Vehicle details filled automatically.')
+      } else {
+        setLookupMessage(message || 'Vehicle not found. Please fill in manually.')
+      }
+    } catch {
+      setLookupMessage('Lookup failed. Please fill in manually.')
+    } finally {
+      setLookingUp(false)
     }
   }
 
@@ -112,6 +144,53 @@ function AssetModal({
                       </TouchableOpacity>
                     ))}
                   </View>
+                ) : field.type === 'textarea' ? (
+                  <TextInput
+                    style={modalStyles.input}
+                    value={values[field.key] || ''}
+                    onChangeText={(val) => handleChange(field.key, val)}
+                    placeholder={field.hint || `Enter ${field.label.toLowerCase()}`}
+                    placeholderTextColor={Colors.textSecondary + '80'}
+                    multiline
+                    numberOfLines={3}
+                  />
+                ) : field.key === 'plateNumber' ? (
+                  <View>
+                    <View style={modalStyles.plateRow}>
+                      <TextInput
+                        style={[modalStyles.input, { flex: 1 }]}
+                        value={values[field.key] || ''}
+                        onChangeText={(val) => handleChange(field.key, val.toUpperCase())}
+                        placeholder={field.hint || 'e.g. ABC123XY'}
+                        placeholderTextColor={Colors.textSecondary + '80'}
+                        autoCapitalize="characters"
+                      />
+                      <TouchableOpacity
+                        style={[
+                          modalStyles.lookupButton,
+                          (lookingUp || !values[field.key]) && { opacity: 0.4 },
+                        ]}
+                        onPress={() => handleVehicleLookup(values[field.key] || '')}
+                        disabled={lookingUp || !values[field.key]}
+                      >
+                        <Text style={modalStyles.lookupButtonText}>
+                          {lookingUp ? '...' : 'Auto-fill'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+                    {lookupMessage ? (
+                      <Text style={[
+                        modalStyles.lookupMessage,
+                        {
+                          color: lookupMessage.includes('automatically')
+                            ? Colors.success
+                            : Colors.error,
+                        },
+                      ]}>
+                        {lookupMessage}
+                      </Text>
+                    ) : null}
+                  </View>
                 ) : (
                   <TextInput
                     style={modalStyles.input}
@@ -120,12 +199,10 @@ function AssetModal({
                     placeholder={field.hint || `Enter ${field.label.toLowerCase()}`}
                     placeholderTextColor={Colors.textSecondary + '80'}
                     keyboardType={field.type === 'number' ? 'numeric' : 'default'}
-                    multiline={field.type === 'textarea'}
-                    numberOfLines={field.type === 'textarea' ? 3 : 1}
                   />
                 )}
 
-                {field.hint && field.type !== 'textarea' && (
+                {field.hint && field.type !== 'textarea' && field.key !== 'plateNumber' && (
                   <Text style={modalStyles.hint}>{field.hint}</Text>
                 )}
               </View>
@@ -181,6 +258,27 @@ const modalStyles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   hint: { fontSize: 11, color: Colors.textSecondary, marginTop: 4 },
+  plateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  lookupButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  lookupButtonText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  lookupMessage: {
+    fontSize: 11,
+    marginTop: 4,
+    fontStyle: 'italic',
+  },
   selectContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   option: {
     paddingHorizontal: 14,

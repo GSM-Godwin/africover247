@@ -7,10 +7,14 @@ export class HealthController {
 
   @Get()
   async check() {
+    const pingKey = 'health:ping';
+    await this.redisService.set(pingKey, 'ok', 5);
+    const redis = (await this.redisService.get(pingKey)) === 'ok';
+
     return {
       status: 'ok',
       timestamp: new Date().toISOString(),
-      redis: await this.redisService.ping(),
+      redis,
     };
   }
 }

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { Navbar } from "@/components/layout/navbar";
+import { Footer } from "@/components/layout/footer";
 import {
   FilterPills,
   matchesCategoryFilter,
@@ -48,7 +49,7 @@ export default function ProductsPage() {
   return (
     <>
       <Navbar />
-      <main className="pt-16 min-h-screen bg-[#F5F6F8]">
+      <main className="pt-20 min-h-screen bg-[#F5F6F8]">
         <div className="max-w-[1140px] mx-auto px-6 sm:px-8 py-10 sm:py-12">
           <div className="mb-8">
             <h1 className="font-display font-bold text-midnight text-3xl sm:text-4xl mb-2">
@@ -106,6 +107,7 @@ export default function ProductsPage() {
           )}
         </div>
       </main>
+      <Footer />
     </>
   );
 }

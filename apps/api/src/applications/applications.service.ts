@@ -327,7 +327,6 @@ export class ApplicationsService {
       documentType: string;
       fileUrl: string;
       fileName: string;
-      publicId: string;
     },
   ) {
     return this.prisma.kycDocument.create({

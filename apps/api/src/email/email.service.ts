@@ -1,117 +1,123 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import * as postmark from 'postmark'
+
+interface SendEmailOptions {
+  to: string
+  subject: string
+  html: string
+  from?: string
+}
 
 @Injectable()
 export class EmailService {
-  private readonly logger = new Logger(EmailService.name);
-  private resend: any;
+  private readonly logger = new Logger(EmailService.name)
+  private readonly client: postmark.ServerClient | null = null
+  private readonly fromEmail: string
+  private readonly isStub: boolean
 
   constructor(private configService: ConfigService) {
-    // TODO: swap console stub for real Resend client once API key is confirmed
-    const apiKey = this.configService.get<string>('EMAIL_API_KEY');
-    if (apiKey && apiKey !== 'placeholder_fill_before_day3') {
-      const { Resend } = require('resend');
-      this.resend = new Resend(apiKey);
+    const apiToken = this.configService.get<string>('POSTMARK_API_TOKEN') || ''
+    this.fromEmail =
+      this.configService.get<string>('POSTMARK_FROM_EMAIL') ||
+      'noreply@africover247.com'
+
+    this.isStub = !apiToken || apiToken === 'placeholder'
+
+    if (this.isStub) {
+      this.logger.log('[STUB] Postmark not configured — emails will be logged only')
+    } else {
+      this.client = new postmark.ServerClient(apiToken)
+      this.logger.log('Postmark configured')
     }
   }
 
-  async sendOtpEmail(to: string, otp: string): Promise<void> {
+  // --- Send email ---
+  async sendEmail(options: SendEmailOptions): Promise<void> {
+    if (this.isStub) {
+      this.logger.log(`[STUB] Email to ${options.to}: ${options.subject}`)
+      return
+    }
+
     try {
-      if (!this.resend) {
-        this.logger.log(`[STUB] OTP for ${to}: ${otp}`);
-        return;
-      }
-      await this.resend.emails.send({
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to,
-        subject: 'Verify your AfriCover247 account',
-        html: `<p>Your verification code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send OTP email to ${to}`, error);
+      await this.client!.sendEmail({
+        From: options.from || this.fromEmail,
+        To: options.to,
+        Subject: options.subject,
+        HtmlBody: options.html,
+        TextBody: options.html.replace(/<[^>]*>/g, ''),
+        MessageStream: 'outbound',
+      })
+      this.logger.log(`Email sent to ${options.to}: ${options.subject}`)
+    } catch (err) {
+      this.logger.error(`Failed to send email to ${options.to}:`, err)
     }
   }
 
-  async sendPasswordResetEmail(to: string, otp: string): Promise<void> {
-    try {
-      if (!this.resend) {
-        this.logger.log(`[STUB] Password reset OTP for ${to}: ${otp}`);
-        return;
-      }
-      await this.resend.emails.send({
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to,
-        subject: 'Reset your AfriCover247 password',
-        html: `<p>Your password reset code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send password reset email to ${to}`, error);
-    }
+  // --- Send OTP email ---
+  async sendOtpEmail(email: string, otp: string, firstName: string): Promise<void> {
+    await this.sendEmail({
+      to: email,
+      subject: 'Your AfriCover247 verification code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #15679b; padding: 24px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 24px;">AfriCover247</h1>
+            <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
+          </div>
+          <div style="padding: 32px;">
+            <p>Dear ${firstName},</p>
+            <p>Your verification code is:</p>
+            <div style="background: #F0F4F8; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
+              <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #15679b;">${otp}</span>
+            </div>
+            <p style="color: #5C6478; font-size: 14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
+          </div>
+          <div style="background: #F0F4F8; padding: 16px; text-align: center;">
+            <p style="color: #5C6478; font-size: 12px; margin: 0;">
+              Powered by AfriGlobal Insurance Brokers Limited · Secured by Monnify
+            </p>
+          </div>
+        </div>
+      `,
+    })
   }
 
+  // --- Send policy issued email ---
   async sendPolicyIssuedEmail(
-    to: string,
+    email: string,
+    firstName: string,
     policyNumber: string,
-    downloadUrl: string,
+    productName: string,
+    pdfUrl: string | null
   ): Promise<void> {
-    try {
-      if (!this.resend) {
-        this.logger.log(`[STUB] Policy issued email for ${to}: ${policyNumber}`);
-        return;
-      }
-      await this.resend.emails.send({
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to,
-        subject: `Your AfriCover247 Policy is Ready — ${policyNumber}`,
-        html: `<p>Congratulations! Your policy <strong>${policyNumber}</strong> has been issued.</p><p><a href="${downloadUrl}">Download your policy</a></p>`,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send policy email to ${to}`, error);
-    }
-  }
-
-  async sendClaimStatusEmail(
-    to: string,
-    claimReference: string,
-    newStatus: string,
-    note?: string,
-  ): Promise<void> {
-    try {
-      if (!this.resend) {
-        this.logger.log(
-          `[STUB] Claim status email for ${to}: ${claimReference} → ${newStatus}`,
-        );
-        return;
-      }
-      await this.resend.emails.send({
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to,
-        subject: `Your claim ${claimReference} has been updated`,
-        html: `<p>Your claim status has been updated to <strong>${newStatus}</strong>.</p>${note ? `<p>${note}</p>` : ''}`,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send claim status email to ${to}`, error);
-    }
-  }
-
-  async sendEmail(params: {
-    to: string;
-    subject: string;
-    html: string;
-  }): Promise<void> {
-    try {
-      if (!this.resend) {
-        this.logger.log(`[STUB] Email to ${params.to}: ${params.subject}`);
-        return;
-      }
-      await this.resend.emails.send({
-        from: this.configService.get<string>('EMAIL_FROM'),
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-      });
-    } catch (error) {
-      this.logger.error(`Failed to send email to ${params.to}`, error);
-    }
+    await this.sendEmail({
+      to: email,
+      subject: `Your policy is ready — ${policyNumber}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="background: #15679b; padding: 24px; text-align: center;">
+            <h1 style="color: white; margin: 0;">AfriCover247</h1>
+            <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
+          </div>
+          <div style="padding: 32px;">
+            <p>Dear ${firstName},</p>
+            <p>Your insurance policy has been issued successfully.</p>
+            <div style="background: #E8F5F0; border-radius: 8px; padding: 20px; margin: 24px 0;">
+              <p style="margin: 0; font-size: 12px; color: #5C6478; text-transform: uppercase; letter-spacing: 1px;">Policy Number</p>
+              <p style="margin: 4px 0 0; font-size: 24px; font-weight: 800; color: #15679b; font-family: monospace;">${policyNumber}</p>
+              <p style="margin: 8px 0 0; color: #5C6478;">${productName}</p>
+            </div>
+            ${pdfUrl ? `<p><a href="${pdfUrl}" style="background: #F68B1E; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700;">Download Policy Certificate</a></p>` : ''}
+            <p style="color: #5C6478; font-size: 14px;">You can also access your policy anytime from your AfriCover247 dashboard.</p>
+          </div>
+          <div style="background: #F0F4F8; padding: 16px; text-align: center;">
+            <p style="color: #5C6478; font-size: 12px; margin: 0;">
+              Powered by AfriGlobal Insurance Brokers Limited
+            </p>
+          </div>
+        </div>
+      `,
+    })
   }
 }

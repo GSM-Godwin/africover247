@@ -38,6 +38,8 @@ export function AssetDetailsModal({
   const router = useRouter();
   const [values, setValues] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupMessage, setLookupMessage] = useState("");
   const [calculatedPremium, setCalculatedPremium] = useState<number | null>(
     null,
   );
@@ -78,6 +80,36 @@ export function AssetDetailsModal({
 
   function handleChange(key: string, value: string) {
     setValues((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handleVehicleLookup(plateNumber: string) {
+    if (!plateNumber || plateNumber.length < 5) return;
+    setLookingUp(true);
+    setLookupMessage("");
+    try {
+      const res = await api.post("/applications/verify-vehicle", {
+        plateNumber,
+      });
+      const { verified, data, message } = res.data;
+
+      if (verified && data) {
+        const updates: Record<string, string> = {};
+        if (data.make) updates.vehicleMake = data.make;
+        if (data.model) updates.vehicleModel = data.model;
+        if (data.year) updates.vehicleYear = data.year;
+        if (data.colour) updates.vehicleColour = data.colour;
+        if (data.engineNumber) updates.engineNumber = data.engineNumber;
+        if (data.chassisNumber) updates.chassisNumber = data.chassisNumber;
+        setValues((prev) => ({ ...prev, ...updates }));
+        setLookupMessage("Vehicle details filled automatically.");
+      } else {
+        setLookupMessage(message || "Vehicle not found. Please fill in manually.");
+      }
+    } catch {
+      setLookupMessage("Lookup failed. Please fill in manually.");
+    } finally {
+      setLookingUp(false);
+    }
   }
 
   async function handleConfirm() {
@@ -144,7 +176,42 @@ export function AssetDetailsModal({
                 )}
               </label>
 
-              {field.type === "select" ? (
+              {field.key === "plateNumber" ? (
+                <>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={values[field.key] || ""}
+                      onChange={(e) =>
+                        handleChange(field.key, e.target.value.toUpperCase())
+                      }
+                      placeholder={field.hint || "e.g. ABC123XY"}
+                      className="flex-1 bg-transparent border-b border-slate/40 pb-2 font-body text-base text-midnight focus:border-daybreak focus:outline-none transition-colors uppercase"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        handleVehicleLookup(values[field.key] || "")
+                      }
+                      disabled={lookingUp || !values[field.key]}
+                      className="text-xs font-body font-semibold text-daybreak hover:text-midnight disabled:opacity-40 transition-colors whitespace-nowrap pb-2"
+                    >
+                      {lookingUp ? "Looking up..." : "Auto-fill →"}
+                    </button>
+                  </div>
+                  {lookupMessage && (
+                    <p
+                      className={`font-body text-xs mt-1 ${
+                        lookupMessage.includes("automatically")
+                          ? "text-cover-green"
+                          : "text-alert-coral"
+                      }`}
+                    >
+                      {lookupMessage}
+                    </p>
+                  )}
+                </>
+              ) : field.type === "select" ? (
                 <select
                   value={values[field.key] || ""}
                   onChange={(e) => handleChange(field.key, e.target.value)}
@@ -175,7 +242,9 @@ export function AssetDetailsModal({
                 />
               )}
 
-              {field.hint && field.type !== "textarea" && (
+              {field.hint &&
+                field.type !== "textarea" &&
+                field.key !== "plateNumber" && (
                 <p className="font-body text-xs text-slate/60 mt-1">
                   {field.hint}
                 </p>

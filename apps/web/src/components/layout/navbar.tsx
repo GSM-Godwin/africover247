@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronDown, Menu, User, X, type LucideIcon } from "lucide-react";
+import { ChevronDown, Menu, X, type LucideIcon } from "lucide-react";
 import { LogoutConfirmModal } from "@/components/shared/logout-confirm-modal";
 import { NotificationBellDropdown } from "@/components/layout/notification-bell-dropdown";
 import {
@@ -42,7 +43,7 @@ function DesktopNavLink({
     <Link
       href={href}
       className={`relative group inline-flex items-center gap-1.5 text-sm font-body font-medium transition-colors duration-150 ${
-        isActive ? "text-paper" : "text-paper/70 hover:text-paper"
+        isActive ? "text-daybreak" : "text-slate hover:text-midnight"
       }`}
     >
       {Icon && <Icon size={15} strokeWidth={2} aria-hidden />}
@@ -76,7 +77,7 @@ function MobileNavLink({
       href={href}
       onClick={onNavigate}
       className={`flex items-center gap-2.5 py-3 font-body text-base font-medium transition-colors duration-150 ${
-        isActive ? "text-daybreak" : "text-paper/80 hover:text-paper"
+        isActive ? "text-daybreak" : "text-slate hover:text-midnight"
       }`}
     >
       {Icon && <Icon size={18} strokeWidth={2} aria-hidden />}
@@ -102,6 +103,7 @@ export function Navbar() {
       { label: "Products", href: "/products" },
       { label: "Claims", href: "/claims" },
       { label: "About", href: "/about" },
+      { label: "Contact", href: "/contact" },
     ];
 
     if (authenticated) {
@@ -175,20 +177,20 @@ export function Navbar() {
         initial={{ opacity: 0, y: -16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled
-            ? "bg-midnight/95 backdrop-blur-sm shadow-sm"
-            : "bg-midnight"
+        className={`fixed top-0 left-0 right-0 z-50 bg-white border-b border-slate/10 transition-all duration-300 py-4 ${
+          scrolled ? "shadow-md" : "shadow-sm"
         }`}
       >
-        <div className="max-w-[1140px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between relative">
-          <Link href="/" className="flex items-baseline gap-0 shrink-0">
-            <span className="font-display font-bold text-paper text-xl leading-none">
-              AfriCover
-            </span>
-            <span className="font-mono font-medium text-daybreak text-xl leading-none">
-              247
-            </span>
+        <div className="max-w-[1140px] mx-auto px-4 sm:px-8 flex items-center justify-between relative">
+          <Link href="/" className="flex items-center shrink-0">
+            <Image
+              src="/afriglobal_logo.png"
+              alt="AfriGlobal Insurance Brokers"
+              width={220}
+              height={70}
+              className="h-32 -my-10 pt-6 w-auto object-contain"
+              priority
+            />
           </Link>
 
           <nav className="hidden md:flex items-center gap-8">
@@ -226,17 +228,17 @@ export function Navbar() {
                         return !current;
                       });
                     }}
-                    className="flex items-center gap-2 text-paper/80 hover:text-paper transition-colors duration-150"
+                    className="flex items-center gap-2 text-slate hover:text-midnight transition-colors duration-150"
                   >
                     <div className="w-8 h-8 rounded-full bg-daybreak flex items-center justify-center text-midnight text-xs font-body font-semibold">
                       {getUserInitials(user)}
                     </div>
-                    <span className="text-sm font-body">
+                    <span className="text-sm font-body text-midnight">
                       {getUserDisplayName(user)}
                     </span>
                     <ChevronDown
                       size={14}
-                      className={`text-paper/60 transition-transform duration-150 ${
+                      className={`text-slate transition-transform duration-150 ${
                         menuOpen ? "rotate-180" : ""
                       }`}
                     />
@@ -247,21 +249,21 @@ export function Navbar() {
                       <Link
                         href="/account"
                         onClick={() => setMenuOpen(false)}
-                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate/5 transition-colors"
                       >
                         My Account
                       </Link>
                       <Link
                         href="/policies"
                         onClick={() => setMenuOpen(false)}
-                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate/5 transition-colors"
                       >
                         My Policies
                       </Link>
                       <Link
                         href="/dashboard"
                         onClick={() => setMenuOpen(false)}
-                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                        className="block px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate/5 transition-colors"
                       >
                         Dashboard
                       </Link>
@@ -269,7 +271,7 @@ export function Navbar() {
                       <button
                         type="button"
                         onClick={openLogoutModal}
-                        className="w-full text-left px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate-100 transition-colors"
+                        className="w-full text-left px-4 py-2.5 font-body text-sm text-midnight hover:bg-slate/5 transition-colors"
                       >
                         Log Out
                       </button>
@@ -291,7 +293,7 @@ export function Navbar() {
               aria-label={mobileNavOpen ? "Close menu" : "Open menu"}
               aria-expanded={mobileNavOpen}
               onClick={toggleMobileNav}
-              className="md:hidden text-paper/80 hover:text-paper transition-colors duration-150 p-1"
+              className="md:hidden text-midnight hover:text-daybreak transition-colors p-1"
             >
               {mobileNavOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -304,9 +306,9 @@ export function Navbar() {
               type="button"
               aria-label="Close menu overlay"
               onClick={closeMobileNav}
-              className="fixed inset-0 top-16 bg-midnight/60 md:hidden z-[55]"
+              className="fixed inset-0 top-24 bg-midnight/40 md:hidden z-[55]"
             />
-            <div className="absolute left-0 right-0 top-full bg-midnight border-t border-paper/10 shadow-lg md:hidden z-[56] max-h-[calc(100vh-4rem)] overflow-y-auto">
+            <div className="absolute left-0 right-0 top-full bg-white border-t border-slate/10 shadow-lg md:hidden z-[56] max-h-[calc(100vh-4rem)] overflow-y-auto">
               <nav className="px-4 sm:px-8 py-4">
                 {navLinks.map((link) => (
                   <MobileNavLink
@@ -319,42 +321,42 @@ export function Navbar() {
                   />
                 ))}
 
-                <div className="border-t border-paper/10 mt-3 pt-3">
+                <div className="border-t border-slate/10 mt-3 pt-3">
                   {authenticated && user ? (
                     <>
                       <div className="flex items-center gap-3 py-3">
                         <div className="w-9 h-9 rounded-full bg-daybreak flex items-center justify-center text-midnight text-xs font-body font-semibold">
                           {getUserInitials(user)}
                         </div>
-                        <span className="font-body text-sm font-medium text-paper">
+                        <span className="font-body text-sm font-medium text-midnight">
                           {getUserDisplayName(user)}
                         </span>
                       </div>
                       <Link
                         href="/account"
                         onClick={closeMobileNav}
-                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                        className="block py-3 font-body text-base text-slate hover:text-midnight transition-colors"
                       >
                         My Account
                       </Link>
                       <Link
                         href="/policies"
                         onClick={closeMobileNav}
-                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                        className="block py-3 font-body text-base text-slate hover:text-midnight transition-colors"
                       >
                         My Policies
                       </Link>
                       <Link
                         href="/dashboard"
                         onClick={closeMobileNav}
-                        className="block py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                        className="block py-3 font-body text-base text-slate hover:text-midnight transition-colors"
                       >
                         Dashboard
                       </Link>
                       <button
                         type="button"
                         onClick={openLogoutModal}
-                        className="w-full text-left py-3 font-body text-base text-paper/80 hover:text-paper transition-colors"
+                        className="w-full text-left py-3 font-body text-base text-slate hover:text-midnight transition-colors"
                       >
                         Log Out
                       </button>

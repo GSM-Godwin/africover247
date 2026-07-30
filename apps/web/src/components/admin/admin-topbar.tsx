@@ -12,14 +12,16 @@ export function AdminTopbar({ onMenuClick }: AdminTopbarProps) {
   return (
     <div className="lg:hidden flex items-center justify-between bg-midnight px-4 py-3 sticky top-0 z-30">
       <Link href="/admin">
-        <Image
-          src="/afriglobal_logo.png"
-          alt="AfriGlobal"
-          width={120}
-          height={36}
-          className="h-7 w-auto object-contain brightness-0 invert"
-          priority
-        />
+        <div className="bg-white rounded-xl px-3 py-2 inline-flex">
+          <Image
+            src="/afriglobal_logo.png"
+            alt="AfriGlobal"
+            width={130}
+            height={42}
+            className="h-32 -my-10 pt-6 w-auto object-contain"
+            priority
+          />
+        </div>
       </Link>
       <button
         type="button"

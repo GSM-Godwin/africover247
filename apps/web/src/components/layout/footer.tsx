@@ -9,7 +9,8 @@ const links = {
   Company: [
     { label: "About Us", href: "/about" },
     { label: "How It Works", href: "/#how-it-works" },
-    { label: "Contact", href: "/contact" },
+    { label: "NAICOM Insurers", href: "/insurers" },
+    { label: "Contact Us", href: "/contact" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy-policy" },

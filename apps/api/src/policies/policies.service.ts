@@ -205,21 +205,12 @@ export class PoliciesService {
 
     let policyPdfUrl = '';
     try {
-      const file = {
-        buffer: pdfBuffer,
-        mimetype: 'application/pdf',
-        originalname: `${policyNumber}.pdf`,
-        size: pdfBuffer.length,
-      } as Express.Multer.File;
-
-      const { url } = await this.storageService.uploadFile(
-        file,
-        'africover247/policies',
+      policyPdfUrl = await this.storageService.uploadPdf(
+        pdfBuffer,
+        `${policyNumber}.pdf`,
       );
-      policyPdfUrl = url;
     } catch (error) {
-      this.logger.error(`Failed to upload policy PDF to Cloudinary`, error);
-      // TODO: retry logic in Phase 2
+      this.logger.error(`Failed to upload policy PDF to S3`, error);
     }
 
     const policy = await this.prisma.policy.create({
@@ -256,8 +247,10 @@ export class PoliciesService {
 
     await this.emailService.sendPolicyIssuedEmail(
       application.user.email,
+      application.user.firstName,
       policyNumber,
-      policyPdfUrl || 'Policy document will be available shortly',
+      application.product.name,
+      policyPdfUrl || null,
     );
 
     await this.sendPushNotification(

@@ -133,11 +133,11 @@ export class ClaimsService {
       { referenceType: 'claim', referenceId: claim.id, type: 'claim_submitted' },
     );
 
-    await this.emailService.sendClaimStatusEmail(
-      policy.user.email,
-      claimReference,
-      'Submitted',
-    );
+    await this.emailService.sendEmail({
+      to: policy.user.email,
+      subject: `Your claim ${claimReference} has been updated`,
+      html: `<p>Your claim status has been updated to <strong>Submitted</strong>.</p>`,
+    });
 
     return claim;
   }
@@ -196,8 +196,10 @@ export class ClaimsService {
     await this.findOne(claimId, userId);
 
     const { url } = await this.storageService.uploadFile(
-      file,
-      'africover247/claims',
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+      'claims',
     );
 
     return this.prisma.claimDocument.create({
@@ -283,12 +285,11 @@ export class ClaimsService {
       { referenceType: 'claim', referenceId: claimId, type: 'claim_status_updated' },
     );
 
-    await this.emailService.sendClaimStatusEmail(
-      claim.user.email,
-      claim.claimReference,
-      dto.status,
-      dto.note,
-    );
+    await this.emailService.sendEmail({
+      to: claim.user.email,
+      subject: `Your claim ${claim.claimReference} has been updated`,
+      html: `<p>Your claim status has been updated to <strong>${dto.status.replace(/_/g, ' ')}</strong>.</p>${dto.note ? `<p>${dto.note}</p>` : ''}`,
+    });
 
     if (claim.user.phone) {
       await this.smsService.sendClaimStatusSms(

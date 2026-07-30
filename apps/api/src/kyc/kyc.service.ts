@@ -183,4 +183,81 @@ export class KycService {
       return { verified: false, data: null, message };
     }
   }
+
+  // --- Verify vehicle by plate number ---
+  async verifyVehicle(plateNumber: string): Promise<{
+    verified: boolean
+    data: {
+      plateNumber: string
+      make: string | null
+      model: string | null
+      year: string | null
+      colour: string | null
+      engineNumber: string | null
+      chassisNumber: string | null
+      ownerName: string | null
+      state: string | null
+    } | null
+    message: string
+  }> {
+    if (this.isStub) {
+      this.logger.log(`[STUB] Dojah vehicle lookup for plate: ${plateNumber}`)
+      return {
+        verified: true,
+        data: {
+          plateNumber,
+          make: 'Toyota',
+          model: 'Camry',
+          year: '2019',
+          colour: 'Silver',
+          engineNumber: 'ENG123456',
+          chassisNumber: 'CHS789012',
+          ownerName: 'John Doe',
+          state: 'Lagos',
+        },
+        message: 'Stub vehicle data',
+      }
+    }
+
+    try {
+      const response = await axios.get(
+        `https://api.dojah.io/api/v1/vehicle`,
+        {
+          params: { plate_number: plateNumber },
+          headers: {
+            Authorization: this.privateKey,
+            AppId: this.appId,
+          },
+        }
+      )
+
+      const entity = response.data?.entity
+      if (!entity) {
+        return { verified: false, data: null, message: 'Vehicle not found' }
+      }
+
+      return {
+        verified: true,
+        data: {
+          plateNumber: entity.plate_number || plateNumber,
+          make: entity.make || null,
+          model: entity.model || null,
+          year: entity.year || null,
+          colour: entity.colour || entity.color || null,
+          engineNumber: entity.engine_number || null,
+          chassisNumber: entity.chassis_number || null,
+          ownerName: entity.owner_name || null,
+          state: entity.state || null,
+        },
+        message: 'Vehicle verified successfully',
+      }
+    } catch (err: any) {
+      this.logger.warn(`Dojah vehicle lookup failed for ${plateNumber}: ${err.message}`)
+      return {
+        verified: false,
+        data: null,
+        message: err.response?.data?.error || 'Vehicle lookup failed',
+      }
+    }
+  }
 }
