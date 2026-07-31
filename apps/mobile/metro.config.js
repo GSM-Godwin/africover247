@@ -2,16 +2,15 @@ const { getDefaultConfig } = require('expo/metro-config')
 const path = require('path')
 
 const projectRoot = __dirname
-const monorepoRoot = path.resolve(projectRoot, '../..')
 
 const config = getDefaultConfig(projectRoot)
-
-config.watchFolders = [projectRoot]
 
 config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
 ]
 
-config.resolver.disableHierarchicalLookup = true
+// --- Do NOT set disableHierarchicalLookup ---
+// React Native internal packages need hierarchical resolution
+// to find @react-native/* sub-packages within react-native itself
 
 module.exports = config
