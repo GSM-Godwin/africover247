@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Image,
 } from 'react-native'
 import { Colors } from '../constants'
 
@@ -67,8 +68,11 @@ export function SplashScreen({ onFinish }: SplashScreenProps) {
           { opacity: logoOpacity, transform: [{ scale: logoScale }] },
         ]}>
           <View style={styles.logoCard}>
-            <Text style={styles.logoText}>AfriCover</Text>
-            <Text style={styles.logoAccent}>247</Text>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
           </View>
         </Animated.View>
 
@@ -124,27 +128,23 @@ const styles = StyleSheet.create({
   },
   logoWrapper: { alignItems: 'center' },
   logoCard: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 24,
-    paddingVertical: 16,
-    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 32,
+    paddingVertical: 24,
+    borderRadius: 24,
     marginBottom: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
-  logoText: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.white,
-    letterSpacing: -1,
-  },
-  logoAccent: {
-    fontSize: 36,
-    fontWeight: '800',
-    color: Colors.accent,
-    letterSpacing: -1,
+  logoImage: {
+    width: 200,
+    height: 60,
+    resizeMode: 'contain',
   },
   tagline: {
     fontSize: 14,
