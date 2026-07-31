@@ -129,6 +129,37 @@ export class AuthService {
     return { accessToken, user: this.sanitizeUser(updatedUser) };
   }
 
+  async resendVerificationOtp(email: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { email },
+    });
+
+    if (!user) {
+      return { message: 'If an account exists, a new code has been sent.' };
+    }
+
+    if (user.emailVerified) {
+      throw new BadRequestException('This email is already verified.');
+    }
+
+    const otp = this.generateOtp();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.emailVerification.create({
+      data: { userId: user.id, otpCode: otp, expiresAt },
+    });
+
+    await this.emailService.sendOtpEmail(user.email, otp, user.firstName);
+
+    if (user.phone) {
+      await this.smsService.sendOtpSms(user.phone, otp);
+    }
+
+    this.logger.log(`[AUTH] Resent OTP for ${email}: ${otp}`);
+
+    return { message: 'A new verification code has been sent.' };
+  }
+
   // --- Login ---
 
   async login(dto: LoginDto) {

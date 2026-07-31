@@ -42,7 +42,6 @@ export default function VerifyEmailPage() {
       setUser(res.data.user);
       setRole(res.data.user.role);
       sessionStorage.removeItem("pending_verification_email");
-      sessionStorage.removeItem("pending_registration");
       const role = res.data.user?.role;
       router.push(role === "admin" ? "/admin" : "/dashboard");
     } catch {
@@ -53,18 +52,15 @@ export default function VerifyEmailPage() {
   }
 
   async function handleResend() {
-    if (resendSeconds > 0) return;
+    if (resendSeconds > 0) return
     try {
-      const raw = sessionStorage.getItem("pending_registration");
-      if (raw) {
-        await api.post("/auth/register", JSON.parse(raw));
-      } else {
-        await api.post("/auth/forgot-password", { email });
-      }
-      setResendSeconds(60);
-      toast.success("A new code has been sent to your email.");
-    } catch {
-      toast.error("Could not resend code. Please try again.");
+      await api.post('/auth/resend-otp', { email })
+      setResendSeconds(60)
+      toast.success('A new verification code has been sent to your email.')
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message
+      toast.error(message || 'Could not resend code. Please try again.')
     }
   }
 

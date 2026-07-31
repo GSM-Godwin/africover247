@@ -187,7 +187,7 @@ export function HomeScreen({ navigation }: any) {
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Continue Application</Text>
               {drafts.length > 1 && (
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate('Drafts')}>
                   <Text style={styles.seeAll}>See all ({drafts.length})</Text>
                 </TouchableOpacity>
               )}

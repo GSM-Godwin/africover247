@@ -52,7 +52,7 @@ export function VerifyEmailScreen({
   async function handleResend() {
     if (resendSeconds > 0) return
     try {
-      await api.post('/auth/forgot-password', { email })
+      await api.post('/auth/resend-otp', { email })
       setResendSeconds(60)
     } catch {}
   }

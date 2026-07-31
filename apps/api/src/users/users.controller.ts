@@ -3,8 +3,11 @@ import {
   Get,
   Put,
   Post,
+  Patch,
+  Delete,
   Body,
   Query,
+  Param,
   UseGuards,
   HttpCode,
   HttpStatus,
@@ -51,6 +54,47 @@ export class UsersController {
     @Body('platform') platform: string,
   ) {
     return this.usersService.savePushToken(user.id, pushToken, platform);
+  }
+
+  @Get('admin/all')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  getAllUsers(@Query('role') role?: string) {
+    return this.usersService.getAllUsers(role);
+  }
+
+  @Get('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  getUserById(@Param('id') id: string) {
+    return this.usersService.getUserById(id);
+  }
+
+  @Patch('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  adminUpdateUser(
+    @Param('id') id: string,
+    @Body()
+    dto: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      role?: string;
+      emailVerified?: boolean;
+    },
+  ) {
+    return this.usersService.adminUpdateUser(id, dto);
+  }
+
+  @Delete('admin/:id')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  adminDeleteUser(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.usersService.adminDeleteUser(id, user.id);
   }
 }
 

@@ -2,6 +2,7 @@ import React from 'react'
 import { createStackNavigator } from '@react-navigation/stack'
 import { AppTabs } from './AppTabs'
 import { ApplicationWizardScreen } from '../screens/apply/ApplicationWizardScreen'
+import { DraftsScreen } from '../screens/apply/DraftsScreen'
 import { PaymentInitiateScreen } from '../screens/payment/PaymentInitiateScreen'
 import { PaymentSuccessScreen } from '../screens/payment/PaymentSuccessScreen'
 import { EditProfileScreen } from '../screens/account/EditProfileScreen'
@@ -26,6 +27,7 @@ export function MainStack({ onLogout }: MainStackProps) {
         {(props) => <AppTabs {...props} onLogout={onLogout} />}
       </Stack.Screen>
       <Stack.Screen name="ApplicationWizard" component={ApplicationWizardScreen} />
+      <Stack.Screen name="Drafts" component={DraftsScreen} />
       <Stack.Screen name="PaymentInitiate" component={PaymentInitiateScreen} />
       <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />

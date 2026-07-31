@@ -79,7 +79,90 @@ export class UsersService {
     return { saved: true };
   }
 
-  // --- Admin: get all users ---
+  async getAllUsers(role?: string) {
+    return this.prisma.user.findMany({
+      where: role ? { role: role as 'customer' | 'admin' } : undefined,
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        emailVerified: true,
+        createdAt: true,
+        _count: {
+          select: { policies: true, claims: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async getUserById(id: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        emailVerified: true,
+        createdAt: true,
+        _count: {
+          select: { policies: true, claims: true },
+        },
+      },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    return user;
+  }
+
+  async adminUpdateUser(
+    id: string,
+    dto: {
+      firstName?: string;
+      lastName?: string;
+      phone?: string;
+      role?: string;
+      emailVerified?: boolean;
+    },
+  ) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    const { role, ...rest } = dto;
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        ...rest,
+        ...(role !== undefined ? { role: role as 'customer' | 'admin' } : {}),
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        role: true,
+        emailVerified: true,
+      },
+    });
+  }
+
+  async adminDeleteUser(id: string, requestingUserId: string) {
+    if (id === requestingUserId) {
+      throw new BadRequestException('You cannot delete your own account');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    await this.prisma.user.delete({ where: { id } });
+    return { deleted: true };
+  }
 
   findAll(search?: string) {
     const where: Prisma.UserWhereInput = {};
