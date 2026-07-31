@@ -9,7 +9,7 @@ export default {
     splash: {
       image: "./assets/splash-icon.png",
       resizeMode: "contain",
-      backgroundColor: "#15679b"
+      backgroundColor: "#ffffff"
     },
     ios: {
       supportsTablet: false,
@@ -19,7 +19,7 @@ export default {
       adaptiveIcon: {
         foregroundImage: "./assets/android-icon-foreground.png",
         backgroundImage: "./assets/android-icon-background.png",
-        backgroundColor: "#15679b"
+        backgroundColor: "#ffffff"
       },
       package: "com.africover247.app",
       permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
@@ -27,7 +27,8 @@ export default {
     plugins: [
       "expo-secure-store",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     extra: {
       apiUrl: "https://africover247.onrender.com",

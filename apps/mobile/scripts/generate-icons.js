@@ -84,7 +84,7 @@ async function generateCircleIcon(size, outputPath, padding = 0.2) {
       width: size,
       height: size,
       channels: 4,
-      background: { r: 21, g: 103, b: 155, alpha: 1 },
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     },
   })
     .composite([
@@ -140,13 +140,13 @@ async function main() {
     .toFile(path.join(ASSETS_DIR, 'android-icon-foreground.png'))
   console.log('✓ Generated android-icon-foreground.png (1024x1024)')
 
-  // --- Android adaptive icon background (blue) ---
+  // --- Android adaptive icon background (white) ---
   await sharp({
     create: {
       width: 1024,
       height: 1024,
       channels: 4,
-      background: { r: 21, g: 103, b: 155, alpha: 1 },
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     },
   })
     .png()

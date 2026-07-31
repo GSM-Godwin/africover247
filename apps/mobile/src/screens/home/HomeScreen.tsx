@@ -16,10 +16,19 @@ import api from '../../services/api'
 import { getUser } from '../../services/auth'
 import type { User, Policy, Claim, Quote } from '../../types'
 
+interface Application {
+  id: string
+  status: string
+  stepCompleted: number
+  createdAt: string
+  product: { name: string; category: string }
+}
+
 interface DashboardData {
   policies: Policy[]
   claims: Claim[]
   quotes: Quote[]
+  drafts: Application[]
   unreadCount: number
 }
 
@@ -29,6 +38,7 @@ export function HomeScreen({ navigation }: any) {
     policies: [],
     claims: [],
     quotes: [],
+    drafts: [],
     unreadCount: 0,
   })
   const [loading, setLoading] = useState(true)
@@ -36,18 +46,20 @@ export function HomeScreen({ navigation }: any) {
 
   const fetchData = useCallback(async () => {
     try {
-      const [u, policiesRes, claimsRes, quotesRes, notifRes] = await Promise.all([
+      const [u, policiesRes, claimsRes, quotesRes, notifRes, draftsRes] = await Promise.all([
         getUser(),
         api.get('/policies/my'),
         api.get('/claims/my'),
         api.get('/quotes/my'),
         api.get('/notifications/unread-count'),
+        api.get('/applications/drafts').catch(() => ({ data: [] })),
       ])
       setUser(u)
       setData({
         policies: policiesRes.data,
         claims: claimsRes.data,
         quotes: quotesRes.data,
+        drafts: draftsRes.data,
         unreadCount: notifRes.data.count,
       })
     } catch {}
@@ -64,12 +76,9 @@ export function HomeScreen({ navigation }: any) {
   }
 
   const activePolicies = data.policies.filter((p) => p.status === 'active')
-  const pendingClaims = data.claims.filter((c) =>
-    ['submitted', 'in_review'].includes(c.status)
-  )
-  const pendingQuotes = data.quotes.filter((q) =>
-    ['quote_sent', 'countered_by_admin'].includes(q.status)
-  )
+  const pendingClaims = data.claims.filter((c) => ['submitted', 'in_review'].includes(c.status))
+  const pendingQuotes = data.quotes.filter((q) => ['quote_sent', 'countered_by_admin'].includes(q.status))
+  const drafts = data.drafts.filter((d) => d.status === 'draft')
 
   if (loading) {
     return (
@@ -90,7 +99,6 @@ export function HomeScreen({ navigation }: any) {
         }
       >
 
-        {/* --- Header --- */}
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>
@@ -113,39 +121,57 @@ export function HomeScreen({ navigation }: any) {
           </TouchableOpacity>
         </View>
 
-        {/* --- Summary cards --- */}
         <View style={styles.summaryRow}>
-          <Card style={[styles.summaryCard, { backgroundColor: Colors.primary }]} padding={16}>
-            <Ionicons name="shield-checkmark" size={20} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.summaryCount}>{activePolicies.length}</Text>
-            <Text style={styles.summaryLabel}>Active Policies</Text>
-          </Card>
-          <Card style={[styles.summaryCard, { backgroundColor: Colors.accent }]} padding={16}>
-            <Ionicons name="document-text" size={20} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.summaryCount}>{pendingClaims.length}</Text>
-            <Text style={styles.summaryLabel}>Pending Claims</Text>
-          </Card>
-          <Card style={[styles.summaryCard, { backgroundColor: Colors.success }]} padding={16}>
-            <Ionicons name="chatbubble-ellipses" size={20} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.summaryCount}>{pendingQuotes.length}</Text>
-            <Text style={styles.summaryLabel}>Quotes Ready</Text>
-          </Card>
+          <TouchableOpacity
+            style={styles.summaryCardWrapper}
+            onPress={() => navigation.navigate('Policies')}
+            activeOpacity={0.8}
+          >
+            <Card style={[styles.summaryCard, { backgroundColor: Colors.primary }]} padding={16}>
+              <Ionicons name="shield-checkmark" size={20} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryCount}>{activePolicies.length}</Text>
+              <Text style={styles.summaryLabel}>Active Policies</Text>
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.summaryCardWrapper}
+            onPress={() => navigation.navigate('Claims')}
+            activeOpacity={0.8}
+          >
+            <Card style={[styles.summaryCard, { backgroundColor: Colors.accent }]} padding={16}>
+              <Ionicons name="document-text" size={20} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryCount}>{pendingClaims.length}</Text>
+              <Text style={styles.summaryLabel}>Pending Claims</Text>
+            </Card>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.summaryCardWrapper}
+            onPress={() => navigation.navigate('Products', { screen: 'QuotesList' })}
+            activeOpacity={0.8}
+          >
+            <Card style={[styles.summaryCard, { backgroundColor: Colors.success }]} padding={16}>
+              <Ionicons name="chatbubble-ellipses" size={20} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.summaryCount}>{pendingQuotes.length}</Text>
+              <Text style={styles.summaryLabel}>Quotes Ready</Text>
+            </Card>
+          </TouchableOpacity>
         </View>
 
-        {/* --- Quick actions --- */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.quickActions}>
             {[
-              { icon: 'shield-outline' as const, label: 'Get Covered', tab: 'Products' },
-              { icon: 'add-circle-outline' as const, label: 'File Claim', tab: 'Claims' },
-              { icon: 'chatbubble-outline' as const, label: 'Get Quote', tab: 'Products' },
-              { icon: 'person-outline' as const, label: 'My Account', tab: 'Account' },
+              { icon: 'shield-outline' as const, label: 'Get Covered', onPress: () => navigation.navigate('Products') },
+              { icon: 'add-circle-outline' as const, label: 'File Claim', onPress: () => navigation.navigate('Claims') },
+              { icon: 'chatbubble-outline' as const, label: 'Get Quote', onPress: () => navigation.navigate('Products') },
+              { icon: 'person-outline' as const, label: 'My Account', onPress: () => navigation.navigate('Account') },
             ].map((action) => (
               <TouchableOpacity
                 key={action.label}
                 style={styles.quickAction}
-                onPress={() => navigation.navigate(action.tab)}
+                onPress={action.onPress}
               >
                 <View style={styles.quickActionIcon}>
                   <Ionicons name={action.icon} size={22} color={Colors.primary} />
@@ -156,75 +182,173 @@ export function HomeScreen({ navigation }: any) {
           </View>
         </View>
 
-        {/* --- Active policies --- */}
+        {drafts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Continue Application</Text>
+              {drafts.length > 1 && (
+                <TouchableOpacity>
+                  <Text style={styles.seeAll}>See all ({drafts.length})</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {drafts.slice(0, 1).map((draft) => (
+              <TouchableOpacity
+                key={draft.id}
+                onPress={() => navigation.navigate('ApplicationWizard', {
+                  applicationId: draft.id,
+                  product: draft.product,
+                })}
+                activeOpacity={0.7}
+              >
+                <Card style={styles.draftCard} padding={16}>
+                  <View style={styles.draftRow}>
+                    <View style={[styles.policyIcon, { backgroundColor: '#FEF3E8' }]}>
+                      <Ionicons name="document-text-outline" size={20} color={Colors.accent} />
+                    </View>
+                    <View style={styles.policyInfo}>
+                      <Text style={styles.policyName} numberOfLines={1}>
+                        {draft.product.name}
+                      </Text>
+                      <Text style={styles.draftStep}>
+                        Step {draft.stepCompleted} of 4 completed
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                  </View>
+                  <View style={styles.progressTrack}>
+                    <View style={[
+                      styles.progressBar,
+                      { width: `${(draft.stepCompleted / 4) * 100}%` as `${number}%` },
+                    ]} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {activePolicies.length > 0 && (
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>My Policies</Text>
-              <TouchableOpacity>
-                <Text style={styles.seeAll}>See all</Text>
-              </TouchableOpacity>
+              {activePolicies.length > 1 && (
+                <TouchableOpacity onPress={() => navigation.navigate('Policies')}>
+                  <Text style={styles.seeAll}>See all ({activePolicies.length})</Text>
+                </TouchableOpacity>
+              )}
             </View>
-            {activePolicies.slice(0, 2).map((policy) => (
-              <Card key={policy.id} style={styles.policyCard} padding={16}>
-                <View style={styles.policyRow}>
-                  <View style={[styles.policyIcon, { backgroundColor: Colors.primaryLight }]}>
-                    <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
+            {activePolicies.slice(0, 1).map((policy) => (
+              <TouchableOpacity
+                key={policy.id}
+                onPress={() => navigation.navigate('PolicyDetail', { policyId: policy.id })}
+                activeOpacity={0.7}
+              >
+                <Card style={styles.policyCard} padding={16}>
+                  <View style={styles.policyRow}>
+                    <View style={[styles.policyIcon, { backgroundColor: Colors.primaryLight }]}>
+                      <Ionicons name="shield-checkmark" size={20} color={Colors.primary} />
+                    </View>
+                    <View style={styles.policyInfo}>
+                      <Text style={styles.policyName} numberOfLines={1}>
+                        {policy.product.name}
+                      </Text>
+                      <Text style={styles.policyNumber}>{policy.policyNumber}</Text>
+                    </View>
+                    <StatusBadge status={policy.status} />
                   </View>
-                  <View style={styles.policyInfo}>
-                    <Text style={styles.policyName} numberOfLines={1}>
-                      {policy.product.name}
+                  <View style={styles.policyMeta}>
+                    <Text style={styles.policyMetaText}>
+                      Expires {new Date(policy.expiryDate).toLocaleDateString('en-NG', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                      })}
                     </Text>
-                    <Text style={styles.policyNumber}>{policy.policyNumber}</Text>
+                    <Text style={styles.policyPremium}>
+                      ₦{parseFloat(policy.premiumPaid).toLocaleString('en-NG')}/yr
+                    </Text>
                   </View>
-                  <StatusBadge status={policy.status} />
-                </View>
-                <View style={styles.policyMeta}>
-                  <Text style={styles.policyMetaText}>
-                    Expires {new Date(policy.expiryDate).toLocaleDateString('en-NG', {
-                      day: 'numeric',
-                      month: 'short',
-                      year: 'numeric',
-                    })}
-                  </Text>
-                  <Text style={styles.policyPremium}>
-                    ₦{parseFloat(policy.premiumPaid).toLocaleString('en-NG')}/yr
-                  </Text>
-                </View>
-              </Card>
+                </Card>
+              </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* --- Pending quotes --- */}
+        {pendingClaims.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Pending Claims</Text>
+              {pendingClaims.length > 1 && (
+                <TouchableOpacity onPress={() => navigation.navigate('Claims')}>
+                  <Text style={styles.seeAll}>See all ({pendingClaims.length})</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {pendingClaims.slice(0, 1).map((claim) => (
+              <TouchableOpacity
+                key={claim.id}
+                onPress={() => navigation.navigate('Claims')}
+                activeOpacity={0.7}
+              >
+                <Card style={styles.policyCard} padding={16}>
+                  <View style={styles.policyRow}>
+                    <View style={[styles.policyIcon, { backgroundColor: '#FEF3E8' }]}>
+                      <Ionicons name="document-text" size={20} color={Colors.accent} />
+                    </View>
+                    <View style={styles.policyInfo}>
+                      <Text style={styles.policyName}>{claim.claimReference}</Text>
+                      <Text style={styles.policyNumber}>{claim.policy.product.name}</Text>
+                    </View>
+                    <StatusBadge status={claim.status} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+
         {pendingQuotes.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quotes Awaiting Response</Text>
-            {pendingQuotes.slice(0, 2).map((quote) => (
-              <Card key={quote.id} style={styles.quoteCard} padding={16}>
-                <View style={styles.quoteRow}>
-                  <View style={[styles.policyIcon, { backgroundColor: '#FEF3E8' }]}>
-                    <Ionicons name="chatbubble-ellipses" size={20} color={Colors.accent} />
-                  </View>
-                  <View style={styles.policyInfo}>
-                    <Text style={styles.policyName} numberOfLines={1}>
-                      {quote.product.name}
-                    </Text>
-                    {quote.adminQuoteAmount && (
-                      <Text style={styles.quoteAmount}>
-                        ₦{parseFloat(quote.adminQuoteAmount).toLocaleString('en-NG')}/yr
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Quotes Awaiting Response</Text>
+              {pendingQuotes.length > 1 && (
+                <TouchableOpacity onPress={() => navigation.navigate('Products', { screen: 'QuotesList' })}>
+                  <Text style={styles.seeAll}>See all ({pendingQuotes.length})</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            {pendingQuotes.slice(0, 1).map((quote) => (
+              <TouchableOpacity
+                key={quote.id}
+                onPress={() => navigation.navigate('Products', {
+                  screen: 'QuoteDetail',
+                  params: { quoteId: quote.id },
+                })}
+                activeOpacity={0.7}
+              >
+                <Card style={styles.quoteCard} padding={16}>
+                  <View style={styles.quoteRow}>
+                    <View style={[styles.policyIcon, { backgroundColor: '#FEF3E8' }]}>
+                      <Ionicons name="chatbubble-ellipses" size={20} color={Colors.accent} />
+                    </View>
+                    <View style={styles.policyInfo}>
+                      <Text style={styles.policyName} numberOfLines={1}>
+                        {quote.product.name}
                       </Text>
-                    )}
+                      {quote.adminQuoteAmount && (
+                        <Text style={styles.quoteAmount}>
+                          ₦{parseFloat(quote.adminQuoteAmount).toLocaleString('en-NG')}/yr
+                        </Text>
+                      )}
+                    </View>
+                    <StatusBadge status={quote.status} />
                   </View>
-                  <StatusBadge status={quote.status} />
-                </View>
-              </Card>
+                </Card>
+              </TouchableOpacity>
             ))}
           </View>
         )}
 
-        {/* --- Empty state --- */}
-        {activePolicies.length === 0 && pendingQuotes.length === 0 && (
+        {activePolicies.length === 0 && pendingQuotes.length === 0 && drafts.length === 0 && (
           <View style={styles.emptyState}>
             <Ionicons name="shield-outline" size={48} color={Colors.border} />
             <Text style={styles.emptyTitle}>No policies yet</Text>
@@ -258,7 +382,7 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
     backgroundColor: Colors.white,
   },
-  greeting: { fontSize: 14, color: Colors.textSecondary, fontWeight: '400' },
+  greeting: { fontSize: 14, color: Colors.textSecondary },
   name: { fontSize: 22, fontWeight: '800', color: Colors.text, marginTop: 2 },
   notifButton: {
     width: 42,
@@ -291,7 +415,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     gap: 10,
     paddingBottom: 4,
+    paddingTop: 16,
   },
+  summaryCardWrapper: { flex: 1 },
   summaryCard: {
     flex: 1,
     borderRadius: 16,
@@ -301,12 +427,7 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  summaryCount: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: Colors.white,
-    marginTop: 8,
-  },
+  summaryCount: { fontSize: 28, fontWeight: '800', color: Colors.white, marginTop: 8 },
   summaryLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
@@ -315,18 +436,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 12,
-  },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
   seeAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
+  quickActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   quickAction: { flex: 1, alignItems: 'center' },
   quickActionIcon: {
     width: 52,
@@ -342,23 +454,17 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 3,
   },
-  quickActionLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-    textAlign: 'center',
-  },
-  policyCard: { marginBottom: 10 },
-  quoteCard: { marginBottom: 10 },
+  quickActionLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '500', textAlign: 'center' },
+  draftCard: { marginBottom: 0 },
+  draftRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  progressTrack: { height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, overflow: 'hidden' },
+  progressBar: { height: '100%', backgroundColor: Colors.accent, borderRadius: 2 },
+  draftStep: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
+  policyCard: { marginBottom: 0 },
+  quoteCard: { marginBottom: 0 },
   policyRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   quoteRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  policyIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  policyIcon: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   policyInfo: { flex: 1 },
   policyName: { fontSize: 14, fontWeight: '700', color: Colors.text },
   policyNumber: { fontSize: 12, color: Colors.textSecondary, marginTop: 2, fontFamily: 'monospace' },

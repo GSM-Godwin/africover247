@@ -333,10 +333,27 @@ export function ProductDetailScreen({ route, navigation }: any) {
         productId: product.id,
         assetDetails,
       })
-      navigation.navigate('ApplicationWizard', { applicationId: res.data.id, product })
-    } catch {
-    } finally {
       setStarting(false)
+      navigation.navigate('ApplicationWizard', {
+        applicationId: res.data.id,
+        product,
+      })
+    } catch (err: any) {
+      setStarting(false)
+      const message = err?.response?.data?.message
+      const msg = Array.isArray(message) ? message.join(' ') : String(message ?? '')
+      if (msg.includes('draft') || msg.includes('existing')) {
+        const draftsRes = await api.get('/applications/drafts')
+        const existing = draftsRes.data.find(
+          (d: any) => d.product?.id === product.id && d.status === 'draft'
+        )
+        if (existing) {
+          navigation.navigate('ApplicationWizard', {
+            applicationId: existing.id,
+            product,
+          })
+        }
+      }
     }
   }
 

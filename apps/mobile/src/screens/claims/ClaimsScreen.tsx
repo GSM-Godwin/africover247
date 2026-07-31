@@ -14,7 +14,7 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Claim } from '../../types'
 
-export function ClaimsScreen() {
+export function ClaimsScreen({ navigation }: any) {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)

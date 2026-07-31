@@ -9,45 +9,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Modal,
+  FlatList,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 
-interface FormData {
-  dateOfBirth: string
-  gender: string
-  nationality: string
-  maritalStatus: string
-  address: string
-  city: string
-  state: string
-  alternativePhone: string
-  employmentStatus: string
-  employer: string
-  occupation: string
-  annualIncome: string
-}
-
-const STEPS = [
-  'Personal Details',
-  'Address',
-  'Employment',
-  'Review & Submit',
+const NIGERIAN_STATES = [
+  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
+  'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
+  'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
+  'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
+  'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
 ]
 
 const GENDERS = ['Male', 'Female', 'Prefer not to say']
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed']
 const EMPLOYMENT = ['Employed', 'Self-employed', 'Business owner', 'Retired', 'Student', 'Unemployed']
-const STATES = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
-  'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT', 'Gombe',
-  'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara',
-  'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau',
-  'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-]
+
+const STEPS = ['Personal Details', 'Address', 'Employment', 'Review & Submit']
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -62,10 +46,7 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
             {i < current ? (
               <Ionicons name="checkmark" size={12} color={Colors.white} />
             ) : (
-              <Text style={[
-                stepStyles.dotText,
-                i === current && stepStyles.dotTextActive,
-              ]}>
+              <Text style={[stepStyles.dotText, i === current && stepStyles.dotTextActive]}>
                 {i + 1}
               </Text>
             )}
@@ -82,12 +63,8 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 const stepStyles = StyleSheet.create({
   container: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16 },
   dot: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: '#E2E8F0', alignItems: 'center', justifyContent: 'center',
   },
   dotActive: { backgroundColor: Colors.primary },
   dotDone: { backgroundColor: Colors.success },
@@ -97,7 +74,7 @@ const stepStyles = StyleSheet.create({
   lineDone: { backgroundColor: Colors.success },
 })
 
-function SelectChips({
+function ChipSelector({
   options,
   value,
   onChange,
@@ -111,10 +88,10 @@ function SelectChips({
       {options.map((opt) => (
         <TouchableOpacity
           key={opt}
-          style={[chipStyles.chip, value === opt && chipStyles.chipSelected]}
+          style={[chipStyles.chip, value === opt && chipStyles.selected]}
           onPress={() => onChange(opt)}
         >
-          <Text style={[chipStyles.text, value === opt && chipStyles.textSelected]}>
+          <Text style={[chipStyles.text, value === opt && chipStyles.selectedText]}>
             {opt}
           </Text>
         </TouchableOpacity>
@@ -124,34 +101,22 @@ function SelectChips({
 }
 
 const chipStyles = StyleSheet.create({
-  container: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  container: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
   chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0',
     backgroundColor: Colors.white,
   },
-  chipSelected: { borderColor: Colors.primary, backgroundColor: '#EBF4FA' },
+  selected: { borderColor: Colors.primary, backgroundColor: '#EBF4FA' },
   text: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
-  textSelected: { color: Colors.primary, fontWeight: '700' },
+  selectedText: { color: Colors.primary, fontWeight: '700' },
 })
 
-function Field({
-  label,
-  required,
-  children,
-}: {
-  label: string
-  required?: boolean
-  children: React.ReactNode
-}) {
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <View style={fieldStyles.container}>
       <Text style={fieldStyles.label}>
-        {label}
-        {required && <Text style={{ color: Colors.error }}> *</Text>}
+        {label}{required && <Text style={{ color: Colors.error }}> *</Text>}
       </Text>
       {children}
     </View>
@@ -168,36 +133,208 @@ function TInput({
   onChangeText,
   placeholder,
   keyboardType,
+  editable = true,
 }: {
   value: string
   onChangeText: (v: string) => void
   placeholder?: string
-  keyboardType?: 'default' | 'numeric' | 'phone-pad'
+  keyboardType?: 'default' | 'phone-pad' | 'numeric'
+  editable?: boolean
 }) {
   return (
     <TextInput
-      style={inputStyles.input}
+      style={[inputStyles.input, !editable && inputStyles.disabled]}
       value={value}
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor={Colors.textSecondary + '80'}
       keyboardType={keyboardType || 'default'}
+      editable={editable}
     />
   )
 }
 
 const inputStyles = StyleSheet.create({
   input: {
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: Colors.text,
-    backgroundColor: Colors.white,
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12,
+    fontSize: 15, color: Colors.text, backgroundColor: Colors.white,
   },
+  disabled: { backgroundColor: '#F8FAFC', color: Colors.textSecondary },
 })
+
+function StatePicker({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (v: string) => void
+}) {
+  const [visible, setVisible] = useState(false)
+  const [search, setSearch] = useState('')
+
+  const filtered = NIGERIAN_STATES.filter((s) =>
+    s.toLowerCase().includes(search.toLowerCase())
+  )
+
+  return (
+    <>
+      <TouchableOpacity
+        style={pickerStyles.trigger}
+        onPress={() => setVisible(true)}
+      >
+        <Text style={[pickerStyles.triggerText, !value && pickerStyles.placeholder]}>
+          {value || 'Select state'}
+        </Text>
+        <Ionicons name="chevron-down" size={16} color={Colors.textSecondary} />
+      </TouchableOpacity>
+
+      <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+        <SafeAreaView style={pickerStyles.modal}>
+          <View style={pickerStyles.modalHeader}>
+            <Text style={pickerStyles.modalTitle}>Select State</Text>
+            <TouchableOpacity onPress={() => { setVisible(false); setSearch('') }}>
+              <Ionicons name="close" size={24} color={Colors.text} />
+            </TouchableOpacity>
+          </View>
+          <View style={pickerStyles.searchContainer}>
+            <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
+            <TextInput
+              style={pickerStyles.searchInput}
+              value={search}
+              onChangeText={setSearch}
+              placeholder="Search states..."
+              placeholderTextColor={Colors.textSecondary + '80'}
+            />
+          </View>
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[pickerStyles.option, value === item && pickerStyles.optionSelected]}
+                onPress={() => {
+                  onChange(item)
+                  setVisible(false)
+                  setSearch('')
+                }}
+              >
+                <Text style={[pickerStyles.optionText, value === item && pickerStyles.optionTextSelected]}>
+                  {item}
+                </Text>
+                {value === item && (
+                  <Ionicons name="checkmark" size={18} color={Colors.primary} />
+                )}
+              </TouchableOpacity>
+            )}
+          />
+        </SafeAreaView>
+      </Modal>
+    </>
+  )
+}
+
+const pickerStyles = StyleSheet.create({
+  trigger: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    borderWidth: 1.5, borderColor: '#E2E8F0', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 12, backgroundColor: Colors.white,
+  },
+  triggerText: { fontSize: 15, color: Colors.text },
+  placeholder: { color: Colors.textSecondary + '80' },
+  modal: { flex: 1, backgroundColor: Colors.white },
+  modalHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 16,
+    borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
+  },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
+  searchContainer: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    margin: 16, paddingHorizontal: 12, paddingVertical: 10,
+    backgroundColor: '#F0F4F8', borderRadius: 10,
+  },
+  searchInput: { flex: 1, fontSize: 14, color: Colors.text },
+  option: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 14,
+    borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
+  },
+  optionSelected: { backgroundColor: '#EBF4FA' },
+  optionText: { fontSize: 15, color: Colors.text },
+  optionTextSelected: { color: Colors.primary, fontWeight: '600' },
+})
+
+function DOBPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [show, setShow] = useState(false)
+  const date = value ? new Date(value.split('/').reverse().join('-')) : new Date(2000, 0, 1)
+
+  function handleChange(_: unknown, selected?: Date) {
+    setShow(false)
+    if (selected) {
+      const formatted = `${String(selected.getDate()).padStart(2, '0')}/${String(selected.getMonth() + 1).padStart(2, '0')}/${selected.getFullYear()}`
+      onChange(formatted)
+    }
+  }
+
+  return (
+    <>
+      <TouchableOpacity
+        style={pickerStyles.trigger}
+        onPress={() => setShow(true)}
+      >
+        <Text style={[pickerStyles.triggerText, !value && pickerStyles.placeholder]}>
+          {value || 'Select date of birth'}
+        </Text>
+        <Ionicons name="calendar-outline" size={16} color={Colors.textSecondary} />
+      </TouchableOpacity>
+      {show && (
+        <DateTimePicker
+          value={date}
+          mode="date"
+          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          onChange={handleChange}
+          maximumDate={new Date(new Date().setFullYear(new Date().getFullYear() - 18))}
+          minimumDate={new Date(1940, 0, 1)}
+        />
+      )}
+    </>
+  )
+}
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  if (!value) return null
+  return (
+    <View style={reviewStyles.row}>
+      <Text style={reviewStyles.label}>{label}</Text>
+      <Text style={reviewStyles.value}>{value}</Text>
+    </View>
+  )
+}
+
+const reviewStyles = StyleSheet.create({
+  row: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
+  },
+  label: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
+  value: { fontSize: 13, fontWeight: '600', color: Colors.text, flex: 1, textAlign: 'right' },
+})
+
+interface FormData {
+  dateOfBirth: string
+  gender: string
+  nationality: string
+  maritalStatus: string
+  address: string
+  city: string
+  state: string
+  alternativePhone: string
+  employmentStatus: string
+  employer: string
+  occupation: string
+  annualIncome: string
+}
 
 export function ApplicationWizardScreen({ route, navigation }: any) {
   const { applicationId, product } = route.params
@@ -225,19 +362,19 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
   function validateStep(): boolean {
     if (step === 0) {
       if (!formData.dateOfBirth || !formData.gender || !formData.maritalStatus) {
-        Alert.alert('Missing Fields', 'Please fill in all required fields.')
+        Alert.alert('Missing Fields', 'Please fill in Date of Birth, Gender and Marital Status.')
         return false
       }
     }
     if (step === 1) {
       if (!formData.address || !formData.city || !formData.state) {
-        Alert.alert('Missing Fields', 'Please fill in your address details.')
+        Alert.alert('Missing Fields', 'Please fill in your Address, City and State.')
         return false
       }
     }
     if (step === 2) {
       if (!formData.employmentStatus || !formData.occupation) {
-        Alert.alert('Missing Fields', 'Please fill in your employment details.')
+        Alert.alert('Missing Fields', 'Please fill in Employment Status and Occupation.')
         return false
       }
     }
@@ -246,7 +383,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
 
   async function handleNext() {
     if (!validateStep()) return
-
     if (step < STEPS.length - 1) {
       setSaving(true)
       try {
@@ -271,44 +407,33 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         status: 'pending_payment',
       })
       navigation.replace('PaymentInitiate', { applicationId, product })
-    } catch (err: any) {
-      Alert.alert('Error', err.response?.data?.message || 'Could not save application.')
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message
+      Alert.alert('Error', message || 'Could not save application.')
     } finally {
       setSaving(false)
     }
   }
 
+  const showEmployerFields = ['Employed', 'Self-employed', 'Business owner'].includes(formData.employmentStatus)
+
   function renderStep() {
     switch (step) {
+
       case 0:
         return (
           <View>
             <Field label="Date of Birth" required>
-              <TInput
-                value={formData.dateOfBirth}
-                onChangeText={(v) => update('dateOfBirth', v)}
-                placeholder="DD/MM/YYYY"
-              />
+              <DOBPicker value={formData.dateOfBirth} onChange={(v) => update('dateOfBirth', v)} />
             </Field>
             <Field label="Gender" required>
-              <SelectChips
-                options={GENDERS}
-                value={formData.gender}
-                onChange={(v) => update('gender', v)}
-              />
+              <ChipSelector options={GENDERS} value={formData.gender} onChange={(v) => update('gender', v)} />
             </Field>
             <Field label="Nationality">
-              <TInput
-                value={formData.nationality}
-                onChangeText={(v) => update('nationality', v)}
-              />
+              <TInput value={formData.nationality} onChangeText={(v) => update('nationality', v)} />
             </Field>
             <Field label="Marital Status" required>
-              <SelectChips
-                options={MARITAL}
-                value={formData.maritalStatus}
-                onChange={(v) => update('maritalStatus', v)}
-              />
+              <ChipSelector options={MARITAL} value={formData.maritalStatus} onChange={(v) => update('maritalStatus', v)} />
             </Field>
           </View>
         )
@@ -331,25 +456,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
               />
             </Field>
             <Field label="State" required>
-              <View style={stateStyles.container}>
-                {STATES.map((s) => (
-                  <TouchableOpacity
-                    key={s}
-                    style={[
-                      stateStyles.chip,
-                      formData.state === s && stateStyles.chipSelected,
-                    ]}
-                    onPress={() => update('state', s)}
-                  >
-                    <Text style={[
-                      stateStyles.text,
-                      formData.state === s && stateStyles.textSelected,
-                    ]}>
-                      {s}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <StatePicker value={formData.state} onChange={(v) => update('state', v)} />
             </Field>
             <Field label="Alternative Phone">
               <TInput
@@ -366,26 +473,31 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         return (
           <View>
             <Field label="Employment Status" required>
-              <SelectChips
+              <ChipSelector
                 options={EMPLOYMENT}
                 value={formData.employmentStatus}
                 onChange={(v) => update('employmentStatus', v)}
               />
             </Field>
-            <Field label="Employer / Company">
-              <TInput
-                value={formData.employer}
-                onChangeText={(v) => update('employer', v)}
-                placeholder="Employer name"
-              />
-            </Field>
+
+            {showEmployerFields && (
+              <Field label="Employer / Company Name">
+                <TInput
+                  value={formData.employer}
+                  onChangeText={(v) => update('employer', v)}
+                  placeholder="Company or business name"
+                />
+              </Field>
+            )}
+
             <Field label="Occupation / Role" required>
               <TInput
                 value={formData.occupation}
                 onChangeText={(v) => update('occupation', v)}
-                placeholder="e.g. Software Engineer"
+                placeholder="e.g. Software Engineer, Teacher"
               />
             </Field>
+
             <Field label="Annual Income (₦)">
               <TInput
                 value={formData.annualIncome}
@@ -400,44 +512,49 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
       case 3:
         return (
           <View>
-            <Text style={reviewStyles.heading}>Review your details</Text>
-            <Text style={reviewStyles.subheading}>
-              Please confirm everything looks correct before proceeding to payment.
+            <Text style={styles.reviewTitle}>Review your details</Text>
+            <Text style={styles.reviewSubtitle}>
+              Please confirm everything is correct before proceeding to payment.
             </Text>
 
             {[
-              { section: 'Personal', items: [
+              { title: 'Personal Details', rows: [
                 { label: 'Date of Birth', value: formData.dateOfBirth },
                 { label: 'Gender', value: formData.gender },
                 { label: 'Nationality', value: formData.nationality },
                 { label: 'Marital Status', value: formData.maritalStatus },
               ]},
-              { section: 'Address', items: [
+              { title: 'Address', rows: [
                 { label: 'Address', value: formData.address },
                 { label: 'City', value: formData.city },
                 { label: 'State', value: formData.state },
               ]},
-              { section: 'Employment', items: [
-                { label: 'Employment Status', value: formData.employmentStatus },
+              { title: 'Employment', rows: [
+                { label: 'Status', value: formData.employmentStatus },
                 { label: 'Occupation', value: formData.occupation },
                 { label: 'Employer', value: formData.employer },
+                { label: 'Annual Income', value: formData.annualIncome ? `₦${parseFloat(formData.annualIncome).toLocaleString()}` : '' },
               ]},
-            ].map(({ section, items }) => (
-              <View key={section} style={reviewStyles.section}>
-                <Text style={reviewStyles.sectionTitle}>{section}</Text>
-                {items.filter((i) => i.value).map((item) => (
-                  <View key={item.label} style={reviewStyles.row}>
-                    <Text style={reviewStyles.rowLabel}>{item.label}</Text>
-                    <Text style={reviewStyles.rowValue}>{item.value}</Text>
-                  </View>
+            ].map(({ title, rows }) => (
+              <View key={title} style={styles.reviewSection}>
+                <View style={styles.reviewSectionHeader}>
+                  <Text style={styles.reviewSectionTitle}>{title}</Text>
+                  <TouchableOpacity onPress={() => setStep(
+                    title === 'Personal Details' ? 0 : title === 'Address' ? 1 : 2
+                  )}>
+                    <Text style={styles.editLink}>Edit</Text>
+                  </TouchableOpacity>
+                </View>
+                {rows.map(({ label, value }) => (
+                  <ReviewRow key={label} label={label} value={value} />
                 ))}
               </View>
             ))}
 
-            <View style={reviewStyles.disclaimer}>
+            <View style={styles.disclaimer}>
               <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
-              <Text style={reviewStyles.disclaimerText}>
-                By proceeding you confirm that the information provided is accurate and complete.
+              <Text style={styles.disclaimerText}>
+                By proceeding you confirm the information provided is accurate and complete.
               </Text>
             </View>
           </View>
@@ -455,7 +572,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         style={{ flex: 1 }}
       >
 
-        {/* --- Header --- */}
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => step > 0 ? setStep(step - 1) : navigation.goBack()}
@@ -464,9 +580,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           </TouchableOpacity>
           <View style={styles.headerCenter}>
             <Text style={styles.headerTitle}>{STEPS[step]}</Text>
-            <Text style={styles.headerSub}>
-              Step {step + 1} of {STEPS.length}
-            </Text>
+            <Text style={styles.headerSub}>Step {step + 1} of {STEPS.length}</Text>
           </View>
           <View style={{ width: 22 }} />
         </View>
@@ -475,10 +589,8 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
 
         {product && (
           <View style={styles.productBanner}>
-            <Ionicons name="shield-checkmark" size={16} color={Colors.primary} />
-            <Text style={styles.productBannerText} numberOfLines={1}>
-              {product.name}
-            </Text>
+            <Ionicons name="shield-checkmark" size={14} color={Colors.primary} />
+            <Text style={styles.productBannerText} numberOfLines={1}>{product.name}</Text>
           </View>
         )}
 
@@ -491,7 +603,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           <View style={{ height: 32 }} />
         </ScrollView>
 
-        <View style={styles.actions}>
+        <View style={styles.footer}>
           <Button
             title={step === STEPS.length - 1 ? 'Proceed to Payment' : 'Continue'}
             onPress={handleNext}
@@ -507,75 +619,44 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F4F8',
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 20, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
   },
   headerCenter: { flex: 1, alignItems: 'center' },
   headerTitle: { fontSize: 15, fontWeight: '700', color: Colors.text },
   headerSub: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   productBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#EBF4FA',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#D8EAF5',
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#EBF4FA', paddingHorizontal: 20, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: '#D8EAF5',
   },
   productBannerText: { fontSize: 13, color: Colors.primary, fontWeight: '600', flex: 1 },
   scroll: { padding: 20 },
-  actions: {
-    paddingHorizontal: 20,
-    paddingBottom: 28,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#F0F4F8',
+  footer: {
+    paddingHorizontal: 20, paddingBottom: 28, paddingTop: 12,
+    borderTopWidth: 1, borderTopColor: '#F0F4F8',
     backgroundColor: Colors.white,
   },
-})
-
-const stateStyles = StyleSheet.create({
-  container: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  reviewTitle: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 6 },
+  reviewSubtitle: { fontSize: 13, color: Colors.textSecondary, marginBottom: 20, lineHeight: 20 },
+  reviewSection: {
+    backgroundColor: '#F8FAFC', borderRadius: 12,
+    padding: 16, marginBottom: 12,
+    borderWidth: 1, borderColor: '#E2E8F0',
   },
-  chipSelected: { borderColor: Colors.primary, backgroundColor: '#EBF4FA' },
-  text: { fontSize: 12, color: Colors.textSecondary },
-  textSelected: { color: Colors.primary, fontWeight: '600' },
-})
-
-const reviewStyles = StyleSheet.create({
-  heading: { fontSize: 18, fontWeight: '800', color: Colors.text, marginBottom: 6 },
-  subheading: { fontSize: 13, color: Colors.textSecondary, marginBottom: 20, lineHeight: 20 },
-  section: {
-    backgroundColor: '#F8FAFC',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
+  reviewSectionHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    marginBottom: 10,
   },
-  sectionTitle: { fontSize: 13, fontWeight: '700', color: Colors.primary, marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  rowLabel: { fontSize: 13, color: Colors.textSecondary, flex: 1 },
-  rowValue: { fontSize: 13, color: Colors.text, fontWeight: '600', flex: 1, textAlign: 'right' },
+  reviewSectionTitle: {
+    fontSize: 12, fontWeight: '700', color: Colors.primary,
+    textTransform: 'uppercase', letterSpacing: 0.5,
+  },
+  editLink: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
   disclaimer: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: '#FEF3E8',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 8,
-    alignItems: 'flex-start',
+    flexDirection: 'row', gap: 8, backgroundColor: '#FEF3E8',
+    borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'flex-start',
   },
   disclaimerText: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
 })
