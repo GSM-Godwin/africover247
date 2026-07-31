@@ -1,5 +1,6 @@
 import { Controller, Post, Get, Patch, Body, Param, UseGuards } from '@nestjs/common'
 import { ContactService } from './contact.service'
+import { CreateContactDto } from './dto/create-contact.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
@@ -10,17 +11,8 @@ export class ContactController {
 
   // --- Public: submit message ---
   @Post()
-  create(
-    @Body()
-    body: {
-      name: string
-      email: string
-      phone?: string
-      subject: string
-      message: string
-    },
-  ) {
-    return this.contactService.create(body)
+  create(@Body() dto: CreateContactDto) {
+    return this.contactService.create(dto)
   }
 
   // --- Admin: list all messages ---

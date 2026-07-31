@@ -128,6 +128,18 @@ export function Navbar() {
   }, [pathname]);
 
   useEffect(() => {
+    function handleAuthChange() {
+      setAuthenticated(isAuthenticated());
+      setUserState(getUser());
+      setMenuOpen(false);
+      setMobileNavOpen(false);
+    }
+
+    window.addEventListener("auth-change", handleAuthChange);
+    return () => window.removeEventListener("auth-change", handleAuthChange);
+  }, []);
+
+  useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setMenuOpen(false);

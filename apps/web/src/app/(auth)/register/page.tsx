@@ -32,6 +32,7 @@ type FormData = z.infer<typeof schema>;
 export default function RegisterPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const [agreed, setAgreed] = useState(false);
 
   const {
@@ -45,20 +46,37 @@ export default function RegisterPage() {
       toast.error("Please agree to the Terms of Service and Privacy Policy.");
       return;
     }
+    const { confirmPassword, ...payload } = data as FormData & {
+      confirmPassword?: string;
+    };
     setLoading(true);
+    setError("");
     try {
-      await api.post("/auth/register", data);
-      sessionStorage.setItem("pending_verification_email", data.email);
-      sessionStorage.setItem("pending_registration", JSON.stringify(data));
-      router.push("/register/verify");
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } }).response
-        ?.status;
-      if (status === 409)
-        toast.error("An account with this email already exists.");
-      else toast.error("Something went wrong. Please try again.");
-    } finally {
+      await api.post("/auth/register", payload);
       setLoading(false);
+      sessionStorage.setItem("pending_verification_email", data.email);
+      sessionStorage.setItem("pending_registration", JSON.stringify(payload));
+      router.push(
+        `/register/verify?email=${encodeURIComponent(data.email)}`,
+      );
+    } catch (err: unknown) {
+      setLoading(false);
+      const response = (
+        err as { response?: { status?: number; data?: { message?: unknown } } }
+      ).response;
+      const status = response?.status;
+      const message = response?.data?.message;
+      if (status === 409) {
+        setError("An account with this email already exists.");
+      } else if (Array.isArray(message)) {
+        setError(String(message[0]));
+      } else {
+        setError(
+          typeof message === "string"
+            ? message
+            : "Could not create account. Please try again.",
+        );
+      }
     }
   }
 
@@ -129,6 +147,10 @@ export default function RegisterPage() {
             </Link>
           </span>
         </label>
+
+        {error ? (
+          <p className="font-body text-sm text-red-600">{error}</p>
+        ) : null}
 
         <AuthButton loading={loading}>Create an account</AuthButton>
       </form>

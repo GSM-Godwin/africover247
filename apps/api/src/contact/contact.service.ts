@@ -1,14 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
-
-interface CreateContactDto {
-  name: string
-  email: string
-  phone?: string
-  subject: string
-  message: string
-}
+import { CreateContactDto } from './dto/create-contact.dto'
 
 @Injectable()
 export class ContactService {

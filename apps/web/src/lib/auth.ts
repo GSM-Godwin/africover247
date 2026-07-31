@@ -9,6 +9,7 @@ export function getToken(): string | null {
 export function setToken(token: string): void {
   localStorage.setItem(TOKEN_KEY, token);
   document.cookie = `${TOKEN_KEY}=${token}; path=/; max-age=${60 * 60 * 24 * 7}`;
+  dispatchAuthChange();
 }
 
 export function setRole(role: string): void {
@@ -37,6 +38,7 @@ export function getUser(): Record<string, unknown> | null {
 
 export function setUser(user: Record<string, unknown>): void {
   localStorage.setItem(USER_KEY, JSON.stringify(user));
+  dispatchAuthChange();
 }
 
 export function removeUser(): void {
@@ -48,9 +50,12 @@ export function isAuthenticated(): boolean {
 }
 
 export function logout(): void {
+  if (typeof window === "undefined") return;
   removeToken();
   removeUser();
   removeRole();
+  sessionStorage.clear();
+  dispatchAuthChange();
 }
 
 export function getUserDisplayName(user: Record<string, unknown>): string {
@@ -64,4 +69,10 @@ export function getUserInitials(user: Record<string, unknown>): string {
   const firstName = String(user.firstName ?? "");
   const lastName = String(user.lastName ?? "");
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+}
+
+function dispatchAuthChange(): void {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("auth-change"));
+  }
 }

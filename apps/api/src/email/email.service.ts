@@ -56,6 +56,11 @@ export class EmailService {
 
   // --- Send OTP email ---
   async sendOtpEmail(email: string, otp: string, firstName: string): Promise<void> {
+    if (this.isStub) {
+      this.logger.log(`[STUB] OTP for ${email}: ${otp}`)
+      return
+    }
+
     await this.sendEmail({
       to: email,
       subject: 'Your AfriCover247 verification code',

@@ -51,23 +51,29 @@ export default function ResetPasswordPage() {
   async function onSubmit(data: FormData) {
     const email = sessionStorage.getItem("reset_email");
     const otp = sessionStorage.getItem("reset_otp");
+    const { confirmPassword, newPassword } = data;
     setLoading(true);
     try {
-      await api.post("/auth/reset-password", {
-        email,
-        otp,
-        newPassword: data.newPassword,
-      });
+      await api.post("/auth/reset-password", { email, otp, newPassword });
+      setLoading(false);
       sessionStorage.removeItem("reset_email");
       sessionStorage.removeItem("reset_otp");
       toast.success("Password reset successfully.");
       router.push("/login");
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })
-        .response?.data?.message;
-      toast.error(msg || "Reset failed. Please try again.");
-    } finally {
       setLoading(false);
+      const message = (
+        err as { response?: { data?: { message?: unknown } } }
+      ).response?.data?.message;
+      if (Array.isArray(message)) {
+        toast.error(String(message[0]));
+      } else {
+        toast.error(
+          typeof message === "string"
+            ? message
+            : "Reset failed. Please try again.",
+        );
+      }
     }
   }
 

@@ -26,6 +26,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { StorageService } from '../storage/storage.service';
 import { KycService } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
+import { VerifyVehicleDto } from '../kyc/dto/verify-vehicle.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('applications')
@@ -60,8 +61,8 @@ export class ApplicationsController {
 
   @Post('verify-vehicle')
   @HttpCode(HttpStatus.OK)
-  verifyVehicle(@Body('plateNumber') plateNumber: string) {
-    return this.kycService.verifyVehicle(plateNumber);
+  verifyVehicle(@Body() dto: VerifyVehicleDto) {
+    return this.kycService.verifyVehicle(dto.plateNumber);
   }
 
   @Get(':id')

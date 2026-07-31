@@ -42,6 +42,8 @@ export function LoginForm() {
       const redirect = searchParams.get("redirect");
       const action = searchParams.get("action");
 
+      setLoading(false);
+
       if (redirect) {
         const destination = action
           ? `${redirect}?action=${encodeURIComponent(action)}`
@@ -52,14 +54,25 @@ export function LoginForm() {
 
       router.push(role === "admin" ? "/admin" : "/dashboard");
     } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } }).response
-        ?.status;
-      if (status === 401) toast.error("Incorrect email or password.");
-      else if (status === 429)
-        toast.error("Too many attempts. Please wait a minute.");
-      else toast.error("Something went wrong. Please try again.");
-    } finally {
       setLoading(false);
+      const response = (
+        err as { response?: { status?: number; data?: { message?: unknown } } }
+      ).response;
+      const status = response?.status;
+      const message = response?.data?.message;
+      if (status === 401) {
+        toast.error("Incorrect email or password.");
+      } else if (status === 429) {
+        toast.error("Too many attempts. Please wait a minute.");
+      } else if (Array.isArray(message)) {
+        toast.error(String(message[0]));
+      } else {
+        toast.error(
+          typeof message === "string"
+            ? message
+            : "Something went wrong. Please try again.",
+        );
+      }
     }
   }
 

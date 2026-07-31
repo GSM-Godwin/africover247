@@ -44,6 +44,7 @@ export class SmsService {
   }
 
   async sendOtpSms(phone: string, otp: string): Promise<void> {
+    this.logger.log(`[SMS] sendOtpSms called for ${phone} — stub: ${this.isStub}`);
     if (this.isStub) {
       this.logger.log(`[STUB] SMS OTP to ${phone}: ${otp}`);
       return;
@@ -54,8 +55,11 @@ export class SmsService {
         phone,
         `Your AfriCover247 verification code is: ${otp}. Valid for ${OTP_VALIDITY_MINUTES} minutes.`,
       );
-    } catch {
-      return;
+      this.logger.log(`[SMS] OTP sent successfully to ${phone}`);
+    } catch (err: any) {
+      this.logger.error(
+        `[SMS] Failed to send OTP to ${phone}: ${err?.response?.data ? JSON.stringify(err.response.data) : err?.message}`,
+      );
     }
   }
 
@@ -74,8 +78,10 @@ export class SmsService {
         phone,
         `Payment of N${amount.toLocaleString()} received. Your AfriCover247 policy ${policyNumber} is being issued. Check your email for your policy document.`,
       );
-    } catch {
-      return;
+    } catch (err: any) {
+      this.logger.error(
+        `[SMS] Failed to send to ${phone}: ${err?.response?.data ? JSON.stringify(err.response.data) : err?.message}`,
+      );
     }
   }
 
@@ -94,8 +100,10 @@ export class SmsService {
         phone,
         `Your AfriCover247 claim ${claimReference} has been updated to ${status}. Log in to track your claim.`,
       );
-    } catch {
-      return;
+    } catch (err: any) {
+      this.logger.error(
+        `[SMS] Failed to send to ${phone}: ${err?.response?.data ? JSON.stringify(err.response.data) : err?.message}`,
+      );
     }
   }
 
@@ -113,8 +121,10 @@ export class SmsService {
         phone,
         `Your AfriCover247 policy ${policyNumber} has been issued. Check your email to download your policy document.`,
       );
-    } catch {
-      return;
+    } catch (err: any) {
+      this.logger.error(
+        `[SMS] Failed to send to ${phone}: ${err?.response?.data ? JSON.stringify(err.response.data) : err?.message}`,
+      );
     }
   }
 
@@ -126,8 +136,10 @@ export class SmsService {
 
     try {
       await this.sendSms(phone, message);
-    } catch {
-      return;
+    } catch (err: any) {
+      this.logger.error(
+        `[SMS] Failed to send to ${phone}: ${err?.response?.data ? JSON.stringify(err.response.data) : err?.message}`,
+      );
     }
   }
 }

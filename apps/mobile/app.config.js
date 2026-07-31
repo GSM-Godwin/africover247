@@ -11,10 +11,6 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#15679b"
     },
-    ios: {
-      supportsTablet: false,
-      bundleIdentifier: "com.africover247.app"
-    },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/android-icon-foreground.png",
@@ -23,9 +19,6 @@ export default {
       },
       package: "com.africover247.app"
     },
-    plugins: [
-      "expo-secure-store"
-    ],
     extra: {
       apiUrl: "https://africover247.onrender.com",
       eas: {

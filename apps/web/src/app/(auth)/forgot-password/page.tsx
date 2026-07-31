@@ -31,13 +31,24 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await api.post("/auth/forgot-password", data);
+      setLoading(false);
       sessionStorage.setItem("reset_email", data.email);
       toast.success("If an account exists, a reset code has been sent.");
       router.push("/forgot-password/verify");
-    } catch {
-      toast.error("Something went wrong. Please try again.");
-    } finally {
+    } catch (err: unknown) {
       setLoading(false);
+      const message = (
+        err as { response?: { data?: { message?: unknown } } }
+      ).response?.data?.message;
+      if (Array.isArray(message)) {
+        toast.error(String(message[0]));
+      } else {
+        toast.error(
+          typeof message === "string"
+            ? message
+            : "Something went wrong. Please try again.",
+        );
+      }
     }
   }
 

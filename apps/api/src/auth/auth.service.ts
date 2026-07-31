@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -19,6 +20,8 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
@@ -68,6 +71,7 @@ export class AuthService {
     });
 
     const otp = this.generateOtp();
+    this.logger.log(`[AUTH] OTP generated for ${user.email}: ${otp}`);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.prisma.emailVerification.create({
       data: { userId: user.id, otpCode: otp, expiresAt },
