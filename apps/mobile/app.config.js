@@ -19,6 +19,11 @@ export default {
       },
       package: "com.africover247.app"
     },
+    plugins: [
+      "expo-secure-store",
+      "expo-asset",
+      "expo-font",
+    ],
     extra: {
       apiUrl: "https://africover247.onrender.com",
       eas: {
