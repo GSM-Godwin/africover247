@@ -11,18 +11,23 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#15679b"
     },
+    ios: {
+      supportsTablet: false,
+      bundleIdentifier: "com.africover247.app"
+    },
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/android-icon-foreground.png",
         backgroundImage: "./assets/android-icon-background.png",
         backgroundColor: "#15679b"
       },
-      package: "com.africover247.app"
+      package: "com.africover247.app",
+      permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
     },
     plugins: [
       "expo-secure-store",
       "expo-asset",
-      "expo-font",
+      "expo-font"
     ],
     extra: {
       apiUrl: "https://africover247.onrender.com",
