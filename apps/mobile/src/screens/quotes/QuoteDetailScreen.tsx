@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Button, Card, StatusBadge } from '../../components/ui'
+import { Button, Card, StatusBadge, ConfirmModal } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Quote, NegotiationEntry } from '../../types'
@@ -39,6 +39,18 @@ export function QuoteDetailScreen({ route, navigation }: any) {
   const [showCounter, setShowCounter] = useState(false)
   const [counterAmount, setCounterAmount] = useState('')
   const [counterNote, setCounterNote] = useState('')
+  const [confirmModal, setConfirmModal] = useState<{
+    visible: boolean
+    title: string
+    message: string
+    onConfirm: () => void
+    destructive?: boolean
+  }>({
+    visible: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  })
 
   const fetchQuote = useCallback(async () => {
     try {
@@ -53,60 +65,58 @@ export function QuoteDetailScreen({ route, navigation }: any) {
     fetchQuote().finally(() => setLoading(false))
   }, [fetchQuote])
 
-  async function handleAccept() {
+  function handleAccept() {
     const amount = quote?.adminQuoteAmount || quote?.customerCounterAmount
     if (!amount) return
 
-    Alert.alert(
-      'Accept Quote',
-      `Accept this quote for ₦${parseFloat(amount).toLocaleString('en-NG')}/year?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Accept',
-          onPress: async () => {
-            setSubmitting(true)
-            try {
-              const res = await api.post(`/quotes/${quoteId}/accept`)
-              navigation.replace('PaymentInitiate', {
-                applicationId: res.data.applicationId,
-                amount: res.data.amount,
-                product: quote?.product,
-              })
-            } catch (err: any) {
-              Alert.alert('Error', err.response?.data?.message || 'Could not accept quote.')
-            } finally {
-              setSubmitting(false)
-            }
-          },
-        },
-      ]
-    )
+    setConfirmModal({
+      visible: true,
+      title: 'Accept Quote',
+      message: `Accept this quote for ₦${parseFloat(amount).toLocaleString('en-NG')}/year and proceed to payment?`,
+      onConfirm: confirmAccept,
+    })
   }
 
-  async function handleReject() {
-    Alert.alert(
-      'Decline Quote',
-      'Are you sure you want to decline this quote?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Decline',
-          style: 'destructive',
-          onPress: async () => {
-            setSubmitting(true)
-            try {
-              await api.post(`/quotes/${quoteId}/reject`)
-              navigation.goBack()
-            } catch (err: any) {
-              Alert.alert('Error', err.response?.data?.message || 'Could not decline quote.')
-            } finally {
-              setSubmitting(false)
-            }
-          },
-        },
-      ]
-    )
+  async function confirmAccept() {
+    setSubmitting(true)
+    try {
+      const res = await api.post(`/quotes/${quoteId}/accept`)
+      setSubmitting(false)
+      navigation.replace('PaymentInitiate', {
+        applicationId: res.data.applicationId,
+        amount: res.data.amount,
+        product: quote?.product,
+      })
+    } catch (err: any) {
+      setSubmitting(false)
+      setConfirmModal({
+        visible: true,
+        title: 'Error',
+        message: err.response?.data?.message || 'Could not accept quote.',
+        onConfirm: () => {},
+      })
+    }
+  }
+
+  function handleReject() {
+    setConfirmModal({
+      visible: true,
+      title: 'Decline Quote',
+      message: 'Are you sure you want to decline this quote?',
+      onConfirm: confirmReject,
+      destructive: true,
+    })
+  }
+
+  async function confirmReject() {
+    setSubmitting(true)
+    try {
+      await api.post(`/quotes/${quoteId}/reject`)
+      setSubmitting(false)
+      navigation.goBack()
+    } catch (err: any) {
+      setSubmitting(false)
+    }
   }
 
   async function handleCounter() {
@@ -344,6 +354,25 @@ export function QuoteDetailScreen({ route, navigation }: any) {
           <View style={{ height: 32 }} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <ConfirmModal
+        visible={confirmModal.visible}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onClose={() => setConfirmModal((prev) => ({ ...prev, visible: false }))}
+        actions={[
+          {
+            label: 'Cancel',
+            style: 'cancel',
+            onPress: () => {},
+          },
+          {
+            label: confirmModal.destructive ? 'Decline' : confirmModal.title === 'Error' ? 'OK' : 'Confirm',
+            style: confirmModal.destructive ? 'destructive' : 'default',
+            onPress: confirmModal.onConfirm,
+          },
+        ]}
+      />
     </SafeAreaView>
   )
 }

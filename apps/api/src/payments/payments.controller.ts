@@ -33,6 +33,11 @@ export class PaymentsController {
     return this.paymentsService.initiatePayment(user.id, dto);
   }
 
+  @Get('by-reference/:reference')
+  getByReference(@Param('reference') reference: string) {
+    return this.paymentsService.getPaymentByReference(reference);
+  }
+
   @SkipThrottle()
   @Get('status/:applicationId')
   getStatus(

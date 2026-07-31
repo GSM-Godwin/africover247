@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
+  Alert,
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
@@ -19,6 +20,11 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   const [polling, setPolling] = useState(false)
   const [appAmount, setAppAmount] = useState<string | null>(presetAmount || null)
   const [error, setError] = useState('')
+  const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+
+  useEffect(() => {
+    return () => clearInterval(pollRef.current)
+  }, [])
 
   async function handleInitiatePayment() {
     setLoading(true)
@@ -26,15 +32,11 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
     try {
       const res = await api.post('/payments/initiate', { applicationId })
       const { checkoutUrl, amount } = res.data
-      setAppAmount(amount)
 
-      const result = await WebBrowser.openBrowserAsync(checkoutUrl, {
-        dismissButtonStyle: 'cancel',
-      })
+      if (amount) setAppAmount(String(amount))
 
-      if (result.type === 'cancel' || result.type === 'dismiss') {
-        startPolling(applicationId)
-      }
+      await WebBrowser.openBrowserAsync(checkoutUrl)
+      startPolling(applicationId)
     } catch (err: any) {
       setError(err.response?.data?.message || 'Could not initiate payment.')
     } finally {
@@ -45,23 +47,27 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   function startPolling(appId: string) {
     setPolling(true)
     let attempts = 0
-    const maxAttempts = 60
+    const maxAttempts = 72
 
-    const interval = setInterval(async () => {
+    pollRef.current = setInterval(async () => {
       attempts++
       try {
         const res = await api.get(`/payments/status/${appId}`)
         const { applicationStatus, payment } = res.data
 
-        if (applicationStatus === 'paid' || applicationStatus === 'issued' || payment?.status === 'successful') {
-          clearInterval(interval)
+        if (
+          applicationStatus === 'paid' ||
+          applicationStatus === 'issued' ||
+          payment?.status === 'successful'
+        ) {
+          clearInterval(pollRef.current)
           setPolling(false)
           navigation.replace('PaymentSuccess', { applicationId: appId })
           return
         }
 
         if (payment?.status === 'failed') {
-          clearInterval(interval)
+          clearInterval(pollRef.current)
           setPolling(false)
           setError('Payment failed. Please try again.')
           return
@@ -69,24 +75,28 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
       } catch {}
 
       if (attempts >= maxAttempts) {
-        clearInterval(interval)
+        clearInterval(pollRef.current)
         setPolling(false)
-        setError('Payment status could not be confirmed. Please check your dashboard.')
+        Alert.alert(
+          'Payment Pending',
+          'Your payment is being processed. Check your policies in a few minutes.',
+          [
+            { text: 'Go to Policies', onPress: () => navigation.navigate('Policies') },
+            { text: 'Stay Here', style: 'cancel' },
+          ]
+        )
       }
     }, 5000)
   }
 
   return (
     <SafeAreaView style={styles.container}>
-
-      {/* --- Header --- */}
       <TouchableOpacity style={styles.back} onPress={() => navigation.goBack()}>
         <Ionicons name="arrow-back" size={20} color={Colors.primary} />
         <Text style={styles.backText}>Back</Text>
       </TouchableOpacity>
 
       <View style={styles.content}>
-
         <View style={styles.iconContainer}>
           <Ionicons name="card-outline" size={40} color={Colors.primary} />
         </View>
@@ -94,6 +104,7 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
         <Text style={styles.title}>Complete Payment</Text>
         <Text style={styles.subtitle}>
           You will be redirected to Monnify's secure checkout to complete your payment.
+          After paying, return to this screen.
         </Text>
 
         <Card style={styles.summaryCard} padding={20}>
@@ -126,28 +137,40 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
           </View>
         ) : null}
 
-        {polling && (
+        {polling ? (
           <View style={styles.pollingBox}>
             <ActivityIndicator color={Colors.primary} size="small" />
-            <Text style={styles.pollingText}>
-              Confirming your payment... this may take a moment.
-            </Text>
+            <View style={styles.pollingContent}>
+              <Text style={styles.pollingTitle}>Confirming payment...</Text>
+              <Text style={styles.pollingText}>
+                Please wait while we confirm your payment. This may take a moment.
+              </Text>
+            </View>
           </View>
-        )}
-
-        {!polling && (
-          <Button
-            title={loading ? 'Opening Checkout...' : 'Pay Now'}
-            onPress={handleInitiatePayment}
-            loading={loading}
-            style={{ marginTop: 8 }}
-          />
+        ) : (
+          <>
+            <Button
+              title={loading ? 'Opening Checkout...' : 'Pay Now'}
+              onPress={handleInitiatePayment}
+              loading={loading}
+              style={{ marginTop: 8 }}
+            />
+            {!loading && (
+              <TouchableOpacity
+                style={styles.manualCheck}
+                onPress={() => startPolling(applicationId)}
+              >
+                <Text style={styles.manualCheckText}>
+                  Already paid? Check payment status
+                </Text>
+              </TouchableOpacity>
+            )}
+          </>
         )}
 
         <Text style={styles.secureNote}>
           🔒 Secured by Monnify · Card & bank transfer accepted
         </Text>
-
       </View>
     </SafeAreaView>
   )
@@ -159,55 +182,35 @@ const styles = StyleSheet.create({
   backText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
   content: { flex: 1, paddingHorizontal: 24, paddingTop: 8 },
   iconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#EBF4FA',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: 20,
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: '#EBF4FA', alignItems: 'center', justifyContent: 'center',
+    alignSelf: 'center', marginBottom: 20,
   },
   title: { fontSize: 24, fontWeight: '800', color: Colors.text, textAlign: 'center', marginBottom: 8 },
   subtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   summaryCard: { marginBottom: 20, borderWidth: 1, borderColor: '#E2E8F0' },
   summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F4F8',
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
   },
   summaryLabel: { fontSize: 13, color: Colors.textSecondary },
   summaryValue: { fontSize: 13, fontWeight: '600', color: Colors.text, flex: 1, textAlign: 'right', marginLeft: 12 },
   premiumAmount: { fontSize: 18, color: Colors.primary, fontWeight: '800' },
-  monnifyBadge: {
-    backgroundColor: '#EBF4FA',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
+  monnifyBadge: { backgroundColor: '#EBF4FA', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
   monnifyText: { fontSize: 12, color: Colors.primary, fontWeight: '700' },
   errorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: Colors.errorLight,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: Colors.errorLight, borderRadius: 10, padding: 12, marginBottom: 16,
   },
   errorText: { flex: 1, fontSize: 13, color: Colors.error },
   pollingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: '#EBF4FA',
-    borderRadius: 10,
-    padding: 14,
-    marginBottom: 16,
+    flexDirection: 'row', alignItems: 'flex-start', gap: 12,
+    backgroundColor: '#EBF4FA', borderRadius: 12, padding: 16, marginBottom: 16,
   },
-  pollingText: { flex: 1, fontSize: 13, color: Colors.primary, lineHeight: 20 },
+  pollingContent: { flex: 1 },
+  pollingTitle: { fontSize: 14, fontWeight: '700', color: Colors.primary, marginBottom: 4 },
+  pollingText: { fontSize: 13, color: Colors.primary, lineHeight: 20 },
+  manualCheck: { alignItems: 'center', marginTop: 12 },
+  manualCheckText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
   secureNote: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginTop: 16 },
 })

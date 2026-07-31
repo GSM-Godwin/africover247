@@ -27,7 +27,7 @@ function TabIcon({
       <Ionicons
         name={name}
         size={22}
-        color={focused ? Colors.accent : 'rgba(255,255,255,0.6)'}
+        color={focused ? Colors.primary : Colors.textSecondary}
       />
     </View>
   )
@@ -46,8 +46,8 @@ export function AppTabs({ onLogout }: AppTabsProps) {
         headerShown: false,
         tabBarStyle: styles.tabBar,
         tabBarShowLabel: true,
-        tabBarActiveTintColor: Colors.accent,
-        tabBarInactiveTintColor: 'rgba(255,255,255,0.6)',
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
         tabBarLabelStyle: styles.label,
       }}
     >
@@ -96,7 +96,6 @@ export function AppTabs({ onLogout }: AppTabsProps) {
             minWidth: 16,
             height: 16,
             lineHeight: 16,
-            color: Colors.white,
           },
         }}
       />
@@ -117,16 +116,17 @@ export function AppTabs({ onLogout }: AppTabsProps) {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: Colors.primary,
-    borderTopWidth: 0,
+    backgroundColor: Colors.white,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
     height: 80,
     paddingBottom: 16,
     paddingTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.06,
     shadowRadius: 12,
-    elevation: 12,
+    elevation: 8,
   },
   iconContainer: {
     width: 40,
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconActive: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#EBF4FA',
   },
   label: {
     fontSize: 11,

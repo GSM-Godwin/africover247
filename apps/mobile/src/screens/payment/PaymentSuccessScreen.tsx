@@ -20,23 +20,32 @@ export function PaymentSuccessScreen({ route, navigation }: any) {
 
   useEffect(() => {
     let attempts = 0
-    const maxAttempts = 10
+    const maxAttempts = 24
+
     const interval = setInterval(async () => {
       attempts++
       try {
         const res = await api.get('/policies/my')
         const policies = res.data
-        if (policies.length > 0) {
+
+        const latest = policies
+          .filter((p: any) => p.status === 'active' || p.status === 'issued')
+          .sort((a: any, b: any) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())[0]
+
+        if (latest) {
           clearInterval(interval)
-          setPolicy(policies[0])
+          setPolicy(latest)
           setLoading(false)
+          return
         }
       } catch {}
+
       if (attempts >= maxAttempts) {
         clearInterval(interval)
         setLoading(false)
       }
-    }, 2000)
+    }, 5000)
+
     return () => clearInterval(interval)
   }, [applicationId])
 

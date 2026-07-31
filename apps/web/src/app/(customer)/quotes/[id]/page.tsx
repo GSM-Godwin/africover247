@@ -15,6 +15,16 @@ import type { ApplicationRecord } from "@/types/application";
 
 const MAX_ROUNDS = 3;
 
+function decodeHtml(html: string): string {
+  return html
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#x2F;/g, "/");
+}
+
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -221,7 +231,7 @@ export default function QuoteDetailPage() {
                     </p>
                     {entry.note && (
                       <p className="font-body text-sm text-slate/70 mt-1 italic">
-                        &ldquo;{entry.note}&rdquo;
+                        &ldquo;{decodeHtml(entry.note)}&rdquo;
                       </p>
                     )}
                   </div>

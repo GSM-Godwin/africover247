@@ -237,8 +237,6 @@ export class PaymentsService {
     );
   }
 
-  // --- Get payment status ---
-
   async getPaymentStatus(applicationId: string, userId: string) {
     const application = await this.prisma.application.findUnique({
       where: { id: applicationId },
@@ -259,6 +257,15 @@ export class PaymentsService {
       applicationStatus: application.status,
       payment: payment || null,
     };
+  }
+
+  async getPaymentByReference(reference: string) {
+    const payment = await this.prisma.payment.findFirst({
+      where: { gatewayReference: { contains: reference } },
+      select: { id: true, applicationId: true, status: true },
+    });
+    if (!payment) throw new NotFoundException('Payment not found');
+    return payment;
   }
 
   // --- Stub: simulate successful payment (dev only) ---

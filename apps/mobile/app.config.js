@@ -2,6 +2,7 @@ export default {
   expo: {
     name: "AfriCover247",
     slug: "africover247",
+    scheme: "africover247",
     version: "1.0.0",
     sdkVersion: "54.0.0",
     orientation: "portrait",

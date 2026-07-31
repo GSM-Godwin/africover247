@@ -117,15 +117,37 @@ export function PaymentCallbackContent() {
       );
     }
 
-    const storedApplicationId = sessionStorage.getItem(
-      PENDING_APPLICATION_ID_KEY,
-    );
-    if (!storedApplicationId) {
-      setState("missing_application");
-      return;
-    }
+    const storedId = sessionStorage.getItem(PENDING_APPLICATION_ID_KEY);
+    const paymentRef = searchParams.get("paymentReference");
 
-    setApplicationId(storedApplicationId);
+    if (storedId) {
+      setApplicationId(storedId);
+    } else if (paymentRef) {
+      api
+        .get<{ applicationId?: string }>(
+          `/payments/by-reference/${encodeURIComponent(paymentRef)}`,
+        )
+        .then((res) => {
+          if (res.data?.applicationId) {
+            setApplicationId(res.data.applicationId);
+            sessionStorage.setItem(
+              PENDING_APPLICATION_ID_KEY,
+              res.data.applicationId,
+            );
+          } else {
+            setState("missing_application");
+          }
+        })
+        .catch(() => setState("missing_application"));
+    } else {
+      setState("missing_application");
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!applicationId || state !== "loading") return;
+
+    pollStartTime.current = Date.now();
 
     pollTimer.current = setInterval(async () => {
       if (Date.now() - pollStartTime.current > MAX_POLL_DURATION_MS) {
@@ -136,19 +158,19 @@ export function PaymentCallbackContent() {
       }
 
       try {
-        const resolved = await checkStatus(storedApplicationId);
+        const resolved = await checkStatus(applicationId);
         if (resolved) stopPolling();
       } catch {
         /* keep polling */
       }
     }, POLL_INTERVAL_MS);
 
-    checkStatus(storedApplicationId).then((resolved) => {
+    checkStatus(applicationId).then((resolved) => {
       if (resolved) stopPolling();
     });
 
     return () => stopPolling();
-  }, [searchParams, checkStatus, stopPolling]);
+  }, [applicationId, state, checkStatus, stopPolling]);
 
   if (state === "failure") {
     return (

@@ -5,12 +5,11 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Alert,
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Card } from '../../components/ui'
+import { Card, ConfirmModal } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser, logout } from '../../services/auth'
@@ -33,6 +32,7 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState({ policies: 0, claims: 0, quotes: 0 })
   const [loading, setLoading] = useState(true)
+  const [logoutModalVisible, setLogoutModalVisible] = useState(false)
 
   useEffect(() => {
     getUser().then((u) => {
@@ -54,21 +54,12 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   }, [])
 
   function handleLogout() {
-    Alert.alert(
-      'Log Out',
-      'Are you sure you want to log out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Log Out',
-          style: 'destructive',
-          onPress: async () => {
-            await logout()
-            onLogout()
-          },
-        },
-      ]
-    )
+    setLogoutModalVisible(true)
+  }
+
+  async function confirmLogout() {
+    await logout()
+    onLogout()
   }
 
   function getUserInitials(): string {
@@ -220,6 +211,25 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
 
         <View style={{ height: 32 }} />
       </ScrollView>
+
+      <ConfirmModal
+        visible={logoutModalVisible}
+        title="Log Out"
+        message="Are you sure you want to log out?"
+        onClose={() => setLogoutModalVisible(false)}
+        actions={[
+          {
+            label: 'Cancel',
+            style: 'cancel',
+            onPress: () => {},
+          },
+          {
+            label: 'Log Out',
+            style: 'destructive',
+            onPress: confirmLogout,
+          },
+        ]}
+      />
     </SafeAreaView>
   )
 }
