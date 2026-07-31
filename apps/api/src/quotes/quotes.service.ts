@@ -420,16 +420,23 @@ export class QuotesService {
       },
     });
 
-    await this.prisma.notification.create({
-      data: {
-        userId,
-        message: `You have declined the quote for ${quote.product.name}.`,
-        type: 'quote_rejected',
-        referenceType: 'quote',
-        referenceId: quoteId,
-        quoteId,
-      },
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { id: true },
     });
+
+    if (admins.length > 0) {
+      await this.prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          message: `Customer has declined the quote for ${quote.product.name}.`,
+          type: 'quote_rejected',
+          referenceType: 'quote',
+          referenceId: quoteId,
+          quoteId,
+        })),
+      });
+    }
 
     this.logger.log(`Quote ${quoteId} rejected by customer ${userId}`);
 
@@ -495,16 +502,23 @@ export class QuotesService {
       },
     });
 
-    await this.prisma.notification.create({
-      data: {
-        userId: quote.customerId,
-        message: `Customer has countered the quote for ${quote.product.name} with ₦${dto.counterAmount.toLocaleString()}.`,
-        type: 'quote_countered',
-        referenceType: 'quote',
-        referenceId: quoteId,
-        quoteId,
-      },
+    const admins = await this.prisma.user.findMany({
+      where: { role: 'admin' },
+      select: { id: true },
     });
+
+    if (admins.length > 0) {
+      await this.prisma.notification.createMany({
+        data: admins.map((admin) => ({
+          userId: admin.id,
+          message: `Customer has countered the quote for ${quote.product.name}. Counter amount: ₦${dto.counterAmount.toLocaleString()}.`,
+          type: 'quote_countered',
+          referenceType: 'quote',
+          referenceId: quoteId,
+          quoteId,
+        })),
+      });
+    }
 
     this.logger.log(
       `Quote ${quoteId} countered by customer — amount: ₦${dto.counterAmount}`,

@@ -67,6 +67,24 @@ export class ApplicationsService {
     });
   }
 
+  async findByQuoteId(userId: string, quoteId: string) {
+    const applications = await this.prisma.application.findMany({
+      where: {
+        userId,
+        status: 'pending_payment',
+      },
+      include: {
+        product: { select: { name: true, category: true, premiumAmount: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return applications.filter((app) => {
+      const formData = app.formData as Record<string, unknown> | null;
+      return formData?.quoteId === quoteId;
+    });
+  }
+
   // --- Get single application ---
 
   async findOne(id: string, userId: string) {
@@ -114,6 +132,23 @@ export class ApplicationsService {
     await this.redisService.saveDraft(id, mergedFormData);
 
     return updated;
+  }
+
+  // --- Get all drafts ---
+
+  async getAllDrafts(userId: string) {
+    return this.prisma.application.findMany({
+      where: {
+        userId,
+        status: 'draft',
+      },
+      include: {
+        product: {
+          select: { id: true, name: true, category: true },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    })
   }
 
   // --- Get draft for product ---

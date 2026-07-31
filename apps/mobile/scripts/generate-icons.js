@@ -166,24 +166,24 @@ async function main() {
       width: 1284,
       height: 2778,
       channels: 4,
-      background: { r: 21, g: 103, b: 155, alpha: 1 },
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
     },
   })
     .composite([
       {
         input: await sharp(logoPath)
-          .resize(600, 200, {
+          .resize(800, 260, {
             fit: 'contain',
-            background: { r: 21, g: 103, b: 155, alpha: 0 },
+            background: { r: 255, g: 255, b: 255, alpha: 0 },
           })
           .toBuffer(),
-        top: Math.floor((2778 - 200) / 2) - 100,
-        left: Math.floor((1284 - 600) / 2),
+        top: Math.floor((2778 - 260) / 2),
+        left: Math.floor((1284 - 800) / 2),
       },
     ])
     .png()
     .toFile(path.join(ASSETS_DIR, 'splash-icon.png'))
-  console.log('✓ Generated splash-icon.png (1284x2778)')
+  console.log('✓ Generated splash-icon.png (1284x2778) — white background')
 
   console.log('\n✅ All icons generated successfully!')
   console.log(`   Output: ${ASSETS_DIR}`)

@@ -34,7 +34,7 @@ export function QuoteRequestScreen({ route, navigation }: any) {
   }
 
   async function handleSubmit() {
-    const missing = fields.filter((f) => f.required && !values[f.key]).map((f) => f.label)
+    const missing = fields.filter((f: AssetField) => f.required && !values[f.key]).map((f: AssetField) => f.label)
     if (missing.length > 0) {
       setError(`Please fill in: ${missing.join(', ')}`)
       return
@@ -46,10 +46,10 @@ export function QuoteRequestScreen({ route, navigation }: any) {
         productId: product.id,
         customerDetails: values,
       })
+      setLoading(false)
       navigation.replace('QuoteSuccess', { productName: product.name })
     } catch (err: any) {
       setError(err.response?.data?.message || 'Could not submit quote request.')
-    } finally {
       setLoading(false)
     }
   }

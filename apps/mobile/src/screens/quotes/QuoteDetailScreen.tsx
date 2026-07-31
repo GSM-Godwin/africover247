@@ -20,6 +20,17 @@ import type { Quote, NegotiationEntry } from '../../types'
 
 const MAX_ROUNDS = 3
 
+function decodeHtml(text: string): string {
+  if (!text) return ''
+  return text
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x2F;/g, '/')
+}
+
 export function QuoteDetailScreen({ route, navigation }: any) {
   const { quoteId } = route.params
   const [quote, setQuote] = useState<Quote | null>(null)
@@ -60,6 +71,7 @@ export function QuoteDetailScreen({ route, navigation }: any) {
               navigation.replace('PaymentInitiate', {
                 applicationId: res.data.applicationId,
                 amount: res.data.amount,
+                product: quote?.product,
               })
             } catch (err: any) {
               Alert.alert('Error', err.response?.data?.message || 'Could not accept quote.')
@@ -204,7 +216,7 @@ export function QuoteDetailScreen({ route, navigation }: any) {
                         : ''}
                     </Text>
                     {entry.note && (
-                      <Text style={styles.historyNote}>"{entry.note}"</Text>
+                      <Text style={styles.historyNote}>"{decodeHtml(entry.note)}"</Text>
                     )}
                   </View>
                 </View>
@@ -287,10 +299,23 @@ export function QuoteDetailScreen({ route, navigation }: any) {
               </Text>
               <Button
                 title="Proceed to Payment"
-                onPress={() => navigation.navigate('PaymentInitiate', {
-                  quoteId: quote.id,
-                  amount: quote.finalAmount,
-                })}
+                onPress={async () => {
+                  try {
+                    const res = await api.get(`/applications?quoteId=${quote.id}`)
+                    const application = Array.isArray(res.data) ? res.data[0] : res.data
+                    if (application?.id) {
+                      navigation.navigate('PaymentInitiate', {
+                        applicationId: application.id,
+                        amount: quote.finalAmount,
+                        product: quote.product,
+                      })
+                    } else {
+                      Alert.alert('Error', 'Could not find application. Please contact support.')
+                    }
+                  } catch {
+                    Alert.alert('Error', 'Could not proceed to payment.')
+                  }
+                }}
                 style={{ marginTop: 16 }}
               />
             </View>

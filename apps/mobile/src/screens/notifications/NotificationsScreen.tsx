@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
 import {
   View,
   Text,
@@ -39,9 +39,24 @@ export function NotificationsScreen({ navigation }: any) {
     } catch {}
   }, [])
 
+  const pollInterval = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+
   useEffect(() => {
     fetchNotifications().finally(() => setLoading(false))
+
+    pollInterval.current = setInterval(() => {
+      fetchNotifications()
+    }, 15000)
+
+    return () => clearInterval(pollInterval.current)
   }, [fetchNotifications])
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      fetchNotifications()
+    })
+    return unsubscribe
+  }, [navigation, fetchNotifications])
 
   async function handleRefresh() {
     setRefreshing(true)

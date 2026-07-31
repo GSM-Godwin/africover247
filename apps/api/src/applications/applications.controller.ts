@@ -51,6 +51,11 @@ export class ApplicationsController {
     return this.applicationsService.findMyApplications(user.id);
   }
 
+  @Get('drafts')
+  getAllDrafts(@CurrentUser() user: { id: string }) {
+    return this.applicationsService.getAllDrafts(user.id)
+  }
+
   @Get('my/draft/:productId')
   getDraft(
     @CurrentUser() user: { id: string },
@@ -63,6 +68,17 @@ export class ApplicationsController {
   @HttpCode(HttpStatus.OK)
   verifyVehicle(@Body() dto: VerifyVehicleDto) {
     return this.kycService.verifyVehicle(dto.plateNumber);
+  }
+
+  @Get()
+  findByQuote(
+    @CurrentUser() user: { id: string },
+    @Query('quoteId') quoteId?: string,
+  ) {
+    if (!quoteId) {
+      throw new BadRequestException('quoteId query parameter is required');
+    }
+    return this.applicationsService.findByQuoteId(user.id, quoteId);
   }
 
   @Get(':id')

@@ -9,6 +9,16 @@ import type { QuoteRecord } from "@/types/quote";
 
 const MAX_ROUNDS = 3;
 
+function decodeHtml(html: string): string {
+  return html
+    .replace(/&#x27;/g, "'")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#x2F;/g, "/");
+}
+
 export default function AdminQuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -214,7 +224,7 @@ export default function AdminQuoteDetailPage() {
                   </p>
                   {entry.note && (
                     <p className="font-body text-xs text-slate/70 italic mt-0.5">
-                      &ldquo;{entry.note}&rdquo;
+                      &ldquo;{decodeHtml(entry.note)}&rdquo;
                     </p>
                   )}
                 </div>
@@ -237,7 +247,7 @@ export default function AdminQuoteDetailPage() {
           {isCounteredByCustomer && quote.customerNote && (
             <div className="bg-daybreak/10 border border-daybreak/20 rounded-lg p-3 mb-4">
               <p className="font-body text-sm text-midnight italic">
-                Customer note: &ldquo;{quote.customerNote}&rdquo;
+                Customer note: &ldquo;{decodeHtml(quote.customerNote)}&rdquo;
               </p>
             </div>
           )}
