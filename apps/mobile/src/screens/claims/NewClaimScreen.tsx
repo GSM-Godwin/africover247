@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { Button } from '../../components/ui'
+import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 
@@ -222,13 +222,11 @@ export function NewClaimScreen({ navigation }: any) {
 
           <View style={styles.field}>
             <Text style={styles.label}>Estimated Amount (₦)</Text>
-            <TextInput
-              style={styles.input}
+            <NumberInput
               value={estimatedAmount}
               onChangeText={setEstimatedAmount}
-              placeholder="e.g. 500000"
-              placeholderTextColor={Colors.textSecondary + '80'}
-              keyboardType="numeric"
+              placeholder="e.g. 500,000"
+              prefix="₦"
             />
           </View>
 

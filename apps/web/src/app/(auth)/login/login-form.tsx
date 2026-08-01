@@ -121,16 +121,6 @@ export function LoginForm() {
           Create an account
         </Link>
       </p>
-
-      <p className="font-body text-slate/60 text-xs text-center mt-8">
-        Admin?{" "}
-        <a
-          href={process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3002"}
-          className="hover:text-slate transition-colors"
-        >
-          Log in to the Admin panel →
-        </a>
-      </p>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import api from "@/lib/api";
+import { QuoteCountdown } from "@/components/shared/quote-countdown";
 import type { QuoteRecord } from "@/types/quote";
 import type { ApplicationRecord } from "@/types/application";
 
@@ -189,6 +190,12 @@ export default function QuoteDetailPage() {
             </div>
           )}
         </div>
+
+        {quote.status !== "accepted" && quote.status !== "rejected" && (
+          <div className="mb-4">
+            <QuoteCountdown createdAt={quote.createdAt} deadlineDays={3} />
+          </div>
+        )}
 
         {history.length > 0 && (
           <div className="bg-white border border-slate/20 rounded-xl p-6 mb-4">

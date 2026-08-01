@@ -545,7 +545,7 @@ async function main() {
           label: 'Mode of Transport',
           type: 'select',
           required: true,
-          options: ['Road', 'Rail', 'Air', 'Mixed'],
+          options: ['Road', 'Rail', 'Air', 'Water', 'Mixed'],
         },
         {
           key: 'frequency',
@@ -1009,7 +1009,7 @@ async function main() {
           label: 'Shipping Method',
           type: 'select',
           required: true,
-          options: ['Sea freight', 'Air freight', 'Road', 'Multimodal'],
+          options: ['Sea freight', 'Air freight', 'Road', 'Water', 'Multimodal'],
         },
         {
           key: 'voyageFrequency',

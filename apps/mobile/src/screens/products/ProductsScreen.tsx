@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/ui'
 import { Colors } from '../../constants'
+import { getCategoryIcon, getCategoryColor } from '../../constants/categoryIcons'
 import api from '../../services/api'
 import type { Product } from '../../types'
 
@@ -57,6 +58,9 @@ export function ProductsScreen({ navigation }: any) {
 
   function renderProduct({ item }: { item: Product }) {
     const config = PRICING_TYPE_CONFIG[item.pricingType]
+    const iconName = getCategoryIcon(item.category)
+    const iconColor = getCategoryColor(item.category)
+
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
@@ -64,8 +68,8 @@ export function ProductsScreen({ navigation }: any) {
       >
         <Card style={styles.productCard} padding={16}>
           <View style={styles.productHeader}>
-            <View style={[styles.categoryBadge, { backgroundColor: Colors.primaryLight }]}>
-              <Text style={styles.categoryText}>{item.category}</Text>
+            <View style={[styles.iconCircle, { backgroundColor: iconColor.bg }]}>
+              <Ionicons name={iconName} size={20} color={iconColor.icon} />
             </View>
             <View style={[styles.pricingBadge, { backgroundColor: config.color + '15' }]}>
               <Text style={[styles.pricingText, { color: config.color }]}>
@@ -73,6 +77,7 @@ export function ProductsScreen({ navigation }: any) {
               </Text>
             </View>
           </View>
+          <Text style={styles.categoryLabel}>{item.category}</Text>
           <Text style={styles.productName}>{item.name}</Text>
           <Text style={styles.productDesc} numberOfLines={2}>{item.description}</Text>
           <View style={styles.productFooter}>
@@ -209,8 +214,21 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 20, paddingBottom: 24, gap: 12 },
   productCard: { marginBottom: 0 },
   productHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
-  categoryBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
-  categoryText: { fontSize: 11, color: Colors.primary, fontWeight: '600' },
+  iconCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  categoryLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
   pricingBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
   pricingText: { fontSize: 11, fontWeight: '600' },
   productName: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 6 },

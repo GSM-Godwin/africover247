@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
+import { QuoteCountdown } from "@/components/shared/quote-countdown";
 import type { QuoteRecord } from "@/types/quote";
 
 const MAX_ROUNDS = 3;
@@ -172,6 +173,12 @@ export default function AdminQuoteDetailPage() {
           {quote.status.replace(/_/g, " ")}
         </span>
       </div>
+
+      {quote.status === "pending_review" && (
+        <div className="mb-4">
+          <QuoteCountdown createdAt={quote.createdAt} deadlineDays={3} />
+        </div>
+      )}
 
       <div className="space-y-4">
       <div className="bg-white border border-slate/20 rounded-xl p-6">

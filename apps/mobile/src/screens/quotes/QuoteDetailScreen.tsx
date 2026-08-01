@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Card, StatusBadge, ConfirmModal } from '../../components/ui'
+import { QuoteCountdown } from '../../components/shared/QuoteCountdown'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Quote, NegotiationEntry } from '../../types'
@@ -156,6 +157,7 @@ export function QuoteDetailScreen({ route, navigation }: any) {
   const currentAmount = quote.adminQuoteAmount || quote.customerCounterAmount
   const canAct = ['quote_sent', 'countered_by_admin'].includes(quote.status)
   const isAccepted = quote.status === 'accepted'
+  const isTerminal = ['accepted', 'rejected', 'expired'].includes(quote.status)
   const roundsRemaining = MAX_ROUNDS - quote.roundsUsed
   const history: NegotiationEntry[] = Array.isArray(quote.negotiationHistory)
     ? quote.negotiationHistory
@@ -198,6 +200,10 @@ export function QuoteDetailScreen({ route, navigation }: any) {
                   </Text>
                 )}
               </Card>
+            )}
+
+            {!isTerminal && quote.createdAt && (
+              <QuoteCountdown createdAt={quote.createdAt} deadlineDays={3} />
             )}
           </View>
 

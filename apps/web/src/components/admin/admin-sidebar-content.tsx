@@ -59,7 +59,6 @@ export function AdminSidebarContent({ onNavigate }: AdminSidebarContentProps) {
             />
           </div>
         </Link>
-        <p className="font-body text-white/40 text-xs mt-2">Admin Dashboard</p>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">

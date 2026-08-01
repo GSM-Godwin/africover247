@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Card } from '../../components/ui'
 import { Colors } from '../../constants'
+import { getCategoryIcon, getCategoryColor } from '../../constants/categoryIcons'
 import api from '../../services/api'
 import type { Product, AssetField } from '../../types'
 
@@ -383,6 +384,8 @@ export function ProductDetailScreen({ route, navigation }: any) {
   const coverageItems = product.coverageHighlights.split('\n').filter(Boolean)
   const exclusionItems = product.exclusions.split('\n').filter(Boolean)
   const requiredDocs = product.requiredDocuments.split('\n').filter(Boolean)
+  const iconName = getCategoryIcon(product.category)
+  const iconColor = getCategoryColor(product.category)
 
   function getPriceDisplay(): string {
     if (product!.pricingType === 'fixed' && product!.premiumAmount) {
@@ -414,6 +417,9 @@ export function ProductDetailScreen({ route, navigation }: any) {
         {/* --- Hero --- */}
         <View style={styles.hero}>
           <View style={styles.categoryRow}>
+            <View style={[styles.iconCircle, { backgroundColor: iconColor.bg }]}>
+              <Ionicons name={iconName} size={18} color={iconColor.icon} />
+            </View>
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText}>{product.category}</Text>
             </View>
@@ -538,7 +544,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F4F8',
   },
-  categoryRow: { flexDirection: 'row', gap: 8, marginBottom: 12 },
+  categoryRow: { flexDirection: 'row', gap: 8, marginBottom: 12, alignItems: 'center' },
+  iconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   categoryBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,

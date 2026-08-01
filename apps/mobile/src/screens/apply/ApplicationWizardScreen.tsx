@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
-import { Button } from '../../components/ui'
+import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 
@@ -499,11 +499,11 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
             </Field>
 
             <Field label="Annual Income (₦)">
-              <TInput
+              <NumberInput
                 value={formData.annualIncome}
                 onChangeText={(v) => update('annualIncome', v)}
-                placeholder="e.g. 2400000"
-                keyboardType="numeric"
+                placeholder="e.g. 2,400,000"
+                prefix="₦"
               />
             </Field>
           </View>
