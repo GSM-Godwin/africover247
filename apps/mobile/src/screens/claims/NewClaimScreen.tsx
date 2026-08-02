@@ -24,9 +24,33 @@ interface Policy {
 }
 
 const CLAIM_TYPES = [
-  'Accident', 'Theft', 'Fire', 'Flood', 'Third Party',
-  'Medical', 'Death', 'Disability', 'Property Damage', 'Other',
+  'Motor Accident',
+  'Theft',
+  'Fire',
+  'Flood',
+  'Third Party',
+  'Medical',
+  'Death',
+  'Disability',
+  'Property Damage',
+  'Other',
 ]
+
+function toApiClaimType(type: string): string {
+  const map: Record<string, string> = {
+    'Motor Accident': 'Motor Accident',
+    'Theft': 'Theft',
+    'Fire': 'Fire',
+    'Flood': 'Other',
+    'Third Party': 'Other',
+    'Medical': 'Medical',
+    'Death': 'Other',
+    'Disability': 'Other',
+    'Property Damage': 'Other',
+    'Other': 'Other',
+  }
+  return map[type] || 'Other'
+}
 
 export function NewClaimScreen({ navigation }: any) {
   const [policies, setPolicies] = useState<Policy[]>([])
@@ -73,8 +97,8 @@ export function NewClaimScreen({ navigation }: any) {
         Alert.alert('Missing', 'Please enter the incident location.')
         return
       }
-      if (!description || description.trim().length < 20) {
-        Alert.alert('Missing', 'Please describe what happened (at least 20 characters).')
+      if (!description || description.trim().length < 50) {
+        Alert.alert('Missing', 'Please describe what happened in detail (at least 50 characters).')
         return
       }
 
@@ -106,7 +130,7 @@ export function NewClaimScreen({ navigation }: any) {
 
       const payload: Record<string, any> = {
         policyId: selectedPolicy.id,
-        claimType,
+        claimType: toApiClaimType(claimType),
         incidentDate: incidentDateISO,
         incidentLocation: incidentLocation.trim(),
         description: description.trim(),
@@ -172,7 +196,7 @@ export function NewClaimScreen({ navigation }: any) {
                 </Text>
                 <TouchableOpacity
                   style={styles.getCovedButton}
-                  onPress={() => navigation.navigate('Products')}
+                  onPress={() => navigation.navigate('Tabs', { screen: 'Products' } as never)}
                 >
                   <Text style={styles.getCoveredText}>Browse Products</Text>
                 </TouchableOpacity>
@@ -262,13 +286,13 @@ export function NewClaimScreen({ navigation }: any) {
               style={[styles.input, styles.textarea]}
               value={description}
               onChangeText={setDescription}
-              placeholder="Describe what happened in detail..."
+              placeholder="Describe what happened in detail (minimum 50 characters)..."
               placeholderTextColor={Colors.textSecondary + '80'}
               multiline
               numberOfLines={5}
               textAlignVertical="top"
             />
-            <Text style={styles.charCount}>{description.length} characters (min. 20)</Text>
+            <Text style={styles.charCount}>{description.length}/50 minimum</Text>
           </View>
 
           <View style={styles.field}>

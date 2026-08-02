@@ -33,7 +33,8 @@ function decodeHtml(text: string): string {
 }
 
 export function QuoteDetailScreen({ route, navigation }: any) {
-  const { quoteId } = route.params
+  const params = route.params || {}
+  const { quoteId } = params as any
   const [quote, setQuote] = useState<Quote | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)

@@ -337,7 +337,8 @@ interface FormData {
 }
 
 export function ApplicationWizardScreen({ route, navigation }: any) {
-  const { applicationId, product } = route.params
+  const params = route.params || {}
+  const { applicationId, product } = params as any
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<FormData>({
@@ -434,14 +435,16 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
       await api.put(`/applications/${applicationId}`, {
         formData: { ...formData, stepCompleted: 4 },
         stepCompleted: 4,
-        status: 'pending_payment',
       })
-      navigation.replace('PaymentInitiate', { applicationId, product })
-    } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      Alert.alert('Error', message || 'Could not save application.')
-    } finally {
       setSaving(false)
+      navigation.replace('PaymentInitiate', { applicationId, product })
+    } catch (err: any) {
+      setSaving(false)
+      const message = err?.response?.data?.message
+      Alert.alert(
+        'Error',
+        Array.isArray(message) ? message[0] : (message || 'Could not save application.'),
+      )
     }
   }
 

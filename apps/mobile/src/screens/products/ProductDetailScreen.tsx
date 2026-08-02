@@ -313,7 +313,8 @@ const modalStyles = StyleSheet.create({
 })
 
 export function ProductDetailScreen({ route, navigation }: any) {
-  const { productId } = route.params
+  const params = route.params || {}
+  const { productId } = params as any
   const [product, setProduct] = useState<Product | null>(null)
   const [loading, setLoading] = useState(true)
   const [showAssetModal, setShowAssetModal] = useState(false)
@@ -326,13 +327,17 @@ export function ProductDetailScreen({ route, navigation }: any) {
       .finally(() => setLoading(false))
   }, [productId, navigation])
 
-  async function handleGetCovered(assetDetails?: Record<string, string>) {
+  async function handleGetCovered(
+    assetDetails?: Record<string, string>,
+    calculatedPremium?: number,
+  ) {
     if (!product) return
     setStarting(true)
     try {
       const res = await api.post('/applications', {
         productId: product.id,
         assetDetails,
+        ...(calculatedPremium ? { calculatedPremium } : {}),
       })
       setStarting(false)
       navigation.navigate('ApplicationWizard', {
@@ -341,19 +346,21 @@ export function ProductDetailScreen({ route, navigation }: any) {
       })
     } catch (err: any) {
       setStarting(false)
-      const message = err?.response?.data?.message
-      const msg = Array.isArray(message) ? message.join(' ') : String(message ?? '')
-      if (msg.includes('draft') || msg.includes('existing')) {
-        const draftsRes = await api.get('/applications/drafts')
-        const existing = draftsRes.data.find(
-          (d: any) => d.product?.id === product.id && d.status === 'draft'
-        )
-        if (existing) {
-          navigation.navigate('ApplicationWizard', {
-            applicationId: existing.id,
-            product,
-          })
-        }
+      const msg = err?.response?.data?.message
+      const message = Array.isArray(msg) ? msg.join(', ') : msg
+      if (message?.includes('draft') || message?.includes('existing')) {
+        try {
+          const draftsRes = await api.get('/applications/drafts')
+          const existing = draftsRes.data.find(
+            (d: any) => d.product?.id === product.id && d.status === 'draft',
+          )
+          if (existing) {
+            navigation.navigate('ApplicationWizard', {
+              applicationId: existing.id,
+              product,
+            })
+          }
+        } catch {}
       }
     }
   }
@@ -516,9 +523,9 @@ export function ProductDetailScreen({ route, navigation }: any) {
           visible={showAssetModal}
           product={product}
           onClose={() => setShowAssetModal(false)}
-          onConfirm={(values) => {
+          onConfirm={(values, premium) => {
             setShowAssetModal(false)
-            handleGetCovered(values)
+            handleGetCovered(values, premium || 0)
           }}
         />
       )}

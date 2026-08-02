@@ -14,27 +14,49 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 
 export function PaymentSuccessScreen({ route, navigation }: any) {
-  const { applicationId } = route.params
+  const params = route.params || {}
+  const { applicationId } = params as any
   const [policy, setPolicy] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!applicationId) {
+      setLoading(false)
+      return
+    }
+
     let attempts = 0
     const maxAttempts = 24
 
     const interval = setInterval(async () => {
       attempts++
       try {
-        const res = await api.get('/policies/my')
-        const policies = res.data
+        const [policiesRes, appRes] = await Promise.all([
+          api.get('/policies/my'),
+          api.get(`/applications/${applicationId}`).catch(() => null),
+        ])
 
-        const latest = policies
-          .filter((p: any) => p.status === 'active' || p.status === 'issued')
-          .sort((a: any, b: any) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime())[0]
+        const policies = policiesRes.data
+        const app = appRes?.data
 
-        if (latest) {
+        let found = null
+
+        if (app?.policy) {
+          found = policies.find((p: any) => p.id === app.policy.id)
+        }
+
+        if (!found) {
+          found = policies
+            .filter((p: any) => ['active', 'issued'].includes(p.status))
+            .sort(
+              (a: any, b: any) =>
+                new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime(),
+            )[0]
+        }
+
+        if (found) {
           clearInterval(interval)
-          setPolicy(latest)
+          setPolicy(found)
           setLoading(false)
           return
         }
@@ -111,14 +133,20 @@ export function PaymentSuccessScreen({ route, navigation }: any) {
 
         <Button
           title="Go to Dashboard"
-          onPress={() => navigation.navigate('Tabs', { screen: 'Home' })}
+          onPress={() => navigation.navigate('Tabs', { screen: 'Home' } as never)}
           style={{ marginTop: 16 }}
         />
         <Button
-          title="View All Policies"
-          onPress={() => navigation.navigate('Tabs', { screen: 'Home' })}
+          title="View My Policies"
+          onPress={() => navigation.navigate('Policies')}
           variant="outline"
           style={{ marginTop: 10 }}
+        />
+        <Button
+          title="Go to Dashboard"
+          onPress={() => navigation.navigate('Tabs', { screen: 'Home' } as never)}
+          variant="ghost"
+          style={{ marginTop: 8 }}
         />
 
       </View>

@@ -44,9 +44,10 @@ export class ApplicationsService {
         productId: dto.productId,
         status: 'draft',
         stepCompleted: 0,
-        formData: dto.assetDetails
-          ? ({ assetDetails: dto.assetDetails } as Prisma.InputJsonValue)
-          : {},
+        formData: {
+          ...(dto.assetDetails ? { assetDetails: dto.assetDetails } : {}),
+          ...(dto.calculatedPremium ? { calculatedPremium: dto.calculatedPremium } : {}),
+        } as Prisma.InputJsonValue,
         assetDetails: (dto.assetDetails ?? undefined) as
           | Prisma.InputJsonValue
           | undefined,
@@ -93,6 +94,7 @@ export class ApplicationsService {
       include: {
         product: true,
         kycDocuments: true,
+        policy: true,
       },
     });
     if (!application) throw new NotFoundException('Application not found');

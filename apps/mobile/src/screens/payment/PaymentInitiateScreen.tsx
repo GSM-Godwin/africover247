@@ -15,7 +15,8 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 
 export function PaymentInitiateScreen({ route, navigation }: any) {
-  const { applicationId, product, amount: presetAmount } = route.params
+  const params = route.params || {}
+  const { applicationId, product, amount: presetAmount } = params as any
   const [loading, setLoading] = useState(false)
   const [polling, setPolling] = useState(false)
   const [appAmount, setAppAmount] = useState<string | null>(presetAmount || null)
@@ -79,6 +80,9 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   }
 
   function startPolling(appId: string) {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+    }
     setPolling(true)
     let attempts = 0
     const maxAttempts = 72

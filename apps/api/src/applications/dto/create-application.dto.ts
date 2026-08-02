@@ -1,4 +1,4 @@
-import { IsUUID, IsObject, IsOptional } from 'class-validator';
+import { IsUUID, IsObject, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateApplicationDto {
   @IsUUID()
@@ -7,4 +7,8 @@ export class CreateApplicationDto {
   @IsObject()
   @IsOptional()
   assetDetails?: Record<string, unknown>;
+
+  @IsNumber()
+  @IsOptional()
+  calculatedPremium?: number;
 }

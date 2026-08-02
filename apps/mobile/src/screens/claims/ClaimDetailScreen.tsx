@@ -14,7 +14,8 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 
 export function ClaimDetailScreen({ route, navigation }: any) {
-  const { claimId } = route.params
+  const params = route.params || {}
+  const { claimId } = params as any
   const [claim, setClaim] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 

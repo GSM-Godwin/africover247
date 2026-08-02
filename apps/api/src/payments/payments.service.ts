@@ -72,11 +72,18 @@ export class PaymentsService {
       orderBy: { createdAt: 'desc' },
     });
 
+    const formData = application.formData as Record<string, any> | null;
+    const calculatedPremium = formData?.calculatedPremium
+      ? Number(formData.calculatedPremium)
+      : null;
+
     const amount = payment
       ? Number(payment.amount)
       : application.product.premiumAmount
         ? Number(application.product.premiumAmount)
-        : null;
+        : calculatedPremium
+          ? calculatedPremium
+          : null;
 
     if (!amount) {
       throw new BadRequestException(
