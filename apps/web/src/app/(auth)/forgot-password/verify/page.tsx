@@ -38,8 +38,9 @@ export default function ForgotPasswordVerifyPage() {
     setLoading(true);
     try {
       sessionStorage.setItem("reset_otp", otp);
+      setLoading(false);
       router.push("/reset-password");
-    } finally {
+    } catch {
       setLoading(false);
     }
   }

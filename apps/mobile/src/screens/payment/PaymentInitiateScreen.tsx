@@ -26,21 +26,55 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
     return () => clearInterval(pollRef.current)
   }, [])
 
+  if (!applicationId) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.content}>
+          <Text style={{ color: Colors.error, textAlign: 'center', padding: 20 }}>
+            Missing application. Please go back and try again.
+          </Text>
+          <Button title="Go Back" onPress={() => navigation.goBack()} />
+        </View>
+      </SafeAreaView>
+    )
+  }
+
   async function handleInitiatePayment() {
+    if (!applicationId) {
+      setError('Missing application ID. Please go back and try again.')
+      return
+    }
+
     setLoading(true)
     setError('')
+
     try {
-      const res = await api.post('/payments/initiate', { applicationId })
-      const { checkoutUrl, amount } = res.data
+      const res = await api.post('/payments/initiate', {
+        applicationId: String(applicationId),
+      })
+
+      const checkoutUrl = res.data?.checkoutUrl
+      const amount = res.data?.amount
+
+      if (!checkoutUrl) {
+        setError('Could not get payment URL. Please try again.')
+        setLoading(false)
+        return
+      }
 
       if (amount) setAppAmount(String(amount))
 
-      await WebBrowser.openBrowserAsync(checkoutUrl)
-      startPolling(applicationId)
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Could not initiate payment.')
-    } finally {
       setLoading(false)
+
+      await WebBrowser.openBrowserAsync(checkoutUrl)
+      startPolling(String(applicationId))
+    } catch (err: any) {
+      setLoading(false)
+      const message = err?.response?.data?.message
+      const errorText = Array.isArray(message)
+        ? message[0]
+        : (message || 'Could not initiate payment. Please try again.')
+      setError(errorText)
     }
   }
 

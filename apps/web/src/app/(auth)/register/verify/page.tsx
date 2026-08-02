@@ -42,11 +42,14 @@ export default function VerifyEmailPage() {
       setUser(res.data.user);
       setRole(res.data.user.role);
       sessionStorage.removeItem("pending_verification_email");
-      const role = res.data.user?.role;
-      router.push(role === "admin" ? "/admin" : "/dashboard");
-    } catch {
-      toast.error("Invalid or expired code. Please try again.");
-    } finally {
+      setLoading(false);
+      router.push(
+        res.data.user.role === "admin" ? "/admin" : "/dashboard",
+      );
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message;
+      toast.error(message || "Invalid or expired code.");
       setLoading(false);
     }
   }

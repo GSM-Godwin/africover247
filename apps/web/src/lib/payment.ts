@@ -5,11 +5,13 @@ import {
   type InitiatePaymentResponse,
 } from "@/types/payment";
 
-export async function initiateAndRedirect(applicationId: string): Promise<void> {
+export async function initiateAndRedirect(
+  applicationId: string,
+): Promise<string> {
   sessionStorage.setItem(PENDING_APPLICATION_ID_KEY, applicationId);
   const res = await api.post<InitiatePaymentResponse>("/payments/initiate", {
     applicationId,
   });
   sessionStorage.setItem(PAYMENT_ID_STORAGE_KEY, res.data.paymentId);
-  window.location.href = res.data.checkoutUrl;
+  return res.data.checkoutUrl;
 }

@@ -129,13 +129,13 @@ export function AssetDetailsModal({
         assetDetails: values,
       });
 
+      setLoading(false);
       onClose();
       router.push(`/apply/${product.id}/${res.data.id}/step-1`);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not start application. Please try again.");
-    } finally {
       setLoading(false);
     }
   }

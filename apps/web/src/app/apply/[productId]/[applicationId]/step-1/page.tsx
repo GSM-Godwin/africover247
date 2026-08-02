@@ -110,7 +110,6 @@ export default function Step1Page() {
       stepCompleted,
     });
     updateFormData(payload);
-    await refreshApplication();
   }
 
   async function onSaveContinue(data: Step1FormData) {
@@ -119,10 +118,10 @@ export default function Step1Page() {
     setDraftSaved(false);
     try {
       await persist(data, 1);
+      setSaving(false);
       router.push(applyStepPath(productId, applicationId, 2));
     } catch {
       setError("Something went wrong, please try again.");
-    } finally {
       setSaving(false);
     }
   }
@@ -134,10 +133,11 @@ export default function Step1Page() {
       setDraftSaved(false);
       try {
         await persist(data, 1);
+        await refreshApplication();
         setDraftSaved(true);
+        setSaving(false);
       } catch {
         setError("Something went wrong, please try again.");
-      } finally {
         setSaving(false);
       }
     })();

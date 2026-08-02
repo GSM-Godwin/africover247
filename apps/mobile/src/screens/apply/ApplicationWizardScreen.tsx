@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -354,6 +354,36 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     occupation: '',
     annualIncome: '',
   })
+
+  useEffect(() => {
+    async function loadDraft() {
+      try {
+        const res = await api.get(`/applications/${applicationId}`)
+        const app = res.data
+        if (app.formData && typeof app.formData === 'object') {
+          const fd = app.formData as any
+          setFormData({
+            dateOfBirth: fd.dateOfBirth || '',
+            gender: fd.gender || '',
+            nationality: fd.nationality || 'Nigerian',
+            maritalStatus: fd.maritalStatus || '',
+            address: fd.address || '',
+            city: fd.city || '',
+            state: fd.state || '',
+            alternativePhone: fd.alternativePhone || '',
+            employmentStatus: fd.employmentStatus || '',
+            employer: fd.employer || '',
+            occupation: fd.occupation || '',
+            annualIncome: fd.annualIncome || '',
+          })
+        }
+        if (app.stepCompleted && app.stepCompleted > 0) {
+          setStep(Math.min(app.stepCompleted, STEPS.length - 1))
+        }
+      } catch {}
+    }
+    loadDraft()
+  }, [applicationId])
 
   function update(key: keyof FormData, value: string) {
     setFormData((prev) => ({ ...prev, [key]: value }))

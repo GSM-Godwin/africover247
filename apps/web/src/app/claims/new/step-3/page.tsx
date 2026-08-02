@@ -36,6 +36,7 @@ export default function ClaimStep3Page() {
 
   function onSubmit() {
     setSubmitting(true);
+    setSubmitting(false);
     router.push("/claims/new/success");
   }
 

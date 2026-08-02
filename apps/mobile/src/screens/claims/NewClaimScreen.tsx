@@ -56,36 +56,87 @@ export function NewClaimScreen({ navigation }: any) {
   }
 
   async function handleSubmit() {
-    if (!selectedPolicy) { Alert.alert('Error', 'Please select a policy.'); return }
-    if (!claimType) { Alert.alert('Error', 'Please select a claim type.'); return }
-    if (!incidentDate) { Alert.alert('Error', 'Please enter the incident date.'); return }
-    if (!incidentLocation) { Alert.alert('Error', 'Please enter the incident location.'); return }
-    if (!description || description.length < 20) {
-      Alert.alert('Error', 'Please provide a detailed description (at least 20 characters).')
-      return
-    }
-
-    setLoading(true)
     try {
-      const [day, month, year] = incidentDate.split('/')
-      await api.post('/claims', {
+      if (!selectedPolicy) {
+        Alert.alert('Missing', 'Please select a policy.')
+        return
+      }
+      if (!claimType) {
+        Alert.alert('Missing', 'Please select a claim type.')
+        return
+      }
+      if (!incidentDate || incidentDate.trim() === '') {
+        Alert.alert('Missing', 'Please enter the incident date.')
+        return
+      }
+      if (!incidentLocation || incidentLocation.trim() === '') {
+        Alert.alert('Missing', 'Please enter the incident location.')
+        return
+      }
+      if (!description || description.trim().length < 20) {
+        Alert.alert('Missing', 'Please describe what happened (at least 20 characters).')
+        return
+      }
+
+      setLoading(true)
+
+      let incidentDateISO = new Date().toISOString()
+      try {
+        const trimmed = incidentDate.trim()
+        if (trimmed.includes('/')) {
+          const parts = trimmed.split('/')
+          if (parts.length === 3) {
+            const [day, month, year] = parts
+            const d = new Date(
+              parseInt(year),
+              parseInt(month) - 1,
+              parseInt(day)
+            )
+            if (!isNaN(d.getTime())) {
+              incidentDateISO = d.toISOString()
+            }
+          }
+        } else if (trimmed.includes('-')) {
+          const d = new Date(trimmed)
+          if (!isNaN(d.getTime())) {
+            incidentDateISO = d.toISOString()
+          }
+        }
+      } catch {}
+
+      const payload: Record<string, any> = {
         policyId: selectedPolicy.id,
         claimType,
-        incidentDate: new Date(`${year}-${month}-${day}`).toISOString(),
-        incidentLocation,
-        description,
-        estimatedAmount: estimatedAmount ? parseFloat(estimatedAmount) : undefined,
+        incidentDate: incidentDateISO,
+        incidentLocation: incidentLocation.trim(),
+        description: description.trim(),
         policeReportFiled,
-        policeReportNumber: policeReportFiled ? policeReportNumber : undefined,
-      })
+      }
+
+      if (estimatedAmount && estimatedAmount.trim() !== '') {
+        const amount = parseFloat(estimatedAmount.replace(/,/g, ''))
+        if (!isNaN(amount) && amount > 0) {
+          payload.estimatedAmount = amount
+        }
+      }
+
+      if (policeReportFiled && policeReportNumber.trim() !== '') {
+        payload.policeReportNumber = policeReportNumber.trim()
+      }
+
+      await api.post('/claims', payload)
+
       Alert.alert(
-        'Claim Submitted',
+        'Claim Submitted ✓',
         'Your claim has been submitted successfully. Our team will review it within 3 business days.',
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       )
-    } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } }).response?.data?.message
-      Alert.alert('Error', message || 'Could not submit claim.')
+    } catch (err: any) {
+      const message = err?.response?.data?.message
+      const errorText = Array.isArray(message)
+        ? message[0]
+        : (message || 'Could not submit claim. Please try again.')
+      Alert.alert('Error', errorText)
     } finally {
       setLoading(false)
     }

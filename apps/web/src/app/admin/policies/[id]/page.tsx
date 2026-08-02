@@ -86,13 +86,13 @@ export default function AdminPolicyDetailPage() {
       await api.patch(`/admin/policies/${id}/cancel`);
       toast.success("Policy cancelled.");
       setShowCancelConfirm(false);
+      setCancelling(false);
       const res = await api.get(`/admin/policies/${id}`);
       setPolicy(res.data);
     } catch (err: unknown) {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message;
       toast.error(message || "Could not cancel policy.");
-    } finally {
       setCancelling(false);
     }
   }

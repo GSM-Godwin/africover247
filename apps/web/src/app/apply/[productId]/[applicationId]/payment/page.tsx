@@ -22,7 +22,9 @@ export default function PaymentPage() {
     setError("");
     try {
       sessionStorage.setItem(PENDING_APPLICATION_ID_KEY, applicationId);
-      await initiateAndRedirect(applicationId);
+      const url = await initiateAndRedirect(applicationId);
+      setLoading(false);
+      if (url) window.location.href = url;
     } catch {
       setError("Something went wrong. Please try again.");
       setLoading(false);

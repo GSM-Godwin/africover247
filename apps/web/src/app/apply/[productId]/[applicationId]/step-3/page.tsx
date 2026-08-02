@@ -159,10 +159,10 @@ export default function Step3Page() {
     setError("");
     try {
       await api.put(`/applications/${applicationId}`, { stepCompleted: 3 });
+      setSaving(false);
       router.push(applyStepPath(productId, applicationId, 4));
     } catch {
       setError("Something went wrong, please try again.");
-    } finally {
       setSaving(false);
     }
   }

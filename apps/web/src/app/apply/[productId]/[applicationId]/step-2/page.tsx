@@ -88,7 +88,6 @@ export default function Step2Page() {
     formData,
     loading,
     updateFormData,
-    refreshApplication,
   } = useApplicationWizard();
 
   const [saving, setSaving] = useState(false);
@@ -134,11 +133,10 @@ export default function Step2Page() {
         stepCompleted: 2,
       });
       updateFormData(payload);
-      await refreshApplication();
+      setSaving(false);
       router.push(applyStepPath(productId, applicationId, 3));
     } catch {
       setError("Something went wrong, please try again.");
-    } finally {
       setSaving(false);
     }
   }

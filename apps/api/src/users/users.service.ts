@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -11,6 +12,8 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(private prisma: PrismaService) {}
 
   // --- Get user by id ---
@@ -157,11 +160,57 @@ export class UsersService {
     if (id === requestingUserId) {
       throw new BadRequestException('You cannot delete your own account');
     }
+
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
+    await this.prisma.emailVerification.deleteMany({ where: { userId: id } });
+    await this.prisma.passwordReset.deleteMany({ where: { userId: id } });
+    await this.prisma.notification.deleteMany({ where: { userId: id } });
+    await this.prisma.auditLog.deleteMany({ where: { actorId: id } });
+    await this.prisma.claimStatusHistory.deleteMany({ where: { changedBy: id } });
+    await this.prisma.claimComment.deleteMany({ where: { userId: id } });
+
+    const claims = await this.prisma.claim.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+    const claimIds = claims.map((c) => c.id);
+    if (claimIds.length > 0) {
+      await this.prisma.claimDocument.deleteMany({ where: { claimId: { in: claimIds } } });
+      await this.prisma.claimStatusHistory.deleteMany({ where: { claimId: { in: claimIds } } });
+      await this.prisma.claimComment.deleteMany({ where: { claimId: { in: claimIds } } });
+      await this.prisma.claim.deleteMany({ where: { userId: id } });
+    }
+
+    await this.prisma.policy.deleteMany({ where: { userId: id } });
+
+    const applications = await this.prisma.application.findMany({
+      where: { userId: id },
+      select: { id: true },
+    });
+    const appIds = applications.map((a) => a.id);
+    if (appIds.length > 0) {
+      await this.prisma.payment.deleteMany({ where: { applicationId: { in: appIds } } });
+      await this.prisma.kycDocument.deleteMany({ where: { applicationId: { in: appIds } } });
+      await this.prisma.application.deleteMany({ where: { userId: id } });
+    }
+
+    const quotes = await this.prisma.quote.findMany({
+      where: { customerId: id },
+      select: { id: true },
+    });
+    const quoteIds = quotes.map((q) => q.id);
+    if (quoteIds.length > 0) {
+      await this.prisma.notification.deleteMany({ where: { quoteId: { in: quoteIds } } });
+    }
+    await this.prisma.quote.deleteMany({ where: { customerId: id } });
+
     await this.prisma.user.delete({ where: { id } });
-    return { deleted: true };
+
+    this.logger.log(`User ${user.email} deleted by admin`);
+
+    return { deleted: true, email: user.email };
   }
 
   findAll(search?: string) {

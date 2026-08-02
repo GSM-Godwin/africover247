@@ -106,6 +106,7 @@ export function ProductDetailContent() {
 
       if (draftRes.data?.id) {
         const step = applicationStep(draftRes.data.stepCompleted);
+        setCoverLoading(false);
         router.push(
           applyStepPath(product.id, draftRes.data.id, step),
         );
@@ -115,6 +116,7 @@ export function ProductDetailContent() {
       const created = await api.post<{ id: string }>("/applications", {
         productId: product.id,
       });
+      setCoverLoading(false);
       router.push(applyStepPath(product.id, created.data.id, 1));
     } catch (err: unknown) {
       const status = (err as { response?: { status?: number } }).response?.status;
@@ -124,16 +126,17 @@ export function ProductDetailContent() {
           const created = await api.post<{ id: string }>("/applications", {
             productId: product.id,
           });
+          setCoverLoading(false);
           router.push(applyStepPath(product.id, created.data.id, 1));
           return;
         } catch {
           setCoverError("Something went wrong, please try again.");
+          setCoverLoading(false);
         }
       } else {
         setCoverError("Something went wrong, please try again.");
+        setCoverLoading(false);
       }
-    } finally {
-      setCoverLoading(false);
     }
   }, [product, router]);
 
