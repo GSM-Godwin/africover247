@@ -117,7 +117,7 @@ export default function AdminClaimDetailPage() {
     if (!comment.trim()) return;
     setCommenting(true);
     try {
-      await api.post(`/claims/${id}/comments`, { comment });
+      await api.post(`/claims/admin/${id}/comments`, { comment });
       toast.success("Comment added.");
       setComment("");
       fetchClaim();

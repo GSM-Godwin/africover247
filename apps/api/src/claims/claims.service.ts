@@ -214,8 +214,20 @@ export class ClaimsService {
 
   // --- Add comment ---
 
-  async addComment(claimId: string, userId: string, dto: AddCommentDto) {
-    await this.findOne(claimId, userId);
+  async addComment(
+    claimId: string,
+    userId: string,
+    dto: AddCommentDto,
+    isAdmin = false,
+  ) {
+    const claim = await this.prisma.claim.findUnique({
+      where: { id: claimId },
+    });
+    if (!claim) throw new NotFoundException('Claim not found');
+
+    if (!isAdmin && claim.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this claim');
+    }
 
     return this.prisma.claimComment.create({
       data: {
@@ -224,7 +236,7 @@ export class ClaimsService {
         comment: dto.comment,
       },
       include: {
-        user: { select: { firstName: true, lastName: true } },
+        user: { select: { firstName: true, lastName: true, role: true } },
       },
     });
   }

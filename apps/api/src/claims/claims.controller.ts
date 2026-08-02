@@ -43,6 +43,18 @@ export class ClaimsController {
     return this.claimsService.findMyClaims(user.id);
   }
 
+  @Post('admin/:id/comments')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  @HttpCode(HttpStatus.CREATED)
+  addAdminComment(
+    @CurrentUser() user: { id: string },
+    @Param('id') id: string,
+    @Body() dto: AddCommentDto,
+  ) {
+    return this.claimsService.addComment(id, user.id, dto, true);
+  }
+
   @Get(':id')
   findOne(@CurrentUser() user: { id: string }, @Param('id') id: string) {
     return this.claimsService.findOne(id, user.id);

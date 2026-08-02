@@ -48,6 +48,15 @@ export default function NotificationsPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
+  async function handleMarkAllRead() {
+    try {
+      await api.patch("/notifications/read-all");
+      fetchNotifications();
+    } catch {}
+  }
+
   function handleNotificationClick(notification: NotificationRecord) {
     api.patch(`/notifications/${notification.id}/read`).catch(() => {});
 
@@ -66,10 +75,19 @@ export default function NotificationsPage() {
       <Navbar />
       <main className="pt-16 min-h-screen bg-[#F5F6F8]">
         <div className="max-w-[1140px] mx-auto px-6 sm:px-8 py-10 sm:py-12">
-          <div className="mb-8">
+          <div className="mb-8 flex items-center justify-between gap-4">
             <h1 className="font-display font-bold text-midnight text-3xl sm:text-4xl">
               Notifications
             </h1>
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={handleMarkAllRead}
+                className="font-body text-sm text-midnight hover:text-daybreak font-medium transition-colors"
+              >
+                Mark all read
+              </button>
+            )}
           </div>
 
           <div className="mb-8">

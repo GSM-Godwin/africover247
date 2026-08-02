@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
+import * as DocumentPicker from 'expo-document-picker'
 import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
@@ -31,7 +32,14 @@ const GENDERS = ['Male', 'Female', 'Prefer not to say']
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed']
 const EMPLOYMENT = ['Employed', 'Self-employed', 'Business owner', 'Retired', 'Student', 'Unemployed']
 
-const STEPS = ['Personal Details', 'Address', 'Employment', 'Review & Submit']
+const STEPS = ['Personal Details', 'Address', 'Employment', 'Documents', 'Review & Submit']
+
+const KYC_DOC_TYPES = [
+  { key: 'government-id', label: "Government ID (NIN, Passport, or Driver's License)" },
+  { key: 'proof-of-address', label: 'Proof of Address (Utility bill)' },
+  { key: 'vehicle-documents', label: 'Vehicle Documents (for motor products)' },
+  { key: 'other', label: 'Other Supporting Documents' },
+]
 
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
@@ -341,6 +349,9 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
   const { applicationId, product } = params as any
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [kycDocuments, setKycDocuments] = useState<
+    { name: string; uri: string; type: string; docType: string }[]
+  >([])
   const [formData, setFormData] = useState<FormData>({
     dateOfBirth: '',
     gender: '',
@@ -417,6 +428,22 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     if (step < STEPS.length - 1) {
       setSaving(true)
       try {
+        if (step === 3 && kycDocuments.length > 0) {
+          for (const doc of kycDocuments) {
+            try {
+              const formDataUpload = new FormData()
+              formDataUpload.append('file', {
+                uri: doc.uri,
+                name: doc.name,
+                type: doc.type,
+              } as any)
+              formDataUpload.append('documentType', doc.docType)
+              await api.post(`/applications/${applicationId}/documents`, formDataUpload, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+              })
+            } catch {}
+          }
+        }
         await api.put(`/applications/${applicationId}`, {
           formData: { ...formData, stepCompleted: step + 1 },
           stepCompleted: step + 1,
@@ -433,8 +460,8 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     setSaving(true)
     try {
       await api.put(`/applications/${applicationId}`, {
-        formData: { ...formData, stepCompleted: 4 },
-        stepCompleted: 4,
+        formData: { ...formData, stepCompleted: 5 },
+        stepCompleted: 5,
       })
       setSaving(false)
       navigation.replace('PaymentInitiate', { applicationId, product })
@@ -545,36 +572,107 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
       case 3:
         return (
           <View>
+            <Text style={styles.reviewTitle}>Upload KYC Documents</Text>
+            <Text style={styles.reviewSubtitle}>
+              Upload the required documents to verify your identity and complete your application.
+            </Text>
+
+            {KYC_DOC_TYPES.map((docType) => {
+              const uploaded = kycDocuments.filter((d) => d.docType === docType.key)
+              return (
+                <View key={docType.key} style={styles.docTypeSection}>
+                  <View style={styles.docTypeHeader}>
+                    <Text style={styles.docTypeLabel}>{docType.label}</Text>
+                    {uploaded.length > 0 && (
+                      <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
+                    )}
+                  </View>
+                  {uploaded.map((doc, i) => (
+                    <View key={i} style={styles.docRow}>
+                      <Ionicons name="document-outline" size={14} color={Colors.primary} />
+                      <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                      <TouchableOpacity
+                        onPress={() => {
+                          setKycDocuments((prev) =>
+                            prev.filter((d) => !(d.docType === docType.key && d.name === doc.name))
+                          )
+                        }}
+                      >
+                        <Ionicons name="close-circle" size={16} color={Colors.error} />
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+                  <TouchableOpacity
+                    style={styles.uploadButton}
+                    onPress={async () => {
+                      try {
+                        const result = await DocumentPicker.getDocumentAsync({
+                          type: ['image/*', 'application/pdf'],
+                        })
+                        if (!result.canceled && result.assets?.[0]) {
+                          const a = result.assets[0]
+                          setKycDocuments((prev) => [...prev, {
+                            name: a.name,
+                            uri: a.uri,
+                            type: a.mimeType || 'application/octet-stream',
+                            docType: docType.key,
+                          }])
+                        }
+                      } catch {}
+                    }}
+                  >
+                    <Ionicons name="cloud-upload-outline" size={16} color={Colors.primary} />
+                    <Text style={styles.uploadButtonText}>
+                      {uploaded.length > 0 ? 'Add another' : 'Upload'}
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              )
+            })}
+
+            <View style={styles.kycNote}>
+              <Ionicons name="shield-checkmark-outline" size={16} color={Colors.primary} />
+              <Text style={styles.kycNoteText}>
+                Documents are encrypted and stored securely. They are only used for KYC verification.
+              </Text>
+            </View>
+          </View>
+        )
+
+      case 4:
+        return (
+          <View>
             <Text style={styles.reviewTitle}>Review your details</Text>
             <Text style={styles.reviewSubtitle}>
               Please confirm everything is correct before proceeding to payment.
             </Text>
 
             {[
-              { title: 'Personal Details', rows: [
+              { title: 'Personal Details', stepIndex: 0, rows: [
                 { label: 'Date of Birth', value: formData.dateOfBirth },
                 { label: 'Gender', value: formData.gender },
                 { label: 'Nationality', value: formData.nationality },
                 { label: 'Marital Status', value: formData.maritalStatus },
               ]},
-              { title: 'Address', rows: [
+              { title: 'Address', stepIndex: 1, rows: [
                 { label: 'Address', value: formData.address },
                 { label: 'City', value: formData.city },
                 { label: 'State', value: formData.state },
               ]},
-              { title: 'Employment', rows: [
+              { title: 'Employment', stepIndex: 2, rows: [
                 { label: 'Status', value: formData.employmentStatus },
                 { label: 'Occupation', value: formData.occupation },
                 { label: 'Employer', value: formData.employer },
                 { label: 'Annual Income', value: formData.annualIncome ? `₦${parseFloat(formData.annualIncome).toLocaleString()}` : '' },
               ]},
-            ].map(({ title, rows }) => (
+              { title: 'Documents', stepIndex: 3, rows: [
+                { label: 'Uploaded', value: kycDocuments.length > 0 ? `${kycDocuments.length} file(s)` : 'None' },
+              ]},
+            ].map(({ title, stepIndex, rows }) => (
               <View key={title} style={styles.reviewSection}>
                 <View style={styles.reviewSectionHeader}>
                   <Text style={styles.reviewSectionTitle}>{title}</Text>
-                  <TouchableOpacity onPress={() => setStep(
-                    title === 'Personal Details' ? 0 : title === 'Address' ? 1 : 2
-                  )}>
+                  <TouchableOpacity onPress={() => setStep(stepIndex)}>
                     <Text style={styles.editLink}>Edit</Text>
                   </TouchableOpacity>
                 </View>
@@ -692,4 +790,25 @@ const styles = StyleSheet.create({
     borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'flex-start',
   },
   disclaimerText: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
+  docTypeSection: { marginBottom: 20 },
+  docTypeHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8,
+  },
+  docTypeLabel: { fontSize: 13, fontWeight: '600', color: Colors.text, flex: 1, marginRight: 8 },
+  docRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#EBF4FA', borderRadius: 8, padding: 10, marginBottom: 6,
+  },
+  docName: { flex: 1, fontSize: 12, color: Colors.text },
+  uploadButton: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: Colors.primary, borderStyle: 'dashed',
+    borderRadius: 8, padding: 10, justifyContent: 'center',
+  },
+  uploadButtonText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  kycNote: {
+    flexDirection: 'row', gap: 8, backgroundColor: '#EBF4FA',
+    borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'flex-start',
+  },
+  kycNoteText: { flex: 1, fontSize: 12, color: Colors.primary, lineHeight: 18 },
 })

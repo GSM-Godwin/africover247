@@ -37,11 +37,6 @@ export class PaymentsService {
       },
     });
 
-    // TODO: remove after debugging
-    this.logger.log(
-      `DEBUG application: ${JSON.stringify({ id: application?.id, status: application?.status, userId: application?.userId })}`,
-    );
-
     if (!application) throw new NotFoundException('Application not found');
     if (application.userId !== userId)
       throw new UnauthorizedException(
@@ -49,9 +44,6 @@ export class PaymentsService {
       );
 
     if (!['draft', 'pending_payment'].includes(application.status)) {
-      this.logger.log(
-        `DEBUG: failing on status check — status is: "${application.status}"`,
-      );
       throw new BadRequestException(
         'This application has already been paid or is not eligible for payment',
       );
@@ -60,9 +52,7 @@ export class PaymentsService {
     const existingPayment = await this.prisma.payment.findFirst({
       where: { applicationId: dto.applicationId, status: 'successful' },
     });
-    this.logger.log(`DEBUG existingPayment: ${JSON.stringify(existingPayment)}`);
     if (existingPayment) {
-      this.logger.log(`DEBUG: failing on existing payment check`);
       throw new BadRequestException('This application has already been paid');
     }
 

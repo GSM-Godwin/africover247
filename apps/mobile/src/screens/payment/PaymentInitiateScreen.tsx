@@ -110,7 +110,21 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
           setError('Payment failed. Please try again.')
           return
         }
-      } catch {}
+      } catch (err: any) {
+        const status = err?.response?.status
+        if (status === 401 || status === 403) {
+          clearInterval(pollRef.current)
+          setPolling(false)
+          setError('Session expired. Please log in again.')
+          return
+        }
+        if (status === 404) {
+          clearInterval(pollRef.current)
+          setPolling(false)
+          setError('Application not found. Please contact support.')
+          return
+        }
+      }
 
       if (attempts >= maxAttempts) {
         clearInterval(pollRef.current)

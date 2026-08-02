@@ -6,11 +6,16 @@ import {
   ScrollView,
   TouchableOpacity,
   Linking,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  TextInput,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/ui'
 import { Colors } from '../../constants'
+import api from '../../services/api'
 
 const FAQ = [
   {
@@ -37,11 +42,55 @@ const FAQ = [
 
 export function HelpScreen({ navigation }: any) {
   const [expanded, setExpanded] = React.useState<number | null>(null)
+  const [form, setForm] = React.useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: '',
+    message: '',
+  })
+  const [submitting, setSubmitting] = React.useState(false)
+  const [submitted, setSubmitted] = React.useState(false)
+
+  function updateForm(key: string, value: string) {
+    setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function handleSubmit() {
+    if (!form.name.trim() || !form.email.trim() || !form.subject.trim() || !form.message.trim()) {
+      Alert.alert('Missing Fields', 'Please fill in your name, email, subject and message.')
+      return
+    }
+    if (!form.email.includes('@')) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.')
+      return
+    }
+    if (form.message.trim().length < 10) {
+      Alert.alert('Message too short', 'Please describe how we can help you.')
+      return
+    }
+    setSubmitting(true)
+    try {
+      await api.post('/contact', {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        subject: form.subject.trim(),
+        message: form.message.trim(),
+      })
+      setSubmitted(true)
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' })
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+      Alert.alert('Error', Array.isArray(msg) ? msg[0] : (msg || 'Could not send message. Please try again.'))
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
 
-      {/* --- Header --- */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={22} color={Colors.primary} />
@@ -50,87 +99,207 @@ export function HelpScreen({ navigation }: any) {
         <View style={{ width: 22 }} />
       </View>
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
       >
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
 
-        {/* --- Contact --- */}
-        <Text style={styles.sectionTitle}>Contact Us</Text>
-        <Card style={styles.contactCard} padding={0}>
-          {[
-            {
-              icon: 'mail-outline' as const,
-              label: 'Email Support',
-              value: 'support@africover247.com',
-              onPress: () => Linking.openURL('mailto:support@africover247.com'),
-            },
-            {
-              icon: 'call-outline' as const,
-              label: 'Phone Support',
-              value: '+234 800 000 0000',
-              onPress: () => Linking.openURL('tel:+2348000000000'),
-            },
-            {
-              icon: 'time-outline' as const,
-              label: 'Support Hours',
-              value: 'Mon – Fri, 8am – 6pm',
-              onPress: undefined,
-            },
-          ].map((item, i, arr) => (
+          <Text style={styles.sectionTitle}>Contact Us</Text>
+          <Card style={styles.contactCard} padding={0}>
+            {[
+              {
+                icon: 'mail-outline' as const,
+                label: 'Email Support',
+                value: 'support@africover247.com',
+                onPress: () => Linking.openURL('mailto:support@africover247.com'),
+              },
+              {
+                icon: 'call-outline' as const,
+                label: 'Phone Support',
+                value: '+234 800 000 0000',
+                onPress: () => Linking.openURL('tel:+2348000000000'),
+              },
+              {
+                icon: 'time-outline' as const,
+                label: 'Support Hours',
+                value: 'Mon – Fri, 8am – 6pm',
+                onPress: undefined,
+              },
+            ].map((item, i, arr) => (
+              <TouchableOpacity
+                key={item.label}
+                style={[
+                  styles.contactItem,
+                  i < arr.length - 1 && styles.contactItemBorder,
+                ]}
+                onPress={item.onPress}
+                disabled={!item.onPress}
+                activeOpacity={item.onPress ? 0.7 : 1}
+              >
+                <View style={styles.contactIcon}>
+                  <Ionicons name={item.icon} size={18} color={Colors.primary} />
+                </View>
+                <View style={styles.contactContent}>
+                  <Text style={styles.contactLabel}>{item.label}</Text>
+                  <Text style={styles.contactValue}>{item.value}</Text>
+                </View>
+                {item.onPress && (
+                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </Card>
+
+          <Text style={styles.sectionTitle}>Send Us a Message</Text>
+          <Card style={styles.formCard} padding={20}>
+            {submitted ? (
+              <View style={styles.successState}>
+                <View style={styles.successIcon}>
+                  <Ionicons name="checkmark-circle" size={40} color={Colors.success} />
+                </View>
+                <Text style={styles.successTitle}>Message Sent</Text>
+                <Text style={styles.successText}>
+                  Our team will get back to you within 24 hours.
+                </Text>
+                <TouchableOpacity
+                  style={styles.sendAnotherBtn}
+                  onPress={() => setSubmitted(false)}
+                >
+                  <Text style={styles.sendAnotherText}>Send another message</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.form}>
+                <View style={styles.formRow}>
+                  <View style={[styles.field, { flex: 1 }]}>
+                    <Text style={styles.label}>
+                      Full Name <Text style={styles.required}>*</Text>
+                    </Text>
+                    <TextInput
+                      style={styles.input}
+                      value={form.name}
+                      onChangeText={(v) => updateForm('name', v)}
+                      placeholder="Your full name"
+                      placeholderTextColor={Colors.textSecondary + '80'}
+                      autoCapitalize="words"
+                    />
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Email Address <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={form.email}
+                    onChangeText={(v) => updateForm('email', v)}
+                    placeholder="your@email.com"
+                    placeholderTextColor={Colors.textSecondary + '80'}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>Phone Number</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={form.phone}
+                    onChangeText={(v) => updateForm('phone', v)}
+                    placeholder="08012345678"
+                    placeholderTextColor={Colors.textSecondary + '80'}
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Subject <Text style={styles.required}>*</Text>
+                  </Text>
+                  <View style={styles.subjectPills}>
+                    {['Product Enquiry', 'Claim Support', 'Policy Renewal', 'Quote Request', 'Complaint', 'Other'].map((s) => (
+                      <TouchableOpacity
+                        key={s}
+                        style={[styles.pill, form.subject === s && styles.pillActive]}
+                        onPress={() => updateForm('subject', s)}
+                      >
+                        <Text style={[styles.pillText, form.subject === s && styles.pillTextActive]}>
+                          {s}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.label}>
+                    Message <Text style={styles.required}>*</Text>
+                  </Text>
+                  <TextInput
+                    style={styles.textarea}
+                    value={form.message}
+                    onChangeText={(v) => updateForm('message', v)}
+                    placeholder="Tell us how we can help you..."
+                    placeholderTextColor={Colors.textSecondary + '80'}
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                  />
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+                  onPress={handleSubmit}
+                  disabled={submitting}
+                  activeOpacity={0.8}
+                >
+                  {submitting ? (
+                    <Text style={styles.submitText}>Sending...</Text>
+                  ) : (
+                    <>
+                      <Ionicons name="send" size={16} color={Colors.white} />
+                      <Text style={styles.submitText}>Send Message</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              </View>
+            )}
+          </Card>
+
+          <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+          {FAQ.map((item, i) => (
             <TouchableOpacity
-              key={item.label}
-              style={[
-                styles.contactItem,
-                i < arr.length - 1 && styles.contactItemBorder,
-              ]}
-              onPress={item.onPress}
-              disabled={!item.onPress}
-              activeOpacity={item.onPress ? 0.7 : 1}
+              key={i}
+              style={styles.faqItem}
+              onPress={() => setExpanded(expanded === i ? null : i)}
+              activeOpacity={0.7}
             >
-              <View style={styles.contactIcon}>
-                <Ionicons name={item.icon} size={18} color={Colors.primary} />
+              <View style={styles.faqHeader}>
+                <Text style={styles.faqQuestion}>{item.q}</Text>
+                <Ionicons
+                  name={expanded === i ? 'chevron-up' : 'chevron-down'}
+                  size={16}
+                  color={Colors.textSecondary}
+                />
               </View>
-              <View style={styles.contactContent}>
-                <Text style={styles.contactLabel}>{item.label}</Text>
-                <Text style={styles.contactValue}>{item.value}</Text>
-              </View>
-              {item.onPress && (
-                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+              {expanded === i && (
+                <Text style={styles.faqAnswer}>{item.a}</Text>
               )}
             </TouchableOpacity>
           ))}
-        </Card>
 
-        {/* --- FAQ --- */}
-        <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
-        {FAQ.map((item, i) => (
-          <TouchableOpacity
-            key={i}
-            style={styles.faqItem}
-            onPress={() => setExpanded(expanded === i ? null : i)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.faqHeader}>
-              <Text style={styles.faqQuestion}>{item.q}</Text>
-              <Ionicons
-                name={expanded === i ? 'chevron-up' : 'chevron-down'}
-                size={16}
-                color={Colors.textSecondary}
-              />
-            </View>
-            {expanded === i && (
-              <Text style={styles.faqAnswer}>{item.a}</Text>
-            )}
-          </TouchableOpacity>
-        ))}
+          <Text style={styles.version}>AfriCover247 v1.0.0</Text>
+          <Text style={styles.versionSub}>AfriGlobal Insurance Brokers Limited</Text>
 
-        {/* --- Version --- */}
-        <Text style={styles.version}>AfriCover247 v1.0.0</Text>
-        <Text style={styles.versionSub}>AfriGlobal Insurance Brokers Limited</Text>
-
-        <View style={{ height: 32 }} />
-      </ScrollView>
+          <View style={{ height: 32 }} />
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   )
 }
@@ -176,6 +345,78 @@ const styles = StyleSheet.create({
   contactContent: { flex: 1 },
   contactLabel: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
   contactValue: { fontSize: 14, fontWeight: '600', color: Colors.text },
+  formCard: { marginBottom: 24 },
+  form: { gap: 16 },
+  formRow: { flexDirection: 'row', gap: 12 },
+  field: { marginBottom: 4 },
+  label: { fontSize: 13, fontWeight: '600', color: Colors.text, marginBottom: 6 },
+  required: { color: Colors.error },
+  input: {
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: Colors.text,
+    backgroundColor: Colors.white,
+  },
+  textarea: {
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 14,
+    color: Colors.text,
+    backgroundColor: Colors.white,
+    minHeight: 100,
+  },
+  subjectPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  pill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    backgroundColor: Colors.white,
+  },
+  pillActive: {
+    borderColor: Colors.primary,
+    backgroundColor: '#EBF4FA',
+  },
+  pillText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+  pillTextActive: { color: Colors.primary, fontWeight: '700' },
+  submitBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  submitBtnDisabled: { opacity: 0.6 },
+  submitText: { fontSize: 15, fontWeight: '700', color: Colors.white },
+  successState: { alignItems: 'center', paddingVertical: 24 },
+  successIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: Colors.success + '15',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  successTitle: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 8 },
+  successText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  sendAnotherBtn: { marginTop: 20 },
+  sendAnotherText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
   faqItem: {
     backgroundColor: Colors.white,
     borderRadius: 12,

@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import * as DocumentPicker from 'expo-document-picker'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
@@ -52,7 +53,9 @@ function toApiClaimType(type: string): string {
   return map[type] || 'Other'
 }
 
-export function NewClaimScreen({ navigation }: any) {
+export function NewClaimScreen({ route, navigation }: any) {
+  const params = route?.params || {}
+  const { preselectedPolicyId } = params as { preselectedPolicyId?: string }
   const [policies, setPolicies] = useState<Policy[]>([])
   const [selectedPolicy, setSelectedPolicy] = useState<Policy | null>(null)
   const [claimType, setClaimType] = useState('')
@@ -64,12 +67,41 @@ export function NewClaimScreen({ navigation }: any) {
   const [policeReportNumber, setPoliceReportNumber] = useState('')
   const [showDatePicker, setShowDatePicker] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [documents, setDocuments] = useState<{ name: string; uri: string; type: string }[]>([])
 
   useEffect(() => {
     api.get('/policies/my')
       .then((res) => setPolicies(res.data.filter((p: Policy & { status: string }) => p.status === 'active')))
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (preselectedPolicyId && policies.length > 0) {
+      const found = policies.find((p) => p.id === preselectedPolicyId)
+      if (found) setSelectedPolicy(found)
+    }
+  }, [preselectedPolicyId, policies])
+
+  async function handleAddDocument() {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'application/pdf'],
+        multiple: true,
+      })
+      if (!result.canceled && result.assets) {
+        const newDocs = result.assets.map((a) => ({
+          name: a.name,
+          uri: a.uri,
+          type: a.mimeType || 'application/octet-stream',
+        }))
+        setDocuments((prev) => [...prev, ...newDocs].slice(0, 5))
+      }
+    } catch {}
+  }
+
+  function removeDocument(index: number) {
+    setDocuments((prev) => prev.filter((_, i) => i !== index))
+  }
 
   function handleDateChange(_: unknown, selected?: Date) {
     setShowDatePicker(false)
@@ -148,7 +180,25 @@ export function NewClaimScreen({ navigation }: any) {
         payload.policeReportNumber = policeReportNumber.trim()
       }
 
-      await api.post('/claims', payload)
+      const claimRes = await api.post('/claims', payload)
+      const claimId = claimRes.data.id
+
+      if (documents.length > 0) {
+        for (const doc of documents) {
+          try {
+            const formData = new FormData()
+            formData.append('file', {
+              uri: doc.uri,
+              name: doc.name,
+              type: doc.type,
+            } as any)
+            formData.append('documentType', 'incident-photo')
+            await api.post(`/claims/${claimId}/documents`, formData, {
+              headers: { 'Content-Type': 'multipart/form-data' },
+            })
+          } catch {}
+        }
+      }
 
       Alert.alert(
         'Claim Submitted ✓',
@@ -341,6 +391,26 @@ export function NewClaimScreen({ navigation }: any) {
             </View>
           )}
 
+          <View style={styles.field}>
+            <Text style={styles.label}>Supporting Documents (optional)</Text>
+            <Text style={styles.hint}>Upload photos, police report, receipts etc. Max 5 files.</Text>
+
+            <TouchableOpacity style={styles.uploadButton} onPress={handleAddDocument}>
+              <Ionicons name="cloud-upload-outline" size={20} color={Colors.primary} />
+              <Text style={styles.uploadText}>Add Documents</Text>
+            </TouchableOpacity>
+
+            {documents.map((doc, i) => (
+              <View key={i} style={styles.docRow}>
+                <Ionicons name="document-outline" size={16} color={Colors.primary} />
+                <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                <TouchableOpacity onPress={() => removeDocument(i)}>
+                  <Ionicons name="close-circle" size={18} color={Colors.error} />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+
           <View style={styles.infoBox}>
             <Ionicons name="information-circle-outline" size={16} color={Colors.primary} />
             <Text style={styles.infoText}>
@@ -419,6 +489,30 @@ const styles = StyleSheet.create({
   toggleSelected: { borderColor: Colors.primary, backgroundColor: '#EBF4FA' },
   toggleText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
   toggleTextSelected: { color: Colors.primary },
+  hint: { fontSize: 11, color: Colors.textSecondary, marginBottom: 8 },
+  uploadButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.primary,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 14,
+    justifyContent: 'center',
+    marginBottom: 10,
+  },
+  uploadText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  docRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: '#EBF4FA',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 6,
+  },
+  docName: { flex: 1, fontSize: 13, color: Colors.text },
   infoBox: {
     flexDirection: 'row', gap: 8, backgroundColor: '#EBF4FA',
     borderRadius: 10, padding: 12, marginBottom: 16, alignItems: 'flex-start',

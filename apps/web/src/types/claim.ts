@@ -16,6 +16,7 @@ export interface ClaimStatusHistoryEntry {
   id: string;
   newStatus: "submitted" | "in_review" | "approved" | "rejected";
   changedAt: string;
+  note?: string | null;
   user: {
     firstName: string;
     lastName: string;
@@ -23,10 +24,29 @@ export interface ClaimStatusHistoryEntry {
   };
 }
 
+export interface ClaimDocumentEntry {
+  id: string;
+  documentType: string;
+  fileName: string;
+  fileUrl: string;
+  uploadedAt: string;
+}
+
+export interface ClaimCommentEntry {
+  id: string;
+  comment: string;
+  createdAt: string;
+  user: {
+    firstName: string;
+    lastName: string;
+    role: string;
+  };
+}
+
 export interface ClaimDetailRecord extends ClaimRecord {
   description: string;
   estimatedAmount: string | null;
   statusHistory: ClaimStatusHistoryEntry[];
-  documents?: unknown[];
-  comments?: unknown[];
+  documents?: ClaimDocumentEntry[];
+  comments?: ClaimCommentEntry[];
 }

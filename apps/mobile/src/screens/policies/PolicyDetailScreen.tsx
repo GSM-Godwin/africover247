@@ -192,7 +192,7 @@ export function PolicyDetailScreen({ route, navigation }: any) {
         <View style={styles.ctaSection}>
           <TouchableOpacity
             style={styles.claimButton}
-            onPress={() => navigation.navigate('Claims')}
+            onPress={() => navigation.navigate('NewClaim', { preselectedPolicyId: policy.id })}
           >
             <Ionicons name="add-circle-outline" size={18} color={Colors.primary} />
             <Text style={styles.claimButtonText}>File a Claim</Text>
