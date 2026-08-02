@@ -32,7 +32,7 @@ const GENDERS = ['Male', 'Female', 'Prefer not to say']
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed']
 const EMPLOYMENT = ['Employed', 'Self-employed', 'Business owner', 'Retired', 'Student', 'Unemployed']
 
-const STEPS = ['Personal Details', 'Address', 'Employment', 'Documents', 'Review & Submit']
+const STEPS = ['Personal Details', 'Address & Employment', 'Documents', 'Review & Submit']
 
 const KYC_DOC_TYPES = [
   { key: 'government-id', label: "Government ID (NIN, Passport, or Driver's License)" },
@@ -367,6 +367,17 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     annualIncome: '',
   })
 
+  const requiredDocTypes: string[] = (() => {
+    if (!product?.requiredDocuments) return []
+    if (Array.isArray(product.requiredDocuments)) return product.requiredDocuments as string[]
+    if (typeof product.requiredDocuments === 'string') {
+      try { return JSON.parse(product.requiredDocuments) } catch { return [] }
+    }
+    return []
+  })()
+
+  const documentsRequired = requiredDocTypes.length > 0
+
   useEffect(() => {
     async function loadDraft() {
       try {
@@ -401,34 +412,86 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     setFormData((prev) => ({ ...prev, [key]: value }))
   }
 
-  function validateStep(): boolean {
+  async function validateStep(): Promise<boolean> {
     if (step === 0) {
-      if (!formData.dateOfBirth || !formData.gender || !formData.maritalStatus) {
-        Alert.alert('Missing Fields', 'Please fill in Date of Birth, Gender and Marital Status.')
+      if (!formData.dateOfBirth) {
+        Alert.alert('Missing', 'Please enter your date of birth.')
         return false
       }
+      if (!formData.gender) {
+        Alert.alert('Missing', 'Please select your gender.')
+        return false
+      }
+      if (!formData.maritalStatus) {
+        Alert.alert('Missing', 'Please select your marital status.')
+        return false
+      }
+      return true
     }
+
     if (step === 1) {
-      if (!formData.address || !formData.city || !formData.state) {
-        Alert.alert('Missing Fields', 'Please fill in your Address, City and State.')
+      if (!formData.address || formData.address.trim().length < 5) {
+        Alert.alert('Missing', 'Please enter your street address (at least 5 characters).')
         return false
       }
+      if (!formData.city || formData.city.trim() === '') {
+        Alert.alert('Missing', 'Please enter your city.')
+        return false
+      }
+      if (!formData.state || formData.state.trim() === '') {
+        Alert.alert('Missing', 'Please select your state.')
+        return false
+      }
+      if (!formData.employmentStatus) {
+        Alert.alert('Missing', 'Please select your employment status.')
+        return false
+      }
+      if (!formData.occupation || formData.occupation.trim() === '') {
+        Alert.alert('Missing', 'Please enter your occupation.')
+        return false
+      }
+      if (
+        ['Employed', 'Self-employed', 'Business owner'].includes(formData.employmentStatus) &&
+        (!formData.employer || formData.employer.trim() === '')
+      ) {
+        Alert.alert('Missing', 'Please enter your employer or business name.')
+        return false
+      }
+      return true
     }
+
     if (step === 2) {
-      if (!formData.employmentStatus || !formData.occupation) {
-        Alert.alert('Missing Fields', 'Please fill in Employment Status and Occupation.')
-        return false
+      if (!documentsRequired) return true
+
+      const missingRequired = requiredDocTypes.filter(
+        (docType) => !kycDocuments.some((d) => d.docType === docType)
+      )
+
+      if (missingRequired.length > 0) {
+        return new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Documents Missing',
+            `This product requires: ${missingRequired.join(', ')}. You can still proceed but may be asked to provide them later.`,
+            [
+              { text: 'Go Back', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'Continue Anyway', onPress: () => resolve(true) },
+            ]
+          )
+        })
       }
+      return true
     }
+
     return true
   }
 
   async function handleNext() {
-    if (!validateStep()) return
+    const valid = await validateStep()
+    if (!valid) return
     if (step < STEPS.length - 1) {
       setSaving(true)
       try {
-        if (step === 3 && kycDocuments.length > 0) {
+        if (step === 2 && kycDocuments.length > 0) {
           for (const doc of kycDocuments) {
             try {
               const formDataUpload = new FormData()
@@ -460,8 +523,8 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     setSaving(true)
     try {
       await api.put(`/applications/${applicationId}`, {
-        formData: { ...formData, stepCompleted: 5 },
-        stepCompleted: 5,
+        formData: { ...formData, stepCompleted: 4 },
+        stepCompleted: 4,
       })
       setSaving(false)
       navigation.replace('PaymentInitiate', { applicationId, product })
@@ -526,12 +589,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 keyboardType="phone-pad"
               />
             </Field>
-          </View>
-        )
-
-      case 2:
-        return (
-          <View>
             <Field label="Employment Status" required>
               <ChipSelector
                 options={EMPLOYMENT}
@@ -569,7 +626,18 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           </View>
         )
 
-      case 3:
+      case 2:
+        if (!documentsRequired) {
+          return (
+            <View style={styles.noDocsContainer}>
+              <Ionicons name="checkmark-circle-outline" size={48} color={Colors.success} />
+              <Text style={styles.noDocsTitle}>No Documents Required</Text>
+              <Text style={styles.noDocsText}>
+                This product does not require any documents at this stage. You can proceed to review.
+              </Text>
+            </View>
+          )
+        }
         return (
           <View>
             <Text style={styles.reviewTitle}>Upload KYC Documents</Text>
@@ -639,7 +707,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           </View>
         )
 
-      case 4:
+      case 3:
         return (
           <View>
             <Text style={styles.reviewTitle}>Review your details</Text>
@@ -654,18 +722,16 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 { label: 'Nationality', value: formData.nationality },
                 { label: 'Marital Status', value: formData.maritalStatus },
               ]},
-              { title: 'Address', stepIndex: 1, rows: [
+              { title: 'Address & Employment', stepIndex: 1, rows: [
                 { label: 'Address', value: formData.address },
                 { label: 'City', value: formData.city },
                 { label: 'State', value: formData.state },
-              ]},
-              { title: 'Employment', stepIndex: 2, rows: [
                 { label: 'Status', value: formData.employmentStatus },
                 { label: 'Occupation', value: formData.occupation },
                 { label: 'Employer', value: formData.employer },
                 { label: 'Annual Income', value: formData.annualIncome ? `₦${parseFloat(formData.annualIncome).toLocaleString()}` : '' },
               ]},
-              { title: 'Documents', stepIndex: 3, rows: [
+              { title: 'Documents', stepIndex: 2, rows: [
                 { label: 'Uploaded', value: kycDocuments.length > 0 ? `${kycDocuments.length} file(s)` : 'None' },
               ]},
             ].map(({ title, stepIndex, rows }) => (
@@ -811,4 +877,12 @@ const styles = StyleSheet.create({
     borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'flex-start',
   },
   kycNoteText: { flex: 1, fontSize: 12, color: Colors.primary, lineHeight: 18 },
+  noDocsContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 48,
+    gap: 16,
+  },
+  noDocsTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
+  noDocsText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 })

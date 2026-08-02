@@ -221,7 +221,7 @@ export function DashboardContent() {
                           {productDisplayTitle(draftApp.product.name)}
                         </h2>
                         <p className="font-body text-slate text-sm">
-                          Step {draftApp.stepCompleted} of 4 completed · Saved on
+                          Step {draftApp.stepCompleted} of 5 completed · Saved on
                           this device
                         </p>
                       </div>

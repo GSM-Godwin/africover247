@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   DocumentUploadSlot,
   validateKycFile,
@@ -83,10 +84,7 @@ export default function Step3Page() {
     );
   }, [application, slots]);
 
-  const allUploaded =
-    slots.length > 0 &&
-    slotStates.length === slots.length &&
-    slotStates.every((slot) => slot.status === "uploaded");
+  const uploadedCount = slotStates.filter((slot) => slot.status === "uploaded").length;
 
   const updateSlot = useCallback((index: number, next: SlotState) => {
     setSlotStates((prev) => prev.map((slot, i) => (i === index ? next : slot)));
@@ -154,7 +152,10 @@ export default function Step3Page() {
   }
 
   async function handleContinue() {
-    if (!allUploaded) return;
+    if (uploadedCount === 0) {
+      toast.error("Please upload at least one document to proceed.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
@@ -162,7 +163,7 @@ export default function Step3Page() {
       setSaving(false);
       router.push(applyStepPath(productId, applicationId, 4));
     } catch {
-      setError("Something went wrong, please try again.");
+      toast.error("Something went wrong, please try again.");
       setSaving(false);
     }
   }
@@ -193,7 +194,7 @@ export default function Step3Page() {
         productId={productId}
         applicationId={applicationId}
         loading={saving}
-        submitDisabled={!allUploaded}
+        submitDisabled={uploadedCount === 0}
         error={error}
         onSubmit={handleContinue}
       />
