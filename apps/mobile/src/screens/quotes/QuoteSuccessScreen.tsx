@@ -25,17 +25,17 @@ export function QuoteSuccessScreen({ route, navigation }: any) {
         <Text style={styles.info}>
           AfriGlobal Insurance Brokers will review your details and respond within{' '}
           <Text style={{ fontWeight: '700' }}>3 business days</Text>.
-          You will be notified by email, SMS, and push notification when your quote is ready.
+          You will be notified when your quote is ready.
         </Text>
 
         <View style={styles.actions}>
           <Button
-            title="View My Quotes"
-            onPress={() => navigation.navigate('QuotesList')}
-          />
-          <Button
             title="Back to Products"
             onPress={() => navigation.navigate('ProductsList')}
+          />
+          <Button
+            title="View My Quotes"
+            onPress={() => navigation.navigate('QuotesList')}
             variant="outline"
             style={{ marginTop: 10 }}
           />

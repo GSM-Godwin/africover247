@@ -15,6 +15,10 @@ import {
   isAuthenticated,
 } from "@/lib/auth";
 
+function isAdminUser(user: Record<string, unknown> | null): boolean {
+  return user?.role === "admin";
+}
+
 interface NavLinkItem {
   label: string;
   href: string;
@@ -215,6 +219,18 @@ export function Navbar() {
                 icon={link.icon}
               />
             ))}
+            {authenticated && isAdminUser(user) && (
+              <Link
+                href="/admin"
+                className={`font-body text-sm font-medium transition-colors ${
+                  isNavLinkActive(pathname, "/admin")
+                    ? "text-daybreak"
+                    : "text-slate hover:text-midnight"
+                }`}
+              >
+                Admin
+              </Link>
+            )}
           </nav>
 
           <div className="flex items-center gap-2 sm:gap-4">
@@ -332,6 +348,16 @@ export function Navbar() {
                     icon={link.icon}
                   />
                 ))}
+
+                {authenticated && isAdminUser(user) && (
+                  <Link
+                    href="/admin"
+                    onClick={closeMobileNav}
+                    className="block py-3 font-body text-base text-slate hover:text-midnight transition-colors border-b border-slate/10 font-semibold"
+                  >
+                    Admin Dashboard →
+                  </Link>
+                )}
 
                 <div className="border-t border-slate/10 mt-3 pt-3">
                   {authenticated && user ? (

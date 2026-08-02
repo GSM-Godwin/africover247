@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AuthInput } from "@/components/auth/auth-input";
+import { NumberInput } from "@/components/shared/number-input";
 import { WizardSelect } from "@/components/application/wizard-select";
 import { ClaimWizardActions } from "@/components/claims/claim-wizard-actions";
 import { useClaimWizard } from "@/contexts/claim-wizard-context";
@@ -85,6 +86,7 @@ export default function ClaimStep1Page() {
     handleSubmit,
     reset,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
@@ -204,13 +206,23 @@ export default function ClaimStep1Page() {
         />
       </div>
 
-      <AuthInput
-        label="Estimated amount (₦)"
-        placeholder="Amount"
-        type="number"
-        registration={register("estimatedAmount")}
-        error={errors.estimatedAmount?.message}
-      />
+      <div className="space-y-1.5">
+        <label className="block font-body text-sm font-medium text-midnight">
+          Estimated amount (₦)
+        </label>
+        <NumberInput
+          value={watch("estimatedAmount") || ""}
+          onChange={(raw) => setValue("estimatedAmount", raw)}
+          placeholder="e.g. 500,000"
+          prefix="₦"
+          className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+        />
+        {errors.estimatedAmount?.message && (
+          <p className="font-body text-xs text-alert-coral">
+            {errors.estimatedAmount.message}
+          </p>
+        )}
+      </div>
 
       <div className="space-y-1.5">
         <label className="block font-body text-sm font-medium text-midnight">

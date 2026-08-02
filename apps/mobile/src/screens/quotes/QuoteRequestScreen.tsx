@@ -10,7 +10,7 @@ import {
   Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { Button } from '../../components/ui'
+import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Product, AssetField } from '../../types'
@@ -49,7 +49,9 @@ export function QuoteRequestScreen({ route, navigation }: any) {
       setLoading(false)
       navigation.replace('QuoteSuccess', { productName: product.name })
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Could not submit quote request.')
+      const msg = err?.response?.data?.message
+      const errorText = Array.isArray(msg) ? msg[0] : (msg || 'Could not submit quote request.')
+      setError(errorText)
       setLoading(false)
     }
   }
@@ -111,6 +113,13 @@ export function QuoteRequestScreen({ route, navigation }: any) {
                     </TouchableOpacity>
                   ))}
                 </View>
+              ) : field.type === 'number' ? (
+                <NumberInput
+                  value={values[field.key] || ''}
+                  onChangeText={(raw) => handleChange(field.key, raw)}
+                  placeholder={field.hint || 'Enter amount'}
+                  prefix="₦"
+                />
               ) : (
                 <TextInput
                   style={[styles.input, field.type === 'textarea' && styles.inputMultiline]}
@@ -118,7 +127,6 @@ export function QuoteRequestScreen({ route, navigation }: any) {
                   onChangeText={(val) => handleChange(field.key, val)}
                   placeholder={field.hint || `Enter ${field.label.toLowerCase()}`}
                   placeholderTextColor={Colors.textSecondary + '80'}
-                  keyboardType={field.type === 'number' ? 'numeric' : 'default'}
                   multiline={field.type === 'textarea'}
                   numberOfLines={field.type === 'textarea' ? 4 : 1}
                 />

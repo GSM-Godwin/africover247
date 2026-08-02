@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import api from "@/lib/api";
+import { NumberInput } from "@/components/shared/number-input";
 import { QuoteCountdown } from "@/components/shared/quote-countdown";
 import type { QuoteRecord } from "@/types/quote";
 
@@ -267,12 +268,12 @@ export default function AdminQuoteDetailPage() {
                     ? "Your counter amount (₦/year)"
                     : "Quote amount (₦/year)"}
                 </label>
-                <input
-                  type="number"
+                <NumberInput
                   value={quoteAmount}
-                  onChange={(e) => setQuoteAmount(e.target.value)}
-                  placeholder="e.g. 125000"
-                  className="w-full bg-transparent border-b border-slate/40 pb-2 font-mono text-base text-midnight focus:border-daybreak focus:outline-none transition-colors"
+                  onChange={(raw) => setQuoteAmount(raw)}
+                  placeholder="Enter quote amount"
+                  prefix="₦"
+                  className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
                 />
               </div>
               <div>

@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import api from "@/lib/api";
+import { NumberInput } from "@/components/shared/number-input";
 import { type AssetField } from "@/types/asset-field";
 
 interface AssetDetailsModalProps {
@@ -231,6 +232,14 @@ export function AssetDetailsModal({
                   rows={3}
                   placeholder={field.hint}
                   className="w-full bg-transparent border-b border-slate/40 pb-2 font-body text-base text-midnight focus:border-daybreak focus:outline-none transition-colors resize-none"
+                />
+              ) : field.type === "number" ? (
+                <NumberInput
+                  value={values[field.key] || ""}
+                  onChange={(raw) => handleChange(field.key, raw)}
+                  placeholder={field.hint}
+                  prefix="₦"
+                  className="w-full bg-transparent border-b border-slate/40 pb-2 font-body text-base text-midnight focus:border-daybreak focus:outline-none"
                 />
               ) : (
                 <input

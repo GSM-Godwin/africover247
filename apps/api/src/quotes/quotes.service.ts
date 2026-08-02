@@ -83,39 +83,45 @@ export class QuotesService {
       where: { id: userId },
     });
 
-    const quote = await this.prisma.quote.create({
-      data: {
-        customerId: userId,
-        productId: dto.productId,
-        status: 'pending_review',
-        customerDetails: dto.customerDetails as Prisma.InputJsonValue,
-        negotiationHistory: [],
-      },
-      include: { product: true, customer: true },
+    const quote = await this.prisma.$transaction(async (tx) => {
+      const newQuote = await tx.quote.create({
+        data: {
+          customerId: userId,
+          productId: dto.productId,
+          status: 'pending_review',
+          customerDetails: dto.customerDetails as Prisma.InputJsonValue,
+          negotiationHistory: [],
+        },
+        include: { product: true, customer: true },
+      });
+
+      await tx.notification.create({
+        data: {
+          userId,
+          message: `Your quote request for ${product.name} has been received. AfriGlobal will respond within 3 business days.`,
+          type: 'quote_received',
+          referenceType: 'quote',
+          referenceId: newQuote.id,
+          quoteId: newQuote.id,
+        },
+      });
+
+      return newQuote;
     });
 
-    await this.prisma.notification.create({
-      data: {
-        userId,
-        message: `Your quote request for ${product.name} has been received. AfriGlobal will respond within 3 business days.`,
-        type: 'quote_received',
-        referenceType: 'quote',
-        referenceId: quote.id,
-        quoteId: quote.id,
-      },
-    });
-
-    await this.emailService.sendEmail({
-      to: user!.email,
-      subject: `Quote request received — ${product.name}`,
-      html: `
-        <p>Dear ${user!.firstName},</p>
-        <p>Your quote request for <strong>${product.name}</strong> has been received.</p>
-        <p>AfriGlobal Insurance Brokers will review your request and respond within <strong>3 business days</strong>.</p>
-        <p>You can track your quote status on your dashboard.</p>
-        <p>Reference: ${quote.id}</p>
-      `,
-    });
+    try {
+      await this.emailService.sendEmail({
+        to: user!.email,
+        subject: `Quote request received — ${product.name}`,
+        html: `
+          <p>Dear ${user!.firstName},</p>
+          <p>Your quote request for <strong>${product.name}</strong> has been received.</p>
+          <p>AfriGlobal Insurance Brokers will review your request and respond within <strong>3 business days</strong>.</p>
+          <p>You can track your quote status on your dashboard.</p>
+          <p>Reference: ${quote.id}</p>
+        `,
+      });
+    } catch {}
 
     if (user!.phone) {
       await this.smsService.sendNotificationSms(

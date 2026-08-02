@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Button, Card, StatusBadge, ConfirmModal } from '../../components/ui'
+import { Button, Card, StatusBadge, ConfirmModal, NumberInput } from '../../components/ui'
 import { QuoteCountdown } from '../../components/shared/QuoteCountdown'
 import { Colors } from '../../constants'
 import api from '../../services/api'
@@ -244,13 +244,11 @@ export function QuoteDetailScreen({ route, navigation }: any) {
           {showCounter && canAct && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Your Counter-Offer</Text>
-              <TextInput
-                style={styles.counterInput}
+              <NumberInput
                 value={counterAmount}
                 onChangeText={setCounterAmount}
                 placeholder="Your proposed amount (₦/year)"
-                placeholderTextColor={Colors.textSecondary + '80'}
-                keyboardType="numeric"
+                prefix="₦"
               />
               <TextInput
                 style={[styles.counterInput, styles.counterNote]}

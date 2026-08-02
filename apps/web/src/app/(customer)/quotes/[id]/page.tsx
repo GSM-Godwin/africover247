@@ -10,6 +10,7 @@ import {
   MessageCircle,
 } from "lucide-react";
 import api from "@/lib/api";
+import { NumberInput } from "@/components/shared/number-input";
 import { QuoteCountdown } from "@/components/shared/quote-countdown";
 import type { QuoteRecord } from "@/types/quote";
 import type { ApplicationRecord } from "@/types/application";
@@ -258,12 +259,12 @@ export default function QuoteDetailPage() {
                 <label className="block font-body text-sm font-medium text-midnight mb-1.5">
                   Your proposed premium (₦/year)
                 </label>
-                <input
-                  type="number"
+                <NumberInput
                   value={counterAmount}
-                  onChange={(e) => setCounterAmount(e.target.value)}
-                  placeholder="e.g. 95000"
-                  className="w-full bg-transparent border-b border-slate/40 pb-2 font-mono text-base text-midnight focus:border-daybreak focus:outline-none transition-colors"
+                  onChange={(raw) => setCounterAmount(raw)}
+                  placeholder="Your proposed amount"
+                  prefix="₦"
+                  className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
                 />
               </div>
               <div>

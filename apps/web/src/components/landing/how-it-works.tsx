@@ -7,7 +7,7 @@ const steps = [
   {
     number: "01",
     title: "Browse Plans",
-    description: "Compare Motor, Health & SSLAG cover side by side.",
+    description: "Compare motor, property, health, and specialty cover side by side.",
   },
   {
     number: "02",

@@ -13,7 +13,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { Button, Card } from '../../components/ui'
+import { Button, Card, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import { getCategoryIcon, getCategoryColor } from '../../constants/categoryIcons'
 import api from '../../services/api'
@@ -192,6 +192,13 @@ function AssetModal({
                       </Text>
                     ) : null}
                   </View>
+                ) : field.type === 'number' ? (
+                  <NumberInput
+                    value={values[field.key] || ''}
+                    onChangeText={(val) => handleChange(field.key, val)}
+                    placeholder={field.hint || 'Enter amount'}
+                    prefix="₦"
+                  />
                 ) : (
                   <TextInput
                     style={modalStyles.input}
@@ -199,7 +206,6 @@ function AssetModal({
                     onChangeText={(val) => handleChange(field.key, val)}
                     placeholder={field.hint || `Enter ${field.label.toLowerCase()}`}
                     placeholderTextColor={Colors.textSecondary + '80'}
-                    keyboardType={field.type === 'number' ? 'numeric' : 'default'}
                   />
                 )}
 

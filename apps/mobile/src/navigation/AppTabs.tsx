@@ -70,6 +70,11 @@ export function AppTabs({ onLogout }: AppTabsProps) {
             <TabIcon name={focused ? 'shield' : 'shield-outline'} focused={focused} />
           ),
         }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate('Products', { screen: 'ProductsList' })
+          },
+        })}
       />
       <Tab.Screen
         name="Claims"
