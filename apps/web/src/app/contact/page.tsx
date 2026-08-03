@@ -46,7 +46,7 @@ export default function ContactPage() {
     <>
       <Navbar />
 
-      <section className="bg-midnight text-white py-16 px-6 pt-[80px]">
+      <section className="bg-midnight text-white py-16 px-6 pt-[130px]">
         <div className="max-w-3xl mx-auto text-center">
           <p className="font-body text-daybreak text-sm font-semibold uppercase tracking-widest mb-3">
             Get in Touch

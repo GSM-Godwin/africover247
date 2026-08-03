@@ -105,23 +105,25 @@ export function ClaimsScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={f}
-            style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
-            onPress={() => setActiveFilter(f)}
-          >
-            <Text style={[styles.filterPillText, activeFilter === f && styles.filterPillTextActive]}>
-              {f}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.filterWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {FILTERS.map((f) => (
+            <TouchableOpacity
+              key={f}
+              style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
+              onPress={() => setActiveFilter(f)}
+            >
+              <Text style={[styles.filterPillText, activeFilter === f && styles.filterPillTextActive]}>
+                {f}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
 
       {loading ? (
         <View style={styles.loadingContainer}>
@@ -171,13 +173,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
   },
   newClaimText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
-  filterRow: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 8,
+  filterWrapper: {
+    height: 52,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
+    justifyContent: 'center',
+  },
+  filterRow: {
+    paddingHorizontal: 20,
+    gap: 8,
+    alignItems: 'center',
   },
   filterPill: {
     paddingHorizontal: 16,

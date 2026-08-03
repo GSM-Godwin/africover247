@@ -21,7 +21,7 @@ export default function AboutPage() {
     <>
       <Navbar />
 
-      <section className="bg-midnight text-white py-20 px-6 pt-[80px]">
+      <section className="bg-midnight text-white py-20 px-6 pt-[130px]">
         <div className="max-w-4xl mx-auto text-center">
           <div className="inline-flex bg-white rounded-2xl px-8 py-5 mb-8">
             <Image
