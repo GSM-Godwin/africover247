@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -26,6 +27,7 @@ export function DraftsScreen({ navigation }: any) {
   const [drafts, setDrafts] = useState<Draft[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [deleting, setDeleting] = useState<string | null>(null)
 
   const fetchDrafts = useCallback(async () => {
     try {
@@ -44,8 +46,34 @@ export function DraftsScreen({ navigation }: any) {
     setRefreshing(false)
   }
 
+  async function handleDelete(id: string, name: string) {
+    Alert.alert(
+      'Delete Draft',
+      `Are you sure you want to delete your draft application for "${name}"? This cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setDeleting(id)
+            try {
+              await api.delete(`/applications/${id}`)
+              setDrafts((prev) => prev.filter((d) => d.id !== id))
+            } catch {
+              Alert.alert('Error', 'Could not delete draft. Please try again.')
+            } finally {
+              setDeleting(null)
+            }
+          },
+        },
+      ]
+    )
+  }
+
   function renderDraft({ item }: { item: Draft }) {
     const progress = (item.stepCompleted / 4) * 100
+    const isDeleting = deleting === item.id
 
     return (
       <TouchableOpacity
@@ -54,6 +82,7 @@ export function DraftsScreen({ navigation }: any) {
           product: item.product,
         })}
         activeOpacity={0.7}
+        disabled={isDeleting}
       >
         <Card style={styles.draftCard} padding={16}>
           <View style={styles.draftHeader}>
@@ -66,7 +95,18 @@ export function DraftsScreen({ navigation }: any) {
               </Text>
               <Text style={styles.draftCategory}>{item.product.category}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            <TouchableOpacity
+              onPress={() => handleDelete(item.id, item.product.name)}
+              style={styles.deleteButton}
+              disabled={isDeleting}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              {isDeleting ? (
+                <ActivityIndicator size="small" color={Colors.error} />
+              ) : (
+                <Ionicons name="trash-outline" size={18} color={Colors.error} />
+              )}
+            </TouchableOpacity>
           </View>
 
           <View style={styles.draftMeta}>
@@ -166,6 +206,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   draftInfo: { flex: 1 },
+  deleteButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: Colors.errorLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   draftName: { fontSize: 14, fontWeight: '700', color: Colors.text },
   draftCategory: { fontSize: 12, color: Colors.textSecondary, marginTop: 2 },
   draftMeta: {
