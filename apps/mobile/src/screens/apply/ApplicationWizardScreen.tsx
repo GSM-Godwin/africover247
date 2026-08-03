@@ -260,7 +260,7 @@ const pickerStyles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     margin: 16, paddingHorizontal: 12, paddingVertical: 10,
-    backgroundColor: '#F0F4F8', borderRadius: 10,
+    backgroundColor: Colors.background, borderRadius: 10,
   },
   searchInput: { flex: 1, fontSize: 14, color: Colors.text },
   option: {

@@ -172,7 +172,7 @@ export function ProductsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   subtitle: { fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
   searchContainer: {
     flexDirection: 'row',
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
   },
-  ctaText: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  ctaText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyState: { alignItems: 'center', paddingTop: 48 },
   emptyText: { fontSize: 14, color: Colors.textSecondary, marginTop: 12 },

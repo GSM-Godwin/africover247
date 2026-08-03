@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '800',
-    color: Colors.text,
+    color: Colors.textDark,
     marginBottom: 8,
     letterSpacing: -0.5,
   },
@@ -153,7 +153,7 @@ const styles = StyleSheet.create({
   otpLabel: {
     fontSize: 13,
     fontWeight: '600',
-    color: Colors.text,
+    color: Colors.textDark,
     marginBottom: 12,
   },
   otpContainer: { marginBottom: 8 },

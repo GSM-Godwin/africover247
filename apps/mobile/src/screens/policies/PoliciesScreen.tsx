@@ -75,11 +75,7 @@ export function PoliciesScreen({ navigation }: any) {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.primary} />
-        </TouchableOpacity>
         <Text style={styles.title}>My Policies</Text>
-        <View style={{ width: 22 }} />
       </View>
 
       {loading ? (
@@ -114,16 +110,14 @@ export function PoliciesScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingTop: 16,
+    paddingBottom: 12,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F4F8',
+    borderBottomColor: Colors.borderLight,
   },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 20, gap: 12 },
   policyCard: { marginBottom: 0 },
@@ -142,6 +136,6 @@ const styles = StyleSheet.create({
   policyMetaText: { fontSize: 12, color: Colors.textSecondary },
   policyPremium: { fontSize: 12, color: Colors.primary, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 40 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 16, marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 16, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
 })

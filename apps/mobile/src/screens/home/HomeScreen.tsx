@@ -122,41 +122,47 @@ export function HomeScreen({ navigation }: any) {
         </View>
 
         <View style={styles.summaryRow}>
-          <TouchableOpacity
-            style={styles.summaryCardWrapper}
-            onPress={() => navigation.navigate('Policies')}
-            activeOpacity={0.8}
-          >
-            <Card style={[styles.summaryCard, { backgroundColor: Colors.primary }]} padding={16}>
-              <Ionicons name="shield-checkmark" size={20} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryCount}>{activePolicies.length}</Text>
-              <Text style={styles.summaryLabel}>Active Policies</Text>
-            </Card>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.summaryCardWrapper}
-            onPress={() => navigation.navigate('Claims')}
-            activeOpacity={0.8}
-          >
-            <Card style={[styles.summaryCard, { backgroundColor: Colors.accent }]} padding={16}>
-              <Ionicons name="document-text" size={20} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryCount}>{pendingClaims.length}</Text>
-              <Text style={styles.summaryLabel}>Pending Claims</Text>
-            </Card>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.summaryCardWrapper}
-            onPress={() => navigation.navigate('Products', { screen: 'QuotesList' })}
-            activeOpacity={0.8}
-          >
-            <Card style={[styles.summaryCard, { backgroundColor: Colors.success }]} padding={16}>
-              <Ionicons name="chatbubble-ellipses" size={20} color="rgba(255,255,255,0.8)" />
-              <Text style={styles.summaryCount}>{pendingQuotes.length}</Text>
-              <Text style={styles.summaryLabel}>Quotes Ready</Text>
-            </Card>
-          </TouchableOpacity>
+          {[
+            {
+              icon: 'shield-checkmark' as const,
+              count: activePolicies.length,
+              label: 'Active Policies',
+              iconBg: Colors.primaryLight,
+              iconColor: Colors.primary,
+              onPress: () => navigation.navigate('Policies'),
+            },
+            {
+              icon: 'document-text' as const,
+              count: pendingClaims.length,
+              label: 'Pending Claims',
+              iconBg: Colors.accentLight,
+              iconColor: Colors.accent,
+              onPress: () => navigation.navigate('Claims'),
+            },
+            {
+              icon: 'chatbubble-ellipses' as const,
+              count: pendingQuotes.length,
+              label: 'Quotes Ready',
+              iconBg: Colors.successLight,
+              iconColor: Colors.success,
+              onPress: () => navigation.navigate('Products', { screen: 'QuotesList' }),
+            },
+          ].map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.summaryCardWrapper}
+              onPress={item.onPress}
+              activeOpacity={0.8}
+            >
+              <Card style={styles.summaryCard} padding={14}>
+                <View style={[styles.summaryIconCircle, { backgroundColor: item.iconBg }]}>
+                  <Ionicons name={item.icon} size={18} color={item.iconColor} />
+                </View>
+                <Text style={styles.summaryCount}>{item.count}</Text>
+                <Text style={styles.summaryLabel}>{item.label}</Text>
+              </Card>
+            </TouchableOpacity>
+          ))}
         </View>
 
         <View style={styles.section}>
@@ -383,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   greeting: { fontSize: 14, color: Colors.textSecondary },
-  name: { fontSize: 22, fontWeight: '800', color: Colors.text, marginTop: 2 },
+  name: { fontSize: 22, fontWeight: '800', color: Colors.textDark, marginTop: 2 },
   notifButton: {
     width: 42,
     height: 42,
@@ -418,17 +424,17 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   summaryCardWrapper: { flex: 1 },
-  summaryCard: {
-    flex: 1,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 4,
+  summaryCard: { flex: 1 },
+  summaryIconCircle: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 10,
   },
-  summaryCount: { fontSize: 28, fontWeight: '800', color: Colors.white, marginTop: 8 },
-  summaryLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+  summaryCount: { fontSize: 26, fontWeight: '800', color: Colors.textDark, marginBottom: 2 },
+  summaryLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '500', lineHeight: 14 },
   section: { paddingHorizontal: 20, marginTop: 24 },
   sectionHeader: {
     flexDirection: 'row',
@@ -436,7 +442,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textDark },
   seeAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
   quickActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
   quickAction: { flex: 1, alignItems: 'center' },
@@ -479,7 +485,7 @@ const styles = StyleSheet.create({
   policyMetaText: { fontSize: 12, color: Colors.textSecondary },
   policyPremium: { fontSize: 12, color: Colors.primary, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 16, marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 16, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   emptyButton: {
     marginTop: 20,
@@ -488,5 +494,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
-  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
 })

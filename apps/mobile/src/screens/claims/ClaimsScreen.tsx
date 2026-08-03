@@ -84,7 +84,7 @@ export function ClaimsScreen({ navigation }: any) {
           style={styles.newClaimButton}
           onPress={() => navigation.navigate('NewClaim')}
         >
-          <Ionicons name="add" size={20} color={Colors.white} />
+          <Ionicons name="add" size={20} color={Colors.textDark} />
           <Text style={styles.newClaimText}>File Claim</Text>
         </TouchableOpacity>
       </View>
@@ -131,12 +131,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
     backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
   },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   newClaimButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: Colors.primary, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
+    backgroundColor: Colors.accent, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
   },
-  newClaimText: { fontSize: 13, fontWeight: '700', color: Colors.white },
+  newClaimText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 20, gap: 12 },
   claimCard: { marginBottom: 0 },
@@ -155,11 +155,11 @@ const styles = StyleSheet.create({
   claimAmountLabel: { fontSize: 12, color: Colors.textSecondary },
   claimAmountValue: { fontSize: 13, color: Colors.primary, fontWeight: '700' },
   emptyState: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 16, marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 16, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   emptyButton: {
     marginTop: 20, backgroundColor: Colors.accent,
     paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12,
   },
-  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
 })

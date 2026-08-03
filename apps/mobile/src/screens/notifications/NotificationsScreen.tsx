@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     marginTop: 6,
   },
-  separator: { height: 1, backgroundColor: '#F0F4F8' },
+  separator: { height: 1, backgroundColor: Colors.background },
   emptyContainer: { flex: 1 },
   emptyState: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 80 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 16, marginBottom: 8 },

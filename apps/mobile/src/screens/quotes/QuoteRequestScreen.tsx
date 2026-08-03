@@ -207,7 +207,7 @@ const styles = StyleSheet.create({
   optionText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
   optionTextSelected: { color: Colors.primary, fontWeight: '700' },
   infoBox: {
-    backgroundColor: '#F0F4F8',
+    backgroundColor: Colors.background,
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,

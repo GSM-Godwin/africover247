@@ -57,7 +57,7 @@ export function Button({
     >
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? Colors.text : Colors.primary}
+          color={variant === 'primary' ? Colors.textDark : Colors.primary}
           size="small"
         />
       ) : (
@@ -86,7 +86,7 @@ const styles = StyleSheet.create({
   ghost: { backgroundColor: 'transparent' },
   disabled: { opacity: 0.5 },
   text: { fontSize: 15, fontWeight: '600', letterSpacing: 0.3 },
-  textPrimary: { color: Colors.white },
+  textPrimary: { color: Colors.textDark },
   textSecondary: { color: Colors.white },
   textOutline: { color: Colors.primary },
   textGhost: { color: Colors.primary },

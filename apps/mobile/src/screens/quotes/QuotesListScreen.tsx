@@ -138,7 +138,7 @@ export function QuotesListScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
   urgentCount: { fontSize: 13, color: Colors.accent, fontWeight: '600', marginTop: 2 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 20, paddingBottom: 24, gap: 12 },
@@ -175,7 +175,7 @@ const styles = StyleSheet.create({
   amountValue: { fontSize: 14, fontWeight: '700', color: Colors.primary },
   quoteDate: { fontSize: 11, color: Colors.textSecondary },
   emptyState: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 60 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.text, marginTop: 16, marginBottom: 8 },
+  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 16, marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   emptyButton: {
     marginTop: 20,
@@ -184,5 +184,5 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
   },
-  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
 })
