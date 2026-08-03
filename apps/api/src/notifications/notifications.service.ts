@@ -61,7 +61,21 @@ export class NotificationsService {
     };
   }
 
-  // --- Create notification (used internally by other services) ---
+  async markReadByReference(
+    userId: string,
+    referenceType: string,
+    referenceId: string,
+  ) {
+    await this.prisma.notification.updateMany({
+      where: {
+        userId,
+        referenceType,
+        referenceId,
+        read: false,
+      },
+      data: { read: true },
+    });
+  }
 
   create(data: {
     userId: string;

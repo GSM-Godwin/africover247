@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { markRelatedNotificationsRead } from '../../services/notifications'
 
 export function ClaimDetailScreen({ route, navigation }: any) {
   const params = route.params || {}
@@ -21,7 +22,10 @@ export function ClaimDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     api.get(`/claims/${claimId}`)
-      .then((res) => setClaim(res.data))
+      .then((res) => {
+        setClaim(res.data)
+        markRelatedNotificationsRead('claim', claimId)
+      })
       .catch(() => navigation.goBack())
       .finally(() => setLoading(false))
   }, [claimId])

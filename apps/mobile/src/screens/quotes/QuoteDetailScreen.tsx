@@ -17,6 +17,7 @@ import { Button, Card, StatusBadge, ConfirmModal, NumberInput } from '../../comp
 import { QuoteCountdown } from '../../components/shared/QuoteCountdown'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { markRelatedNotificationsRead } from '../../services/notifications'
 import type { Quote, NegotiationEntry } from '../../types'
 
 const MAX_ROUNDS = 3
@@ -58,6 +59,7 @@ export function QuoteDetailScreen({ route, navigation }: any) {
     try {
       const res = await api.get(`/quotes/${quoteId}`)
       setQuote(res.data)
+      markRelatedNotificationsRead('quote', quoteId)
     } catch {
       navigation.goBack()
     }

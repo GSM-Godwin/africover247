@@ -16,3 +16,15 @@ export async function registerForPushNotifications(): Promise<string | null> {
 export async function savePushToken(_token: string): Promise<void> {}
 
 export async function updateBadgeCount(_count: number): Promise<void> {}
+
+export async function markRelatedNotificationsRead(
+  referenceType: 'claim' | 'policy' | 'quote',
+  referenceId: string,
+) {
+  try {
+    await api.patch('/notifications/read-by-reference', {
+      referenceType,
+      referenceId,
+    })
+  } catch {}
+}

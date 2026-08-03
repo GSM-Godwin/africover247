@@ -81,7 +81,7 @@ export function DraftsScreen({ navigation }: any) {
           applicationId: item.id,
           product: item.product,
         })}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
         disabled={isDeleting}
       >
         <Card style={styles.draftCard} padding={16}>
@@ -188,7 +188,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F4F8',
   },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  title: { fontSize: 16, fontWeight: '700', color: Colors.primary },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 20, gap: 12 },
   draftCard: { marginBottom: 0 },

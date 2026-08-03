@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { markRelatedNotificationsRead } from '../../services/notifications'
 
 interface PolicyDetail {
   id: string
@@ -45,7 +46,10 @@ export function PolicyDetailScreen({ route, navigation }: any) {
 
   useEffect(() => {
     api.get(`/policies/${policyId}`)
-      .then((res) => setPolicy(res.data))
+      .then((res) => {
+        setPolicy(res.data)
+        markRelatedNotificationsRead('policy', policyId)
+      })
       .catch(() => navigation.goBack())
       .finally(() => setLoading(false))
   }, [policyId])

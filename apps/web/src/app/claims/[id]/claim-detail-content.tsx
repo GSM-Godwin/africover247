@@ -49,6 +49,10 @@ export function ClaimDetailContent() {
     try {
       const res = await api.get<ClaimDetailRecord>(`/claims/${claimId}`);
       setClaim(res.data);
+      api.patch('/notifications/read-by-reference', {
+        referenceType: 'claim',
+        referenceId: claimId,
+      }).catch(() => {});
     } catch {
       setNotFound(true);
       setClaim(null);

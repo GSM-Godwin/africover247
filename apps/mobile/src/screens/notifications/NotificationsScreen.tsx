@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F4F8',
   },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.text },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   subtitle: { fontSize: 13, color: Colors.primary, marginTop: 2, fontWeight: '600' },
   markAllRead: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },

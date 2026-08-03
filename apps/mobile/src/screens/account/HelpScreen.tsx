@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F4F8',
   },
-  headerTitle: { fontSize: 16, fontWeight: '700', color: Colors.text },
+  headerTitle: { fontSize: 16, fontWeight: '700', color: Colors.primary },
   scroll: { padding: 20 },
   sectionTitle: {
     fontSize: 14,

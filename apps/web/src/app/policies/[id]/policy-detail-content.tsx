@@ -45,6 +45,10 @@ export function PolicyDetailContent() {
     try {
       const res = await api.get<PolicyDetailRecord>(`/policies/${policyId}`);
       setPolicy(res.data);
+      api.patch('/notifications/read-by-reference', {
+        referenceType: 'policy',
+        referenceId: policyId,
+      }).catch(() => {});
     } catch {
       setNotFound(true);
       setPolicy(null);

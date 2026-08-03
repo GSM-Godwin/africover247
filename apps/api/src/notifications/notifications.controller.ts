@@ -3,6 +3,7 @@ import {
   Get,
   Patch,
   Param,
+  Body,
   Query,
   UseGuards,
   HttpCode,
@@ -37,6 +38,19 @@ export class NotificationsController {
   @HttpCode(HttpStatus.OK)
   markAllAsRead(@CurrentUser() user: { id: string }) {
     return this.notificationsService.markAllAsRead(user.id);
+  }
+
+  @Patch('read-by-reference')
+  @HttpCode(HttpStatus.OK)
+  markReadByReference(
+    @CurrentUser() user: { id: string },
+    @Body() body: { referenceType: string; referenceId: string },
+  ) {
+    return this.notificationsService.markReadByReference(
+      user.id,
+      body.referenceType,
+      body.referenceId,
+    );
   }
 
   @Patch(':id/read')

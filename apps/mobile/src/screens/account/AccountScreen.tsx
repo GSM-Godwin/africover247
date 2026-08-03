@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   avatarText: { fontSize: 26, fontWeight: '800', color: Colors.white },
-  userName: { fontSize: 20, fontWeight: '800', color: Colors.text, marginBottom: 4 },
+  userName: { fontSize: 20, fontWeight: '800', color: Colors.primary, marginBottom: 4 },
   userEmail: { fontSize: 13, color: Colors.textSecondary, marginBottom: 8 },
   verifiedBadge: {
     flexDirection: 'row',

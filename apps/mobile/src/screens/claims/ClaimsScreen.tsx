@@ -4,6 +4,7 @@ import {
   Text,
   StyleSheet,
   FlatList,
+  ScrollView,
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
@@ -15,10 +16,21 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Claim } from '../../types'
 
+const FILTERS = ['All', 'Submitted', 'In Review', 'Approved', 'Rejected']
+
+const FILTER_STATUS_MAP: Record<string, string[]> = {
+  'All': [],
+  'Submitted': ['submitted'],
+  'In Review': ['in_review'],
+  'Approved': ['approved', 'accepted'],
+  'Rejected': ['rejected'],
+}
+
 export function ClaimsScreen({ navigation }: any) {
   const [claims, setClaims] = useState<Claim[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [activeFilter, setActiveFilter] = useState('All')
 
   const fetchClaims = useCallback(async () => {
     try {
@@ -37,11 +49,15 @@ export function ClaimsScreen({ navigation }: any) {
     setRefreshing(false)
   }
 
+  const filteredClaims = activeFilter === 'All'
+    ? claims
+    : claims.filter((c) => FILTER_STATUS_MAP[activeFilter]?.includes(c.status))
+
   function renderClaim({ item }: { item: Claim }) {
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate('ClaimDetail', { claimId: item.id })}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
       >
         <Card style={styles.claimCard} padding={16}>
           <View style={styles.claimHeader}>
@@ -89,13 +105,31 @@ export function ClaimsScreen({ navigation }: any) {
         </TouchableOpacity>
       </View>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+      >
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={f}
+            style={[styles.filterPill, activeFilter === f && styles.filterPillActive]}
+            onPress={() => setActiveFilter(f)}
+          >
+            <Text style={[styles.filterPillText, activeFilter === f && styles.filterPillTextActive]}>
+              {f}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       {loading ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator color={Colors.primary} size="large" />
         </View>
       ) : (
         <FlatList
-          data={claims}
+          data={filteredClaims}
           renderItem={renderClaim}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.list}
@@ -129,14 +163,36 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12,
-    backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: '#F0F4F8',
+    backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.borderLight,
   },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   newClaimButton: {
     flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: Colors.accent, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 10,
   },
   newClaimText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
+  filterRow: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  filterPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 20,
+    backgroundColor: Colors.white,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterPillActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  filterPillText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  filterPillTextActive: { color: Colors.white, fontWeight: '700' },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 20, gap: 12 },
   claimCard: { marginBottom: 0 },
@@ -147,7 +203,7 @@ const styles = StyleSheet.create({
   claimProduct: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   claimMeta: {
     flexDirection: 'row', justifyContent: 'space-between',
-    paddingTop: 12, borderTopWidth: 1, borderTopColor: '#F0F4F8',
+    paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.borderLight,
   },
   claimType: { fontSize: 12, color: Colors.textSecondary },
   claimDate: { fontSize: 12, color: Colors.textSecondary },

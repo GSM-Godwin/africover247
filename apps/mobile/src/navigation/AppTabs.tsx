@@ -4,11 +4,9 @@ import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { ClaimsScreen } from '../screens/claims/ClaimsScreen'
-import { NotificationsScreen } from '../screens/notifications/NotificationsScreen'
 import { AccountScreen } from '../screens/account/AccountScreen'
 import { ProductsStack } from './ProductsStack'
 import { Colors } from '../constants'
-import { useNotifications } from '../contexts/NotificationContext'
 
 const Tab = createBottomTabNavigator()
 const TabNavigator = Tab.Navigator as React.ComponentType<any>
@@ -38,8 +36,6 @@ interface AppTabsProps {
 }
 
 export function AppTabs({ onLogout }: AppTabsProps) {
-  const { unreadCount } = useNotifications()
-
   return (
     <TabNavigator
       screenOptions={{
@@ -84,24 +80,6 @@ export function AppTabs({ onLogout }: AppTabsProps) {
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'document-text' : 'document-text-outline'} focused={focused} />
           ),
-        }}
-      />
-      <Tab.Screen
-        name="Notifications"
-        component={NotificationsScreen}
-        options={{
-          tabBarLabel: 'Alerts',
-          tabBarIcon: ({ focused }) => (
-            <TabIcon name={focused ? 'notifications' : 'notifications-outline'} focused={focused} />
-          ),
-          tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
-          tabBarBadgeStyle: {
-            backgroundColor: Colors.error,
-            fontSize: 10,
-            minWidth: 16,
-            height: 16,
-            lineHeight: 16,
-          },
         }}
       />
       <Tab.Screen

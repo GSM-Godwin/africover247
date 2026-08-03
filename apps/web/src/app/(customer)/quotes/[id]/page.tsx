@@ -40,7 +40,13 @@ export default function QuoteDetailPage() {
   useEffect(() => {
     api
       .get<QuoteRecord>(`/quotes/${id}`)
-      .then((res) => setQuote(res.data))
+      .then((res) => {
+        setQuote(res.data);
+        api.patch('/notifications/read-by-reference', {
+          referenceType: 'quote',
+          referenceId: id,
+        }).catch(() => {});
+      })
       .catch(() => {
         toast.error("Quote not found");
         router.push("/dashboard");

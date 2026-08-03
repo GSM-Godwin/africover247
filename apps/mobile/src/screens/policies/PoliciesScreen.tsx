@@ -44,7 +44,7 @@ export function PoliciesScreen({ navigation }: any) {
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate('PolicyDetail', { policyId: item.id })}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
       >
         <Card style={styles.policyCard} padding={16}>
           <View style={styles.policyHeader}>
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.borderLight,
   },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { padding: 20, gap: 12 },
   policyCard: { marginBottom: 0 },

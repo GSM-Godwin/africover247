@@ -12,6 +12,7 @@ import { PoliciesScreen } from '../screens/policies/PoliciesScreen'
 import { PolicyDetailScreen } from '../screens/policies/PolicyDetailScreen'
 import { NewClaimScreen } from '../screens/claims/NewClaimScreen'
 import { ClaimDetailScreen } from '../screens/claims/ClaimDetailScreen'
+import { NotificationsScreen } from '../screens/notifications/NotificationsScreen'
 
 const Stack = createStackNavigator()
 const StackNavigator = Stack.Navigator as React.ComponentType<any>
@@ -37,6 +38,7 @@ export function MainStack({ onLogout }: MainStackProps) {
       <Stack.Screen name="PolicyDetail" component={PolicyDetailScreen} />
       <Stack.Screen name="NewClaim" component={NewClaimScreen} />
       <Stack.Screen name="ClaimDetail" component={ClaimDetailScreen} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} />
     </StackNavigator>
   )
 }

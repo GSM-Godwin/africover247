@@ -53,7 +53,7 @@ export function RootNavigator() {
       } else if (referenceType === 'policy') {
         navigationRef.current.navigate('Tabs', { screen: 'Home' } as never)
       } else {
-        navigationRef.current.navigate('Tabs', { screen: 'Notifications' } as never)
+        navigationRef.current.navigate('Notifications' as never)
       }
     },
     []

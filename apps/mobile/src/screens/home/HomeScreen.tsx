@@ -152,7 +152,7 @@ export function HomeScreen({ navigation }: any) {
               key={item.label}
               style={styles.summaryCardWrapper}
               onPress={item.onPress}
-              activeOpacity={0.8}
+              activeOpacity={0.85}
             >
               <Card style={styles.summaryCard} padding={14}>
                 <View style={[styles.summaryIconCircle, { backgroundColor: item.iconBg }]}>
@@ -205,7 +205,7 @@ export function HomeScreen({ navigation }: any) {
                   applicationId: draft.id,
                   product: draft.product,
                 })}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 <Card style={styles.draftCard} padding={16}>
                   <View style={styles.draftRow}>
@@ -248,7 +248,7 @@ export function HomeScreen({ navigation }: any) {
               <TouchableOpacity
                 key={policy.id}
                 onPress={() => navigation.navigate('PolicyDetail', { policyId: policy.id })}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 <Card style={styles.policyCard} padding={16}>
                   <View style={styles.policyRow}>
@@ -293,7 +293,7 @@ export function HomeScreen({ navigation }: any) {
               <TouchableOpacity
                 key={claim.id}
                 onPress={() => navigation.navigate('Claims')}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 <Card style={styles.policyCard} padding={16}>
                   <View style={styles.policyRow}>
@@ -329,7 +329,7 @@ export function HomeScreen({ navigation }: any) {
                   screen: 'QuoteDetail',
                   params: { quoteId: quote.id },
                 })}
-                activeOpacity={0.7}
+                activeOpacity={0.85}
               >
                 <Card style={styles.quoteCard} padding={16}>
                   <View style={styles.quoteRow}>
@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   greeting: { fontSize: 14, color: Colors.textSecondary },
-  name: { fontSize: 22, fontWeight: '800', color: Colors.textDark, marginTop: 2 },
+  name: { fontSize: 22, fontWeight: '800', color: Colors.primary, marginTop: 2 },
   notifButton: {
     width: 42,
     height: 42,
@@ -444,7 +444,12 @@ const styles = StyleSheet.create({
   },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textDark },
   seeAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  quickActions: { flexDirection: 'row', justifyContent: 'space-between', gap: 10 },
+  quickActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+    marginTop: 12,
+  },
   quickAction: { flex: 1, alignItems: 'center' },
   quickActionIcon: {
     width: 52,

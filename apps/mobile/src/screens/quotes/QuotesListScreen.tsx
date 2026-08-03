@@ -46,7 +46,7 @@ export function QuotesListScreen({ navigation }: any) {
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate('QuoteDetail', { quoteId: item.id })}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
       >
         <Card style={[styles.quoteCard, needsAction && styles.quoteCardUrgent]} padding={16}>
           {needsAction && (
@@ -138,7 +138,7 @@ export function QuotesListScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   urgentCount: { fontSize: 13, color: Colors.accent, fontWeight: '600', marginTop: 2 },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   list: { paddingHorizontal: 20, paddingBottom: 24, gap: 12 },

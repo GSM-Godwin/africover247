@@ -64,7 +64,7 @@ export function ProductsScreen({ navigation }: any) {
     return (
       <TouchableOpacity
         onPress={() => navigation.navigate('ProductDetail', { productId: item.id })}
-        activeOpacity={0.7}
+        activeOpacity={0.85}
       >
         <Card style={styles.productCard} padding={16}>
           <View style={styles.productHeader}>
@@ -82,11 +82,16 @@ export function ProductsScreen({ navigation }: any) {
           <Text style={styles.productDesc} numberOfLines={2}>{item.description}</Text>
           <View style={styles.productFooter}>
             <Text style={styles.productPrice}>{getPriceDisplay(item)}</Text>
-            <View style={styles.ctaButton}>
-              <Text style={styles.ctaText}>
+            <View style={[
+              styles.ctaButton,
+              item.pricingType === 'quote_based' ? styles.ctaButtonQuote : styles.ctaButtonFixed,
+            ]}>
+              <Text style={[
+                styles.ctaText,
+                item.pricingType === 'quote_based' ? styles.ctaTextQuote : styles.ctaTextFixed,
+              ]}>
                 {item.pricingType === 'quote_based' ? 'Get Quote' : 'Get Covered'}
               </Text>
-              <Ionicons name="arrow-forward" size={14} color={Colors.white} />
             </View>
           </View>
         </Card>
@@ -172,7 +177,7 @@ export function ProductsScreen({ navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: Colors.textDark },
+  title: { fontSize: 24, fontWeight: '800', color: Colors.primary },
   subtitle: { fontSize: 14, color: Colors.textSecondary, marginTop: 2 },
   searchContainer: {
     flexDirection: 'row',
@@ -229,22 +234,38 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 4,
   },
-  pricingBadge: { paddingHorizontal: 10, paddingVertical: 3, borderRadius: 6 },
+  pricingBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+  },
   pricingText: { fontSize: 11, fontWeight: '600' },
   productName: { fontSize: 16, fontWeight: '700', color: Colors.text, marginBottom: 6 },
   productDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 20, marginBottom: 14 },
   productFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   productPrice: { fontSize: 15, fontWeight: '700', color: Colors.primary },
   ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: Colors.accent,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
   },
-  ctaText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
+  ctaButtonFixed: {
+    backgroundColor: Colors.accent,
+  },
+  ctaButtonQuote: {
+    backgroundColor: Colors.primary,
+  },
+  ctaText: {
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  ctaTextFixed: {
+    color: Colors.textDark,
+  },
+  ctaTextQuote: {
+    color: Colors.white,
+  },
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyState: { alignItems: 'center', paddingTop: 48 },
   emptyText: { fontSize: 14, color: Colors.textSecondary, marginTop: 12 },
