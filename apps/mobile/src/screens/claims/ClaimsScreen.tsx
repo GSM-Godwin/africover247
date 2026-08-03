@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   newClaimText: { fontSize: 13, fontWeight: '700', color: Colors.textDark },
   filterRow: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
     gap: 8,
     backgroundColor: Colors.white,
     borderBottomWidth: 1,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   filterPill: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: 7,
     borderRadius: 20,
     backgroundColor: Colors.white,
     borderWidth: 1,

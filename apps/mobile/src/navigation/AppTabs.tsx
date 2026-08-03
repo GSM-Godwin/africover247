@@ -4,6 +4,7 @@ import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { ClaimsScreen } from '../screens/claims/ClaimsScreen'
+import { QuotesListScreen } from '../screens/quotes/QuotesListScreen'
 import { AccountScreen } from '../screens/account/AccountScreen'
 import { ProductsStack } from './ProductsStack'
 import { Colors } from '../constants'
@@ -79,6 +80,16 @@ export function AppTabs({ onLogout }: AppTabsProps) {
           tabBarLabel: 'Claims',
           tabBarIcon: ({ focused }) => (
             <TabIcon name={focused ? 'document-text' : 'document-text-outline'} focused={focused} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Quotes"
+        component={QuotesListScreen}
+        options={{
+          tabBarLabel: 'Quotes',
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} focused={focused} />
           ),
         }}
       />
