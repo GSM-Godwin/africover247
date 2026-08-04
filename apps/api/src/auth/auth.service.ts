@@ -48,6 +48,39 @@ export class AuthService {
     return rest;
   }
 
+  private dispatchVerificationOtp(
+    email: string,
+    otp: string,
+    firstName: string,
+    phone?: string | null,
+  ) {
+    void this.emailService
+      .sendOtpEmail(email, otp, firstName)
+      .catch((err) =>
+        this.logger.error(`OTP email failed for ${email}`, err),
+      );
+
+    if (phone) {
+      void this.smsService
+        .sendOtpSms(phone, otp)
+        .catch((err) =>
+          this.logger.error(`OTP SMS failed for ${phone}`, err),
+        );
+    }
+  }
+
+  private dispatchPasswordResetEmail(email: string, otp: string) {
+    void this.emailService
+      .sendEmail({
+        to: email,
+        subject: 'Reset your AfriCover247 password',
+        html: `<p>Your password reset code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
+      })
+      .catch((err) =>
+        this.logger.error(`Password reset email failed for ${email}`, err),
+      );
+  }
+
   // --- Register ---
 
   async register(dto: RegisterDto) {
@@ -77,10 +110,7 @@ export class AuthService {
       data: { userId: user.id, otpCode: otp, expiresAt },
     });
 
-    await this.emailService.sendOtpEmail(user.email, otp, user.firstName);
-    if (user.phone) {
-      await this.smsService.sendOtpSms(user.phone, otp);
-    }
+    this.dispatchVerificationOtp(user.email, otp, user.firstName, user.phone);
     return {
       message:
         'Registration successful. Please check your email for a verification code.',
@@ -149,11 +179,7 @@ export class AuthService {
       data: { userId: user.id, otpCode: otp, expiresAt },
     });
 
-    await this.emailService.sendOtpEmail(user.email, otp, user.firstName);
-
-    if (user.phone) {
-      await this.smsService.sendOtpSms(user.phone, otp);
-    }
+    this.dispatchVerificationOtp(user.email, otp, user.firstName, user.phone);
 
     this.logger.log(`[AUTH] Resent OTP for ${email}: ${otp}`);
 
@@ -193,11 +219,7 @@ export class AuthService {
       await this.prisma.passwordReset.create({
         data: { userId: user.id, token: otp, expiresAt },
       });
-      await this.emailService.sendEmail({
-        to: user.email,
-        subject: 'Reset your AfriCover247 password',
-        html: `<p>Your password reset code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
-      });
+      this.dispatchPasswordResetEmail(user.email, otp);
     }
 
     return {

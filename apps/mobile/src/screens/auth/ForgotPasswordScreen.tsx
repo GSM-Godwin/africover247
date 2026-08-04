@@ -7,6 +7,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
@@ -37,6 +38,7 @@ export function ForgotPasswordScreen({ navigation }: ForgotPasswordScreenProps) 
       await api.post('/auth/forgot-password', data)
       navigation.navigate('ResetPassword', { email: data.email })
     } catch {
+      Alert.alert('Error', 'Could not send reset code. Please try again.')
     } finally {
       setLoading(false)
     }

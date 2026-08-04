@@ -31,12 +31,10 @@ export default function ForgotPasswordPage() {
     setLoading(true);
     try {
       await api.post("/auth/forgot-password", data);
-      setLoading(false);
       sessionStorage.setItem("reset_email", data.email);
-      toast.success("If an account exists, a reset code has been sent.");
       router.push("/forgot-password/verify");
+      toast.success("If an account exists, a reset code has been sent.");
     } catch (err: unknown) {
-      setLoading(false);
       const message = (
         err as { response?: { data?: { message?: unknown } } }
       ).response?.data?.message;
@@ -49,6 +47,8 @@ export default function ForgotPasswordPage() {
             : "Something went wrong. Please try again.",
         );
       }
+    } finally {
+      setLoading(false);
     }
   }
 

@@ -53,14 +53,12 @@ export default function RegisterPage() {
     setError("");
     try {
       await api.post("/auth/register", payload);
-      setLoading(false);
       sessionStorage.setItem("pending_verification_email", data.email);
       sessionStorage.setItem("pending_registration", JSON.stringify(payload));
       router.push(
         `/register/verify?email=${encodeURIComponent(data.email)}`,
       );
     } catch (err: unknown) {
-      setLoading(false);
       const response = (
         err as { response?: { status?: number; data?: { message?: unknown } } }
       ).response;
@@ -77,6 +75,8 @@ export default function RegisterPage() {
             : "Could not create account. Please try again.",
         );
       }
+    } finally {
+      setLoading(false);
     }
   }
 
