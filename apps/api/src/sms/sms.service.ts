@@ -6,6 +6,13 @@ const TERMII_SANDBOX_URL = 'https://sandbox.termii.com/api';
 const TERMII_PRODUCTION_URL = 'https://api.ng.termii.com/api';
 const OTP_VALIDITY_MINUTES = 10;
 
+function toInternational(phone: string): string {
+  const cleaned = phone.replace(/\D/g, '');
+  if (cleaned.startsWith('234')) return `+${cleaned}`;
+  if (cleaned.startsWith('0')) return `+234${cleaned.slice(1)}`;
+  return `+234${cleaned}`;
+}
+
 @Injectable()
 export class SmsService {
   private readonly logger = new Logger(SmsService.name);
@@ -34,7 +41,7 @@ export class SmsService {
 
   private async sendSms(phone: string, message: string): Promise<void> {
     await axios.post(`${this.baseUrl}/sms/send`, {
-      to: phone,
+      to: toInternational(phone),
       from: this.senderId,
       sms: message,
       type: 'plain',
