@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
+import { InactivityGuard } from "@/components/shared/inactivity-guard";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -82,7 +83,7 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${inter.variable} ${ibmPlexMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-paper text-midnight font-body antialiased">
-        {children}
+        <InactivityGuard>{children}</InactivityGuard>
         <Toaster position="top-right" richColors />
       </body>
     </html>

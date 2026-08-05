@@ -1,46 +1,30 @@
-import React, { useState, useCallback, useRef } from 'react'
+import React, { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SplashScreen } from '../screens/SplashScreen'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { AuthStack } from './AuthStack'
 import { MainStack } from './MainStack'
-import { NotificationProvider } from '../contexts/NotificationContext'
 import { isAuthenticated, logout } from '../services/auth'
 import { ONBOARDING_KEY } from '../constants'
 
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app'
 
-export function RootNavigator() {
-  const [appState, setAppState] = useState<AppState>('splash')
-  const navigationRef = useRef<NavigationContainerRef<any>>(null)
+export interface RootNavigatorHandle {
+  logout: () => Promise<void>
+  handleNotificationTap: (notification: any) => void
+}
 
-  const handleSplashFinish = useCallback(async () => {
-    const [authed, onboardingDone] = await Promise.all([
-      isAuthenticated(),
-      AsyncStorage.getItem(ONBOARDING_KEY),
-    ])
-    if (authed) setAppState('app')
-    else if (!onboardingDone) setAppState('onboarding')
-    else setAppState('auth')
-  }, [])
+interface RootNavigatorProps {
+  onAuthChange?: (loggedIn: boolean) => void
+}
 
-  const handleOnboardingFinish = useCallback(async () => {
-    await AsyncStorage.setItem(ONBOARDING_KEY, 'true')
-    setAppState('auth')
-  }, [])
+export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>(
+  function RootNavigator({ onAuthChange }, ref) {
+    const [appState, setAppState] = useState<AppState>('splash')
+    const navigationRef = useRef<NavigationContainerRef<any>>(null)
 
-  const handleLoginSuccess = useCallback(() => {
-    setAppState('app')
-  }, [])
-
-  const handleLogout = useCallback(async () => {
-    await logout()
-    setAppState('auth')
-  }, [])
-
-  const handleNotificationTap = useCallback(
-    (notification: any) => {
+    const handleNotificationTap = useCallback((notification: any) => {
       const data = notification?.request?.content?.data as any
       if (!navigationRef.current) return
 
@@ -55,23 +39,55 @@ export function RootNavigator() {
       } else {
         navigationRef.current.navigate('Notifications' as never)
       }
-    },
-    []
-  )
+    }, [])
 
-  if (appState === 'splash') {
-    return <SplashScreen onFinish={handleSplashFinish} />
-  }
+    const handleLogout = useCallback(async () => {
+      await logout()
+      setAppState('auth')
+      onAuthChange?.(false)
+    }, [onAuthChange])
 
-  if (appState === 'onboarding') {
-    return <OnboardingScreen onFinish={handleOnboardingFinish} />
-  }
+    useImperativeHandle(ref, () => ({
+      logout: handleLogout,
+      handleNotificationTap,
+    }), [handleLogout, handleNotificationTap])
 
-  return (
-    <NotificationProvider
-      isAuthenticated={appState === 'app'}
-      onNotificationTap={handleNotificationTap}
-    >
+    const handleSplashFinish = useCallback(async () => {
+      const [authed, onboardingDone] = await Promise.all([
+        isAuthenticated(),
+        AsyncStorage.getItem(ONBOARDING_KEY),
+      ])
+      if (authed) {
+        setAppState('app')
+        onAuthChange?.(true)
+      } else if (!onboardingDone) {
+        setAppState('onboarding')
+      } else {
+        setAppState('auth')
+        onAuthChange?.(false)
+      }
+    }, [onAuthChange])
+
+    const handleOnboardingFinish = useCallback(async () => {
+      await AsyncStorage.setItem(ONBOARDING_KEY, 'true')
+      setAppState('auth')
+      onAuthChange?.(false)
+    }, [onAuthChange])
+
+    const handleLoginSuccess = useCallback(() => {
+      setAppState('app')
+      onAuthChange?.(true)
+    }, [onAuthChange])
+
+    if (appState === 'splash') {
+      return <SplashScreen onFinish={handleSplashFinish} />
+    }
+
+    if (appState === 'onboarding') {
+      return <OnboardingScreen onFinish={handleOnboardingFinish} />
+    }
+
+    return (
       <NavigationContainer ref={navigationRef}>
         {appState === 'auth' ? (
           <AuthStack onLoginSuccess={handleLoginSuccess} />
@@ -79,6 +95,6 @@ export function RootNavigator() {
           <MainStack onLogout={handleLogout} />
         )}
       </NavigationContainer>
-    </NotificationProvider>
-  )
-}
+    )
+  }
+)

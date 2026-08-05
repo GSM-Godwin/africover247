@@ -58,6 +58,10 @@ export function logout(): void {
   dispatchAuthChange();
 }
 
+export function clearAuth(): void {
+  logout();
+}
+
 export function getUserDisplayName(user: Record<string, unknown>): string {
   const firstName = String(user.firstName ?? "");
   const lastName = String(user.lastName ?? "");
