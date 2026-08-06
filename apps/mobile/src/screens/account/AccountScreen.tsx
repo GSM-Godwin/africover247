@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Switch,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -13,6 +14,13 @@ import { Card, ConfirmModal } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser, logout } from '../../services/auth'
+import {
+  isBiometricAvailable,
+  isBiometricEnabled,
+  setBiometricEnabled,
+  getBiometricType,
+  authenticateWithBiometric,
+} from '../../services/biometric'
 import type { User } from '../../types'
 
 interface AccountScreenProps {
@@ -33,6 +41,9 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   const [stats, setStats] = useState({ policies: 0, claims: 0, quotes: 0 })
   const [loading, setLoading] = useState(true)
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
+  const [biometricAvailable, setBiometricAvailable] = useState(false)
+  const [biometricEnabled, setBiometricEnabledState] = useState(false)
+  const [biometricType, setBiometricType] = useState('Biometric')
 
   useEffect(() => {
     getUser().then((u) => {
@@ -51,6 +62,18 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
         quotes: quotesRes.data.length,
       })
     }).catch(() => {})
+
+    async function loadBiometricSettings() {
+      const available = await isBiometricAvailable()
+      setBiometricAvailable(available)
+      if (available) {
+        const enabled = await isBiometricEnabled()
+        setBiometricEnabledState(enabled)
+        const type = await getBiometricType()
+        setBiometricType(type)
+      }
+    }
+    loadBiometricSettings()
   }, [])
 
   function handleLogout() {
@@ -60,6 +83,15 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   async function confirmLogout() {
     await logout()
     onLogout()
+  }
+
+  async function handleBiometricToggle(value: boolean) {
+    if (value) {
+      const success = await authenticateWithBiometric()
+      if (!success) return
+    }
+    await setBiometricEnabled(value)
+    setBiometricEnabledState(value)
   }
 
   function getUserInitials(): string {
@@ -164,6 +196,29 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
             <Text style={styles.statLabel}>Quotes</Text>
           </Card>
         </View>
+
+        {biometricAvailable && (
+          <Card style={styles.securityCard} padding={16}>
+            <Text style={styles.sectionTitle}>Security</Text>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Ionicons name="finger-print-outline" size={20} color={Colors.primary} />
+                <View style={styles.settingText}>
+                  <Text style={styles.settingLabel}>{biometricType} Login</Text>
+                  <Text style={styles.settingSubLabel}>
+                    Use {biometricType} to sign in
+                  </Text>
+                </View>
+              </View>
+              <Switch
+                value={biometricEnabled}
+                onValueChange={handleBiometricToggle}
+                trackColor={{ false: Colors.border, true: Colors.primary + '60' }}
+                thumbColor={biometricEnabled ? Colors.primary : Colors.white}
+              />
+            </View>
+          </Card>
+        )}
 
         {/* --- Menu --- */}
         <Card style={styles.menuCard} padding={0}>
@@ -276,6 +331,27 @@ const styles = StyleSheet.create({
   statCard: { flex: 1, alignItems: 'center' },
   statValue: { fontSize: 22, fontWeight: '800', color: Colors.primary },
   statLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  securityCard: { marginHorizontal: 20, marginBottom: 16 },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  settingInfo: { flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 },
+  settingText: { flex: 1 },
+  settingLabel: { fontSize: 14, fontWeight: '600', color: Colors.textDark },
+  settingSubLabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   menuCard: { marginHorizontal: 20, marginBottom: 16 },
   menuItem: {
     flexDirection: 'row',

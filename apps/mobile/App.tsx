@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
-import { TouchableWithoutFeedback, View } from 'react-native'
+import { TouchableWithoutFeedback, View, AppState, AppStateStatus } from 'react-native'
+import * as ScreenCapture from 'expo-screen-capture'
 import { RootNavigator, RootNavigatorHandle } from './src/navigation/RootNavigator'
 import { ErrorBoundary } from './src/components/ErrorBoundary'
 import { InactivityModal } from './src/components/shared/InactivityModal'
@@ -73,6 +74,17 @@ export function App() {
 
   useEffect(() => {
     return () => stopCountdown()
+  }, [])
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'background' || state === 'inactive') {
+        ScreenCapture.preventScreenCaptureAsync()
+      } else if (state === 'active') {
+        ScreenCapture.allowScreenCaptureAsync()
+      }
+    })
+    return () => subscription.remove()
   }, [])
 
   return (

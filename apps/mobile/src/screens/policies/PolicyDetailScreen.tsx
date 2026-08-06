@@ -10,6 +10,8 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import * as ScreenCapture from 'expo-screen-capture'
+import * as Clipboard from 'expo-clipboard'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
@@ -54,6 +56,13 @@ export function PolicyDetailScreen({ route, navigation }: any) {
       .finally(() => setLoading(false))
   }, [policyId])
 
+  useEffect(() => {
+    ScreenCapture.preventScreenCaptureAsync()
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync()
+    }
+  }, [])
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -72,6 +81,17 @@ export function PolicyDetailScreen({ route, navigation }: any) {
     (new Date(policy.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
   )
   const isExpiringSoon = daysUntilExpiry > 0 && daysUntilExpiry <= 30
+  const policyNumber = policy.policyNumber
+
+  async function handleCopyPolicyNumber() {
+    await Clipboard.setStringAsync(policyNumber)
+    setTimeout(async () => {
+      const current = await Clipboard.getStringAsync()
+      if (current === policyNumber) {
+        await Clipboard.setStringAsync('')
+      }
+    }, 30000)
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,7 +114,9 @@ export function PolicyDetailScreen({ route, navigation }: any) {
             <StatusBadge status={policy.status} />
           </View>
           <Text style={styles.productName}>{policy.product.name}</Text>
-          <Text style={styles.policyNumber}>{policy.policyNumber}</Text>
+          <TouchableOpacity onPress={handleCopyPolicyNumber} activeOpacity={0.7}>
+            <Text style={styles.policyNumber}>{policy.policyNumber}</Text>
+          </TouchableOpacity>
         </View>
 
         {isExpiringSoon && (

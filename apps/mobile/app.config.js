@@ -14,7 +14,10 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.africover247.app"
+      bundleIdentifier: "com.africover247.app",
+      infoPlist: {
+        NSFaceIDUsageDescription: "AfriCover247 uses Face ID to keep your account secure.",
+      },
     },
     android: {
       adaptiveIcon: {
@@ -23,13 +26,20 @@ export default {
         backgroundColor: "#ffffff"
       },
       package: "com.africover247.app",
-      permissions: ["NOTIFICATIONS", "RECEIVE_BOOT_COMPLETED"]
+      permissions: [
+        "NOTIFICATIONS",
+        "RECEIVE_BOOT_COMPLETED",
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+      ],
     },
     plugins: [
       "expo-secure-store",
       "expo-asset",
       "expo-font",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-local-authentication",
+      "expo-screen-capture",
     ],
     extra: {
       apiUrl: "https://africover247.onrender.com",

@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
+import { Alert } from 'react-native'
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import { SplashScreen } from '../screens/SplashScreen'
@@ -6,6 +7,12 @@ import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { AuthStack } from './AuthStack'
 import { MainStack } from './MainStack'
 import { isAuthenticated, logout } from '../services/auth'
+import {
+  isBiometricAvailable,
+  isBiometricEnabled,
+  authenticateWithBiometric,
+} from '../services/biometric'
+import { isDeviceRooted } from '../services/security'
 import { ONBOARDING_KEY } from '../constants'
 
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app'
@@ -53,11 +60,33 @@ export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>
     }), [handleLogout, handleNotificationTap])
 
     const handleSplashFinish = useCallback(async () => {
+      const rooted = await isDeviceRooted()
+      if (rooted) {
+        Alert.alert(
+          'Security Warning',
+          'This device appears to be rooted or jailbroken. AfriCover247 may not function securely on modified devices. Proceed with caution.',
+          [{ text: 'I Understand', style: 'default' }]
+        )
+      }
+
       const [authed, onboardingDone] = await Promise.all([
         isAuthenticated(),
         AsyncStorage.getItem(ONBOARDING_KEY),
       ])
       if (authed) {
+        const biometricOn = await isBiometricEnabled()
+        if (biometricOn) {
+          const available = await isBiometricAvailable()
+          if (available) {
+            const success = await authenticateWithBiometric()
+            if (!success) {
+              await logout()
+              setAppState('auth')
+              onAuthChange?.(false)
+              return
+            }
+          }
+        }
         setAppState('app')
         onAuthChange?.(true)
       } else if (!onboardingDone) {

@@ -9,6 +9,7 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import * as ScreenCapture from 'expo-screen-capture'
 import { Button, Card } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
@@ -18,6 +19,13 @@ export function PaymentSuccessScreen({ route, navigation }: any) {
   const { applicationId } = params as any
   const [policy, setPolicy] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    ScreenCapture.preventScreenCaptureAsync()
+    return () => {
+      ScreenCapture.allowScreenCaptureAsync()
+    }
+  }, [])
 
   useEffect(() => {
     if (!applicationId) {
