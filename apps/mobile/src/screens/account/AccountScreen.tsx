@@ -18,7 +18,6 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
   setBiometricEnabled,
-  getBiometricType,
   authenticateWithBiometric,
 } from '../../services/biometric'
 import type { User } from '../../types'
@@ -43,7 +42,6 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricEnabled, setBiometricEnabledState] = useState(false)
-  const [biometricType, setBiometricType] = useState('Biometric')
 
   useEffect(() => {
     getUser().then((u) => {
@@ -69,8 +67,6 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
       if (available) {
         const enabled = await isBiometricEnabled()
         setBiometricEnabledState(enabled)
-        const type = await getBiometricType()
-        setBiometricType(type)
       }
     }
     loadBiometricSettings()
@@ -204,9 +200,9 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
               <View style={styles.settingInfo}>
                 <Ionicons name="finger-print-outline" size={20} color={Colors.primary} />
                 <View style={styles.settingText}>
-                  <Text style={styles.settingLabel}>{biometricType} Login</Text>
+                  <Text style={styles.settingLabel}>Biometric Login</Text>
                   <Text style={styles.settingSubLabel}>
-                    Use {biometricType} to sign in
+                    Use biometrics to sign in
                   </Text>
                 </View>
               </View>
