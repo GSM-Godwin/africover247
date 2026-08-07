@@ -14,11 +14,15 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_NO_CAPABILITY_SYNC": "1"
+        "EXPO_NO_CAPABILITY_SYNC": "1",
+        "NODE_ENV": "production"
       }
     },
     "production": {
       "distribution": "store"
     }
+  },
+  "submit": {
+    "production": {}
   }
 }
