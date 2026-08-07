@@ -20,16 +20,10 @@ export function InactivityModal({
   const urgent = countdownSeconds <= 10;
 
   return (
-    <div
-      className="fixed inset-0 z-[200] flex items-center justify-center p-4"
-      onClick={onStay}
-    >
+    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-midnight/60 backdrop-blur-sm" />
 
-      <div
-        className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="relative bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 text-center">
         <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-5 ${
           urgent ? "bg-alert-coral/10" : "bg-daybreak/10"
         }`}>
@@ -68,10 +62,6 @@ export function InactivityModal({
             Stay signed in
           </button>
         </div>
-
-        <p className="font-body text-xs text-slate/50 mt-4">
-          Click anywhere on the page to dismiss
-        </p>
       </div>
     </div>
   );

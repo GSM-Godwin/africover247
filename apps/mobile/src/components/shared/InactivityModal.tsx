@@ -47,11 +47,7 @@ export function InactivityModal({
       animationType="fade"
       onRequestClose={onStay}
     >
-      <TouchableOpacity
-        style={styles.backdrop}
-        activeOpacity={1}
-        onPress={onStay}
-      >
+      <View style={styles.backdrop}>
         <Animated.View
           style={[
             styles.modal,
@@ -91,11 +87,9 @@ export function InactivityModal({
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.hint}>Tap anywhere to dismiss</Text>
-
           </TouchableOpacity>
         </Animated.View>
-      </TouchableOpacity>
+      </View>
     </Modal>
   )
 }
@@ -171,5 +165,4 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   stayText: { fontSize: 14, fontWeight: '800', color: Colors.textDark },
-  hint: { fontSize: 11, color: Colors.textSecondary + '80', textAlign: 'center' },
 })
