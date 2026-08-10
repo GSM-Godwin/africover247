@@ -253,7 +253,10 @@ export class ClaimsService {
   ) {
     const claim = await this.prisma.claim.findUnique({
       where: { id: claimId },
-      include: { user: true },
+      include: {
+        user: true,
+        policy: { include: { product: true } },
+      },
     });
 
     if (!claim) throw new NotFoundException('Claim not found');
@@ -300,11 +303,22 @@ export class ClaimsService {
       { referenceType: 'claim', referenceId: claimId, type: 'claim_status_updated' },
     );
 
-    await this.emailService.sendEmail({
-      to: claim.user.email,
-      subject: `Your claim ${claim.claimReference} has been updated`,
-      html: `<p>Your claim status has been updated to <strong>${dto.status.replace(/_/g, ' ')}</strong>.</p>${dto.note ? `<p>${dto.note}</p>` : ''}`,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: claim.userId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendClaimStatusEmail(
+          user.email,
+          user.firstName,
+          claim.claimReference,
+          claim.policy.product?.name || 'Insurance Policy',
+          dto.status,
+          dto.note,
+        );
+      }
+    } catch {}
 
     if (claim.user.phone) {
       await this.smsService.sendClaimStatusSms(

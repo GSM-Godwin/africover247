@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { PoliciesService } from './policies.service';
+import { PolicySchedulerService } from './policy-scheduler.service';
 import {
   PoliciesController,
   AdminPoliciesController,
@@ -8,10 +9,17 @@ import { EmailModule } from '../email/email.module';
 import { SmsModule } from '../sms/sms.module';
 import { StorageModule } from '../storage/storage.module';
 import { ApplicationsModule } from '../applications/applications.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
-  imports: [EmailModule, SmsModule, StorageModule, ApplicationsModule],
-  providers: [PoliciesService],
+  imports: [
+    EmailModule,
+    SmsModule,
+    StorageModule,
+    ApplicationsModule,
+    NotificationsModule,
+  ],
+  providers: [PoliciesService, PolicySchedulerService],
   controllers: [PoliciesController, AdminPoliciesController],
   exports: [PoliciesService],
 })

@@ -257,17 +257,23 @@ export class QuotesService {
       { referenceType: 'quote', referenceId: quoteId, type: 'quote_sent' },
     );
 
-    await this.emailService.sendEmail({
-      to: quote.customer.email,
-      subject: `Quote ready — ${quote.product.name}`,
-      html: `
-        <p>Dear ${quote.customer.firstName},</p>
-        <p>AfriGlobal Insurance Brokers has reviewed your quote request for <strong>${quote.product.name}</strong>.</p>
-        <p><strong>Proposed premium: ₦${dto.quoteAmount.toLocaleString()}/year</strong></p>
-        ${dto.note ? `<p>Notes from AfriGlobal: ${dto.note}</p>` : ''}
-        <p>Please log in to your dashboard to Accept, Counter, or Reject this quote. The quote expires in 7 days.</p>
-      `,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: quote.customerId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendQuoteStatusEmail(
+          user.email,
+          user.firstName,
+          quote.product.name,
+          'quote_sent',
+          quote.id,
+          dto.note,
+          String(dto.quoteAmount),
+        );
+      }
+    } catch {}
 
     if (quote.customer.phone) {
       await this.smsService.sendNotificationSms(
@@ -369,16 +375,23 @@ export class QuotesService {
       },
     });
 
-    await this.emailService.sendEmail({
-      to: quote.customer.email,
-      subject: `Quote accepted — ${quote.product.name}`,
-      html: `
-        <p>Dear ${quote.customer.firstName},</p>
-        <p>You have accepted the quote for <strong>${quote.product.name}</strong>.</p>
-        <p><strong>Premium: ₦${Number(finalAmount).toLocaleString()}/year</strong></p>
-        <p>Please proceed to payment to receive your policy certificate.</p>
-      `,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendQuoteStatusEmail(
+          user.email,
+          user.firstName,
+          quote.product.name,
+          'accepted',
+          quote.id,
+          undefined,
+          String(finalAmount),
+        );
+      }
+    } catch {}
 
     this.logger.log(
       `Quote ${quoteId} accepted — application ${application.id} created`,
@@ -600,18 +613,23 @@ export class QuotesService {
       { referenceType: 'quote', referenceId: quoteId, type: 'quote_countered' },
     );
 
-    await this.emailService.sendEmail({
-      to: quote.customer.email,
-      subject: `Counter-offer — ${quote.product.name}`,
-      html: `
-        <p>Dear ${quote.customer.firstName},</p>
-        <p>AfriGlobal has responded to your counter-offer for <strong>${quote.product.name}</strong>.</p>
-        <p><strong>New proposed premium: ₦${dto.counterAmount.toLocaleString()}/year</strong></p>
-        ${dto.note ? `<p>Notes: ${dto.note}</p>` : ''}
-        <p>Rounds remaining: ${MAX_ROUNDS - (quote.roundsUsed + 1)}</p>
-        <p>Please log in to Accept, Counter, or Reject. This offer expires in 7 days.</p>
-      `,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: quote.customerId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendQuoteStatusEmail(
+          user.email,
+          user.firstName,
+          quote.product.name,
+          'countered_by_admin',
+          quote.id,
+          dto.note,
+          String(dto.counterAmount),
+        );
+      }
+    } catch {}
 
     if (quote.customer.phone) {
       await this.smsService.sendNotificationSms(
@@ -709,16 +727,23 @@ export class QuotesService {
       { referenceType: 'quote', referenceId: quoteId, type: 'quote_accepted' },
     );
 
-    await this.emailService.sendEmail({
-      to: quote.customer.email,
-      subject: `Counter-offer accepted — ${quote.product.name}`,
-      html: `
-        <p>Dear ${quote.customer.firstName},</p>
-        <p>AfriGlobal has accepted your counter-offer for <strong>${quote.product.name}</strong>.</p>
-        <p><strong>Agreed premium: ₦${Number(finalAmount).toLocaleString()}/year</strong></p>
-        <p>Please proceed to payment to receive your policy certificate.</p>
-      `,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: quote.customerId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendQuoteStatusEmail(
+          user.email,
+          user.firstName,
+          quote.product.name,
+          'accepted',
+          quote.id,
+          undefined,
+          String(finalAmount),
+        );
+      }
+    } catch {}
 
     this.logger.log(
       `Admin accepted counter for quote ${quoteId} — application ${application.id} created`,
@@ -776,16 +801,22 @@ export class QuotesService {
       },
     });
 
-    await this.emailService.sendEmail({
-      to: quote.customer.email,
-      subject: `Quote update — ${quote.product.name}`,
-      html: `
-        <p>Dear ${quote.customer.firstName},</p>
-        <p>We regret to inform you that your quote request for <strong>${quote.product.name}</strong> could not be accommodated at this time.</p>
-        ${reason ? `<p>Reason: ${reason}</p>` : ''}
-        <p>Please contact AfriGlobal directly if you have questions.</p>
-      `,
-    });
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: quote.customerId },
+        select: { email: true, firstName: true },
+      });
+      if (user) {
+        await this.emailService.sendQuoteStatusEmail(
+          user.email,
+          user.firstName,
+          quote.product.name,
+          'rejected',
+          quote.id,
+          reason,
+        );
+      }
+    } catch {}
 
     this.logger.log(`Admin rejected quote ${quoteId}`);
 
