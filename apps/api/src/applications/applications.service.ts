@@ -5,6 +5,7 @@ import {
   ConflictException,
   BadRequestException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -17,6 +18,8 @@ import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 
 @Injectable()
 export class ApplicationsService {
+  private readonly logger = new Logger(ApplicationsService.name);
+
   constructor(
     private prisma: PrismaService,
     private redisService: RedisService,
@@ -26,6 +29,16 @@ export class ApplicationsService {
   // --- Create new application ---
 
   async create(userId: string, dto: CreateApplicationDto) {
+    const kycDocs = await this.prisma.kycDocument.findMany({
+      where: { application: { userId } },
+      take: 1,
+    });
+
+    // TODO: enforce strict KYC when Dojah credentials are live
+    if (kycDocs.length === 0) {
+      this.logger.log(`[KYC] User ${userId} has no KYC documents — allowing for now (stub mode)`);
+    }
+
     const existing = await this.prisma.application.findFirst({
       where: {
         userId,

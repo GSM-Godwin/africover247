@@ -93,12 +93,47 @@ export class UsersService {
         phone: true,
         role: true,
         emailVerified: true,
+        suspended: true,
+        suspendedReason: true,
+        suspendedAt: true,
         createdAt: true,
         _count: {
           select: { policies: true, claims: true },
         },
       },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async suspendUser(id: string, reason: string, requestingUserId: string) {
+    if (id === requestingUserId) {
+      throw new BadRequestException('You cannot suspend your own account');
+    }
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.role === 'admin') throw new BadRequestException('Cannot suspend an admin account');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        suspended: true,
+        suspendedReason: reason,
+        suspendedAt: new Date(),
+      },
+    });
+  }
+
+  async unsuspendUser(id: string) {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) throw new NotFoundException('User not found');
+
+    return this.prisma.user.update({
+      where: { id },
+      data: {
+        suspended: false,
+        suspendedReason: null,
+        suspendedAt: null,
+      },
     });
   }
 
@@ -113,6 +148,9 @@ export class UsersService {
         phone: true,
         role: true,
         emailVerified: true,
+        suspended: true,
+        suspendedReason: true,
+        suspendedAt: true,
         createdAt: true,
         _count: {
           select: { policies: true, claims: true },

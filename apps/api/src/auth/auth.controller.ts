@@ -59,6 +59,54 @@ export class AuthController {
     return this.authService.resetPassword(dto);
   }
 
+  @Post('phone/send-otp')
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  sendPhoneOtp(@Body() body: { phone: string }) {
+    return this.authService.sendPhoneOtp(body.phone);
+  }
+
+  @Post('phone/verify-otp')
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  verifyPhoneOtp(@Body() body: { phone: string; otp: string }) {
+    return this.authService.verifyPhoneOtp(body.phone, body.otp);
+  }
+
+  @Post('google')
+  googleAuth(
+    @Body()
+    body: {
+      googleId: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+    },
+  ) {
+    return this.authService.googleAuth(
+      body.googleId,
+      body.email,
+      body.firstName,
+      body.lastName,
+    );
+  }
+
+  @Post('apple')
+  appleAuth(
+    @Body()
+    body: {
+      appleId: string;
+      email: string | null;
+      firstName: string;
+      lastName: string;
+    },
+  ) {
+    return this.authService.appleAuth(
+      body.appleId,
+      body.email,
+      body.firstName,
+      body.lastName,
+    );
+  }
+
   @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @Get('me')

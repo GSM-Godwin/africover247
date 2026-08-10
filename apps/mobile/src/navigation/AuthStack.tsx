@@ -5,9 +5,11 @@ import { RegisterScreen } from '../screens/auth/RegisterScreen'
 import { VerifyEmailScreen } from '../screens/auth/VerifyEmailScreen'
 import { ForgotPasswordScreen } from '../screens/auth/ForgotPasswordScreen'
 import { ResetPasswordScreen } from '../screens/auth/ResetPasswordScreen'
+import { PhoneLoginScreen } from '../screens/auth/PhoneLoginScreen'
 
 export type AuthStackParamList = {
   Login: undefined
+  PhoneLogin: undefined
   Register: undefined
   VerifyEmail: { email: string }
   ForgotPassword: undefined
@@ -31,6 +33,9 @@ export function AuthStack({ onLoginSuccess }: AuthStackProps) {
     >
       <Stack.Screen name="Login">
         {(props) => <LoginScreen {...props} onLoginSuccess={onLoginSuccess} />}
+      </Stack.Screen>
+      <Stack.Screen name="PhoneLogin">
+        {(props) => <PhoneLoginScreen {...props} onLoginSuccess={onLoginSuccess} />}
       </Stack.Screen>
       <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="VerifyEmail">

@@ -14,7 +14,7 @@ import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser } from '../../services/auth'
-import type { User, Policy, Claim, Quote } from '../../types'
+import type { User, Policy, Claim, Quote, Product } from '../../types'
 
 interface Application {
   id: string
@@ -43,18 +43,21 @@ export function HomeScreen({ navigation }: any) {
   })
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
 
   const fetchData = useCallback(async () => {
     try {
-      const [u, policiesRes, claimsRes, quotesRes, notifRes, draftsRes] = await Promise.all([
+      const [u, policiesRes, claimsRes, quotesRes, notifRes, draftsRes, productsRes] = await Promise.all([
         getUser(),
         api.get('/policies/my'),
         api.get('/claims/my'),
         api.get('/quotes/my'),
         api.get('/notifications/unread-count'),
         api.get('/applications/drafts').catch(() => ({ data: [] })),
+        api.get('/products').catch(() => ({ data: [] })),
       ])
       setUser(u)
+      setFeaturedProducts(productsRes.data.slice(0, 4))
       setData({
         policies: policiesRes.data,
         claims: claimsRes.data,
@@ -164,6 +167,43 @@ export function HomeScreen({ navigation }: any) {
             </TouchableOpacity>
           ))}
         </View>
+
+        {activePolicies.length === 0 && pendingQuotes.length === 0 && drafts.length === 0 && featuredProducts.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Get Started</Text>
+              <TouchableOpacity onPress={() => navigation.navigate('Products')}>
+                <Text style={styles.seeAll}>See all</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.sectionSubtitle}>
+              Browse our insurance products and get covered today.
+            </Text>
+            {featuredProducts.map((product) => (
+              <TouchableOpacity
+                key={product.id}
+                onPress={() => navigation.navigate('Products', {
+                  screen: 'ProductDetail',
+                  params: { productId: product.id },
+                })}
+                activeOpacity={0.85}
+              >
+                <Card style={styles.featuredProduct} padding={14}>
+                  <View style={styles.featuredRow}>
+                    <View style={[styles.featuredIcon, { backgroundColor: Colors.primaryLight }]}>
+                      <Ionicons name="shield-checkmark-outline" size={18} color={Colors.primary} />
+                    </View>
+                    <View style={styles.featuredInfo}>
+                      <Text style={styles.featuredName} numberOfLines={1}>{product.name}</Text>
+                      <Text style={styles.featuredCategory}>{product.category}</Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+                  </View>
+                </Card>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
@@ -354,22 +394,6 @@ export function HomeScreen({ navigation }: any) {
           </View>
         )}
 
-        {activePolicies.length === 0 && pendingQuotes.length === 0 && drafts.length === 0 && (
-          <View style={styles.emptyState}>
-            <Ionicons name="shield-outline" size={48} color={Colors.border} />
-            <Text style={styles.emptyTitle}>No policies yet</Text>
-            <Text style={styles.emptySubtitle}>
-              Browse our products and get covered in minutes.
-            </Text>
-            <TouchableOpacity
-              style={styles.emptyButton}
-              onPress={() => navigation.navigate('Products')}
-            >
-              <Text style={styles.emptyButtonText}>Browse Products</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
@@ -443,7 +467,25 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.textDark },
+  sectionSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginBottom: 12,
+    lineHeight: 20,
+  },
   seeAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+  featuredProduct: { marginBottom: 8 },
+  featuredRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  featuredIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featuredInfo: { flex: 1 },
+  featuredName: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
+  featuredCategory: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   quickActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -489,15 +531,4 @@ const styles = StyleSheet.create({
   },
   policyMetaText: { fontSize: 12, color: Colors.textSecondary },
   policyPremium: { fontSize: 12, color: Colors.primary, fontWeight: '700' },
-  emptyState: { alignItems: 'center', paddingHorizontal: 40, paddingTop: 48 },
-  emptyTitle: { fontSize: 18, fontWeight: '700', color: Colors.textDark, marginTop: 16, marginBottom: 8 },
-  emptySubtitle: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
-  emptyButton: {
-    marginTop: 20,
-    backgroundColor: Colors.accent,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-  emptyButtonText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
 })

@@ -65,6 +65,11 @@ model User {
   passwordHash       String
   role               Role           @default(customer)
   emailVerified      Boolean        @default(false)
+  suspended          Boolean        @default(false)
+  suspendedReason    String?
+  suspendedAt        DateTime?
+  googleId           String?        @unique
+  appleId            String?        @unique
   pushToken          String?
   pushPlatform       String?
   createdAt          DateTime       @default(now())
@@ -79,6 +84,17 @@ model User {
   claimStatusHistory ClaimStatusHistory[]
   emailVerifications EmailVerification[]
   passwordResets     PasswordReset[]
+}
+
+model PhoneOtp {
+  id        String   @id @default(uuid())
+  phone     String
+  otpCode   String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([phone])
 }
 
 model EmailVerification {

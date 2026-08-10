@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, Shield, ShieldOff, Trash2, Edit2, CheckCircle, XCircle } from "lucide-react"
+import { Search, Shield, ShieldOff, Trash2, Edit2, CheckCircle, XCircle, UserCog } from "lucide-react"
 import { toast } from "sonner"
 import api from "@/lib/api"
 import { AdminPageHeader } from "@/components/admin/admin-page-header"
@@ -14,6 +14,9 @@ interface User {
   phone: string
   role: string
   emailVerified: boolean
+  suspended: boolean
+  suspendedReason: string | null
+  suspendedAt: string | null
   createdAt: string
   _count: { policies: number; claims: number }
 }
@@ -147,6 +150,9 @@ export default function AdminCustomersPage() {
   const [roleFilter, setRoleFilter] = useState<'all' | 'customer' | 'admin'>('all')
   const [editingUser, setEditingUser] = useState<User | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [suspendModal, setSuspendModal] = useState<{ user: User } | null>(null)
+  const [suspendReason, setSuspendReason] = useState('')
+  const [suspending, setSuspending] = useState(false)
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -186,6 +192,41 @@ export default function AdminCustomersPage() {
       const message = (err as { response?: { data?: { message?: string } } })
         .response?.data?.message
       toast.error(message || 'Could not update role.')
+    }
+  }
+
+  async function handleSuspend() {
+    if (!suspendModal || !suspendReason.trim()) {
+      toast.error('Please provide a reason for suspension.')
+      return
+    }
+    setSuspending(true)
+    try {
+      await api.patch(`/users/admin/${suspendModal.user.id}/suspend`, {
+        reason: suspendReason.trim(),
+      })
+      toast.success('User suspended.')
+      setSuspendModal(null)
+      setSuspendReason('')
+      fetchUsers()
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message
+      toast.error(message || 'Could not suspend user.')
+    } finally {
+      setSuspending(false)
+    }
+  }
+
+  async function handleUnsuspend(userId: string) {
+    try {
+      await api.patch(`/users/admin/${userId}/unsuspend`)
+      toast.success('User unsuspended.')
+      fetchUsers()
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { message?: string } } })
+        .response?.data?.message
+      toast.error(message || 'Could not unsuspend user.')
     }
   }
 
@@ -276,9 +317,16 @@ export default function AdminCustomersPage() {
                         </span>
                       </div>
                       <div>
-                        <p className="font-body text-sm font-semibold text-midnight">
-                          {user.firstName} {user.lastName}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-body text-sm font-semibold text-midnight">
+                            {user.firstName} {user.lastName}
+                          </p>
+                          {user.suspended && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-alert-coral/10 text-alert-coral text-xs font-semibold">
+                              Suspended
+                            </span>
+                          )}
+                        </div>
                         <p className="font-body text-xs text-slate">{user.email}</p>
                       </div>
                     </div>
@@ -331,8 +379,26 @@ export default function AdminCustomersPage() {
                         }`}
                         title={user.role === 'admin' ? 'Remove admin' : 'Make admin'}
                       >
-                        {user.role === 'admin' ? <ShieldOff size={15} /> : <Shield size={15} />}
+                        <UserCog size={15} />
                       </button>
+
+                      {user.suspended ? (
+                        <button
+                          onClick={() => handleUnsuspend(user.id)}
+                          title="Unsuspend"
+                          className="p-2 rounded-lg hover:bg-cover-green/10 text-cover-green transition-colors"
+                        >
+                          <Shield size={16} />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setSuspendModal({ user })}
+                          title="Suspend"
+                          className="p-2 rounded-lg hover:bg-alert-coral/10 text-alert-coral transition-colors"
+                        >
+                          <ShieldOff size={16} />
+                        </button>
+                      )}
 
                       <button
                         onClick={() => handleDelete(user)}
@@ -357,6 +423,46 @@ export default function AdminCustomersPage() {
           onClose={() => setEditingUser(null)}
           onSave={handleEditSave}
         />
+      )}
+
+      {suspendModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6">
+            <h2 className="font-display font-bold text-midnight text-xl mb-2">
+              Suspend Account
+            </h2>
+            <p className="font-body text-slate text-sm mb-4">
+              Suspending <strong>{suspendModal.user.firstName} {suspendModal.user.lastName}</strong>. They will not be able to log in until unsuspended.
+            </p>
+            <div className="mb-4">
+              <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                Reason for suspension <span className="text-alert-coral">*</span>
+              </label>
+              <textarea
+                rows={3}
+                value={suspendReason}
+                onChange={(e) => setSuspendReason(e.target.value)}
+                placeholder="e.g. Suspicious activity, policy violation..."
+                className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak resize-none"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setSuspendModal(null); setSuspendReason('') }}
+                className="flex-1 border border-slate/20 text-slate font-body font-medium text-sm py-3 rounded-xl hover:bg-slate/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSuspend}
+                disabled={suspending || !suspendReason.trim()}
+                className="flex-1 bg-alert-coral text-white font-body font-bold text-sm py-3 rounded-xl hover:bg-red-600 disabled:opacity-60 transition-colors"
+              >
+                {suspending ? 'Suspending...' : 'Suspend Account'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

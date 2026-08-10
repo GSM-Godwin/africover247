@@ -76,6 +76,9 @@ export class ClaimsService {
   // --- Submit new claim ---
 
   async create(userId: string, dto: CreateClaimDto) {
+    // TODO: re-verify claimant identity when Dojah credentials are live
+    this.logger.log(`[KYC] Claim created by user ${userId} — identity re-verification pending Dojah integration`);
+
     const policy = await this.prisma.policy.findUnique({
       where: { id: dto.policyId },
       include: { user: true },

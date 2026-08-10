@@ -87,6 +87,24 @@ export class UsersController {
     return this.usersService.adminUpdateUser(id, dto);
   }
 
+  @Patch('admin/:id/suspend')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  suspendUser(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+    @Body() body: { reason: string },
+  ) {
+    return this.usersService.suspendUser(id, body.reason, user.id);
+  }
+
+  @Patch('admin/:id/unsuspend')
+  @UseGuards(RolesGuard)
+  @Roles('admin')
+  unsuspendUser(@Param('id') id: string) {
+    return this.usersService.unsuspendUser(id);
+  }
+
   @Delete('admin/:id')
   @UseGuards(RolesGuard)
   @Roles('admin')

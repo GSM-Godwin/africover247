@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ChangeEventHandler } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
@@ -9,7 +9,11 @@ interface AuthInputProps {
   type?: string;
   placeholder?: string;
   error?: string;
-  registration: UseFormRegisterReturn;
+  registration?: UseFormRegisterReturn;
+  value?: string;
+  onChange?: ChangeEventHandler<HTMLInputElement>;
+  maxLength?: number;
+  required?: boolean;
   disabled?: boolean;
 }
 
@@ -19,6 +23,10 @@ export function AuthInput({
   placeholder,
   error,
   registration,
+  value,
+  onChange,
+  maxLength,
+  required,
   disabled,
 }: AuthInputProps) {
   const [showPassword, setShowPassword] = useState(false);
@@ -34,6 +42,10 @@ export function AuthInput({
       <div className="relative">
         <input
           {...registration}
+          value={value}
+          onChange={onChange}
+          maxLength={maxLength}
+          required={required}
           type={inputType}
           placeholder={placeholder}
           disabled={disabled}

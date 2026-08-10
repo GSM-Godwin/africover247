@@ -202,6 +202,12 @@ export class AuthService {
         'Please verify your email before logging in',
       );
 
+    if (user.suspended) {
+      throw new UnauthorizedException(
+        `Your account has been suspended. ${user.suspendedReason ? `Reason: ${user.suspendedReason}` : 'Please contact support.'}`,
+      );
+    }
+
     const accessToken = this.signToken(user.id, user.email, user.role);
     return { accessToken, user: this.sanitizeUser(user) };
   }
@@ -271,5 +277,146 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     return this.sanitizeUser(user);
+  }
+
+  async sendPhoneOtp(phone: string) {
+    const normalized = this.normalizePhone(phone);
+
+    const user = await this.prisma.user.findFirst({
+      where: { phone: normalized },
+    });
+    if (!user) throw new NotFoundException('No account found with this phone number');
+    if (user.suspended) {
+      throw new UnauthorizedException(
+        `Your account has been suspended. ${user.suspendedReason ? `Reason: ${user.suspendedReason}` : 'Please contact support.'}`,
+      );
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    await this.prisma.phoneOtp.deleteMany({ where: { phone: normalized } });
+    await this.prisma.phoneOtp.create({
+      data: { phone: normalized, otpCode: otp, expiresAt },
+    });
+
+    this.logger.log(`[AUTH] Phone OTP for ${normalized}: ${otp}`);
+    await this.smsService.sendOtpSms(normalized, otp);
+
+    return { message: 'OTP sent to your phone number' };
+  }
+
+  async verifyPhoneOtp(phone: string, otp: string) {
+    const normalized = this.normalizePhone(phone);
+
+    const record = await this.prisma.phoneOtp.findFirst({
+      where: { phone: normalized, used: false },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!record) throw new UnauthorizedException('No OTP found. Please request a new one.');
+    if (record.otpCode !== otp) throw new UnauthorizedException('Invalid OTP.');
+    if (new Date() > record.expiresAt) throw new UnauthorizedException('OTP has expired. Please request a new one.');
+
+    await this.prisma.phoneOtp.update({
+      where: { id: record.id },
+      data: { used: true },
+    });
+
+    const user = await this.prisma.user.findFirst({
+      where: { phone: normalized },
+    });
+    if (!user) throw new NotFoundException('User not found');
+
+    const accessToken = this.signToken(user.id, user.email, user.role);
+    return { accessToken, user: this.sanitizeUser(user) };
+  }
+
+  private normalizePhone(phone: string): string {
+    const cleaned = phone.replace(/\D/g, '');
+    if (cleaned.startsWith('234')) return `+${cleaned}`;
+    if (cleaned.startsWith('0')) return `+234${cleaned.slice(1)}`;
+    return `+234${cleaned}`;
+  }
+
+  async googleAuth(
+    googleId: string,
+    email: string,
+    firstName: string,
+    lastName: string,
+  ) {
+    let user = await this.prisma.user.findUnique({ where: { email } });
+
+    if (!user) {
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          firstName,
+          lastName,
+          passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
+          emailVerified: true,
+          role: 'customer',
+          googleId,
+        },
+      });
+    } else if (!user.googleId) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { googleId },
+      });
+    }
+
+    if (user.suspended) {
+      throw new UnauthorizedException(
+        `Your account has been suspended. ${user.suspendedReason || 'Please contact support.'}`,
+      );
+    }
+
+    const accessToken = this.signToken(user.id, user.email, user.role);
+    return { accessToken, user: this.sanitizeUser(user) };
+  }
+
+  async appleAuth(
+    appleId: string,
+    email: string | null,
+    firstName: string,
+    lastName: string,
+  ) {
+    let user = email
+      ? await this.prisma.user.findUnique({ where: { email } })
+      : null;
+
+    if (!user) {
+      user = await this.prisma.user.findFirst({ where: { appleId } });
+    }
+
+    if (!user) {
+      if (!email) throw new UnauthorizedException('Email is required for first-time Apple Sign-In');
+      user = await this.prisma.user.create({
+        data: {
+          email,
+          firstName: firstName || 'Apple',
+          lastName: lastName || 'User',
+          passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
+          emailVerified: true,
+          role: 'customer',
+          appleId,
+        },
+      });
+    } else if (!user.appleId) {
+      user = await this.prisma.user.update({
+        where: { id: user.id },
+        data: { appleId },
+      });
+    }
+
+    if (user.suspended) {
+      throw new UnauthorizedException(
+        `Your account has been suspended. ${user.suspendedReason || 'Please contact support.'}`,
+      );
+    }
+
+    const accessToken = this.signToken(user.id, user.email, user.role);
+    return { accessToken, user: this.sanitizeUser(user) };
   }
 }
