@@ -39,7 +39,6 @@ export default {
       "expo-font",
       "@react-native-community/datetimepicker",
       "expo-local-authentication",
-      "expo-screen-capture",
       "expo-apple-authentication",
     ],
     extra: {
