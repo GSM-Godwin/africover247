@@ -47,7 +47,7 @@ export default {
     extra: {
       apiUrl: "https://africover247.onrender.com",
       eas: {
-        projectId: "1c5e61d2-65d1-4b21-8150-e983b402a3bc"
+        projectId: "436de704-ba6f-46e8-a6b9-0c7286ce59e1"
       }
     }
   }
