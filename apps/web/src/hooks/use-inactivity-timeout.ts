@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 
-const IDLE_MS = 5 * 60 * 1000;
+const IDLE_MS = 30 * 60 * 1000;
 const COUNTDOWN_MS = 60 * 1000;
 const EVENTS = ["mousemove", "mousedown", "keydown", "touchstart", "scroll", "click"];
 

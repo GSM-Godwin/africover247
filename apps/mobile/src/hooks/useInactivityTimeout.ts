@@ -1,7 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react'
 import { AppState, AppStateStatus } from 'react-native'
 
-const IDLE_MS = 5 * 60 * 1000
+const IDLE_MS = 30 * 60 * 1000
 
 interface UseInactivityTimeoutOptions {
   onIdle: () => void

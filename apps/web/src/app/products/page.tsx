@@ -1,13 +1,11 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { Search, X } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import {
-  FilterPills,
-  matchesCategoryFilter,
-} from "@/components/products/filter-pills";
+import { FilterPills } from "@/components/products/filter-pills";
 import {
   ProductCard,
   ProductCardSkeleton,
@@ -23,6 +21,7 @@ function ProductsContent() {
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [search, setSearch] = useState("");
   const [activeFilter, setActiveFilter] = useState<string | null>(
     categoryParam ? categoryParam.toLowerCase() : null,
   );
@@ -31,30 +30,28 @@ function ProductsContent() {
     setLoading(true);
     setError(false);
     try {
-      const res = await api.get<Product[]>("/products");
+      const params: Record<string, string> = {};
+      if (search) params.search = search;
+      if (activeFilter) params.category = activeFilter;
+      const res = await api.get<Product[]>("/products", { params });
       setAllProducts(res.data);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [search, activeFilter]);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    const timer = setTimeout(() => {
+      fetchProducts();
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search, activeFilter, fetchProducts]);
 
   useEffect(() => {
     setActiveFilter(categoryParam ? categoryParam.toLowerCase() : null);
   }, [categoryParam]);
-
-  const filteredProducts = useMemo(
-    () =>
-      allProducts.filter((product) =>
-        matchesCategoryFilter(product.category, activeFilter),
-      ),
-    [allProducts, activeFilter],
-  );
 
   return (
     <>
@@ -68,6 +65,26 @@ function ProductsContent() {
             <p className="font-body text-slate text-base">
               Choose the coverage that is right for you.
             </p>
+          </div>
+
+          <div className="relative mb-4">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder='Search products e.g. "holiday cover", "car insurance"...'
+              className="w-full pl-9 pr-4 py-3 border border-slate/20 rounded-xl font-body text-sm text-midnight placeholder:text-slate focus:outline-none focus:border-daybreak bg-white"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate hover:text-midnight"
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
 
           <div className="mb-8">
@@ -97,18 +114,18 @@ function ProductsContent() {
             </div>
           )}
 
-          {!loading && !error && filteredProducts.length === 0 && (
+          {!loading && !error && allProducts.length === 0 && (
             <p className="font-body text-slate text-base text-center py-16">
               No products available in this category right now.
             </p>
           )}
 
-          {!loading && !error && filteredProducts.length > 0 && (
+          {!loading && !error && allProducts.length > 0 && (
             <StaggerContainer
-              key={activeFilter ?? "all"}
+              key={`${activeFilter ?? "all"}-${search}`}
               className="grid grid-cols-1 md:grid-cols-3 gap-6"
             >
-              {filteredProducts.map((product) => (
+              {allProducts.map((product) => (
                 <StaggerItem key={product.id}>
                   <ProductCard product={product} />
                 </StaggerItem>

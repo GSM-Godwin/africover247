@@ -52,7 +52,12 @@ export function ProductsScreen({ navigation }: any) {
 
   const filtered = products.filter((p) => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-    const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase())
+    const term = search.toLowerCase().trim()
+    const matchesSearch = !term ||
+      p.name.toLowerCase().includes(term) ||
+      p.description?.toLowerCase().includes(term) ||
+      p.category.toLowerCase().includes(term) ||
+      (Array.isArray(p.keywords) && p.keywords.some((k: string) => k.includes(term)))
     return matchesCategory && matchesSearch
   })
 
@@ -113,7 +118,7 @@ export function ProductsScreen({ navigation }: any) {
         <Ionicons name="search-outline" size={18} color={Colors.textSecondary} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search products..."
+          placeholder="Search e.g. holiday cover, car insurance..."
           placeholderTextColor={Colors.textSecondary + '80'}
           value={search}
           onChangeText={setSearch}

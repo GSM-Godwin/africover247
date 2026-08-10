@@ -17,4 +17,5 @@ export interface Product {
   exclusions: string;
   requiredDocuments: string;
   status: string;
+  keywords?: string[];
 }

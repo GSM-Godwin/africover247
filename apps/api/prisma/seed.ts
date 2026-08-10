@@ -3,6 +3,19 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  Motor: ['motor', 'car', 'vehicle', 'auto', 'automobile', 'driving', 'third party', 'comprehensive', 'road', 'accident', 'collision', 'theft', 'transport'],
+  Property: ['property', 'home', 'house', 'building', 'contents', 'fire', 'flood', 'burglary', 'landlord', 'tenant', 'office', 'shop', 'real estate'],
+  Health: ['health', 'medical', 'hospital', 'doctor', 'illness', 'sickness', 'treatment', 'surgery', 'medicine', 'healthcare', 'hmo', 'outpatient', 'inpatient'],
+  Life: ['life', 'death', 'funeral', 'beneficiary', 'family', 'protection', 'term', 'whole life', 'endowment', 'savings'],
+  Travel: ['travel', 'holiday', 'vacation', 'trip', 'abroad', 'flight', 'luggage', 'passport', 'visa', 'overseas', 'international', 'tourist'],
+  Marine: ['marine', 'cargo', 'ship', 'boat', 'sea', 'ocean', 'freight', 'import', 'export', 'goods in transit', 'water', 'vessel', 'shipping'],
+  Engineering: ['engineering', 'machinery', 'equipment', 'construction', 'contractor', 'erection', 'plant', 'industrial', 'factory', 'breakdown'],
+  Financial: ['financial', 'money', 'fidelity', 'bond', 'fraud', 'professional', 'indemnity', 'liability', 'directors', 'officers'],
+  Liability: ['liability', 'public', 'employer', 'workmen', 'compensation', 'accident', 'injury', 'third party', 'legal'],
+  Agriculture: ['agriculture', 'farm', 'crop', 'livestock', 'cattle', 'poultry', 'fish', 'harvest', 'farmer', 'rural'],
+};
+
 async function main() {
   const adminPassword = await bcrypt.hash('Admin@123456', 10);
   await prisma.user.upsert({
@@ -1424,17 +1437,30 @@ async function main() {
 
   for (const product of products) {
     const item = product as any;
-    await prisma.product.create({
-      data: {
-        ...item,
-        premiumAmount: item.premiumAmount ?? null,
-        rate: item.rate ?? null,
-        rateMin: item.rateMin ?? null,
-        rateMax: item.rateMax ?? null,
-        calculationBasis: item.calculationBasis ?? null,
-        assetFields: item.assetFields ?? null,
-      } as any,
+    const keywords = CATEGORY_KEYWORDS[item.category] ?? [];
+    const data = {
+      ...item,
+      keywords,
+      premiumAmount: item.premiumAmount ?? null,
+      rate: item.rate ?? null,
+      rateMin: item.rateMin ?? null,
+      rateMax: item.rateMax ?? null,
+      calculationBasis: item.calculationBasis ?? null,
+      assetFields: item.assetFields ?? null,
+    };
+
+    const existing = await prisma.product.findFirst({
+      where: { name: item.name },
     });
+
+    if (existing) {
+      await prisma.product.update({
+        where: { id: existing.id },
+        data: { keywords },
+      });
+    } else {
+      await prisma.product.create({ data: data as any });
+    }
   }
 
   console.log(`Seeded ${products.length} products`);

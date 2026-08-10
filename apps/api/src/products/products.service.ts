@@ -9,10 +9,30 @@ export class ProductsService {
 
   // --- Customer-facing ---
 
-  findAll() {
+  findAll(search?: string, category?: string) {
+    const where: {
+      status: string;
+      category?: { equals: string; mode: 'insensitive' };
+      OR?: Array<Record<string, unknown>>;
+    } = { status: 'active' };
+
+    if (category) {
+      where.category = { equals: category, mode: 'insensitive' };
+    }
+
+    if (search) {
+      const term = search.toLowerCase().trim();
+      where.OR = [
+        { name: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { category: { contains: term, mode: 'insensitive' } },
+        { keywords: { has: term } },
+      ];
+    }
+
     return this.prisma.product.findMany({
-      where: { status: 'active' },
-      orderBy: { createdAt: 'asc' },
+      where,
+      orderBy: { name: 'asc' },
     });
   }
 

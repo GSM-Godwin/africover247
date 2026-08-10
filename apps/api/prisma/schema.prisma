@@ -133,6 +133,7 @@ model Product {
   coverageHighlights String
   exclusions         String
   requiredDocuments  String
+  keywords           String[]      @default([])
   status             String        @default("active")
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
