@@ -4,12 +4,14 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FirebaseService } from '../firebase/firebase.service';
 
 @Injectable()
 export class NotificationsService {
-  constructor(private prisma: PrismaService) {}
-
-  // --- List user notifications ---
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly firebase: FirebaseService,
+  ) {}
 
   findMyNotifications(userId: string, unreadOnly = false) {
     return this.prisma.notification.findMany({
@@ -21,16 +23,12 @@ export class NotificationsService {
     });
   }
 
-  // --- Get unread count ---
-
   async getUnreadCount(userId: string): Promise<{ count: number }> {
     const count = await this.prisma.notification.count({
       where: { userId, read: false },
     });
     return { count };
   }
-
-  // --- Mark single notification as read ---
 
   async markAsRead(id: string, userId: string) {
     const notification = await this.prisma.notification.findUnique({
@@ -47,8 +45,6 @@ export class NotificationsService {
       data: { read: true },
     });
   }
-
-  // --- Mark all as read ---
 
   async markAllAsRead(userId: string): Promise<{ message: string; updated: number }> {
     const result = await this.prisma.notification.updateMany({
@@ -77,13 +73,46 @@ export class NotificationsService {
     });
   }
 
-  create(data: {
+  async create(data: {
     userId: string;
     message: string;
     type: string;
     referenceType?: string;
     referenceId?: string;
   }) {
-    return this.prisma.notification.create({ data });
+    const notification = await this.prisma.notification.create({ data });
+
+    try {
+      const user = await this.prisma.user.findUnique({
+        where: { id: data.userId },
+        select: { pushToken: true, firstName: true },
+      });
+      if (user?.pushToken) {
+        await this.firebase.sendPushToUser(
+          user.pushToken,
+          this.getNotificationTitle(data.type),
+          data.message,
+          {
+            type: data.type,
+            referenceType: data.referenceType || '',
+            referenceId: data.referenceId || '',
+          },
+        );
+      }
+    } catch {}
+
+    return notification;
+  }
+
+  private getNotificationTitle(type: string): string {
+    const titles: Record<string, string> = {
+      quote_received: 'Quote Request Received',
+      quote_sent: 'Quote Ready',
+      quote_deadline: 'Quote Deadline Alert',
+      claim_update: 'Claim Update',
+      policy_expiry: 'Policy Expiring Soon',
+      payment_confirmed: 'Payment Confirmed',
+    };
+    return titles[type] || 'AfriCover247';
   }
 }

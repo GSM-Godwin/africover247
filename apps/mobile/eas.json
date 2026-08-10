@@ -11,7 +11,8 @@
     "preview": {
       "distribution": "internal",
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",
+        "googleServicesFile": "google-services.json"
       },
       "env": {
         "EXPO_NO_CAPABILITY_SYNC": "1",
@@ -19,7 +20,10 @@
       }
     },
     "production": {
-      "distribution": "store"
+      "distribution": "store",
+      "android": {
+        "googleServicesFile": "google-services.json"
+      }
     }
   },
   "submit": {

@@ -21,12 +21,14 @@ import { KycModule } from './kyc/kyc.module';
 import { SmsModule } from './sms/sms.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { ContactModule } from './contact/contact.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    FirebaseModule,
     RedisModule,
     PrismaModule,
     EmailModule,

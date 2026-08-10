@@ -2,6 +2,7 @@ import React, { useState, useCallback, useRef, forwardRef, useImperativeHandle }
 import { Alert } from 'react-native'
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as Notifications from 'expo-notifications'
 import { SplashScreen } from '../screens/SplashScreen'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { AuthStack } from './AuthStack'
@@ -13,9 +14,27 @@ import {
   authenticateWithBiometric,
 } from '../services/biometric'
 import { isDeviceRooted } from '../services/security'
+import { registerForPushNotifications, savePushToken } from '../services/notifications'
 import { ONBOARDING_KEY } from '../constants'
 
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+})
+
 type AppState = 'splash' | 'onboarding' | 'auth' | 'app'
+
+async function registerPushToken() {
+  const pushToken = await registerForPushNotifications()
+  if (pushToken) {
+    await savePushToken(pushToken)
+  }
+}
 
 export interface RootNavigatorHandle {
   logout: () => Promise<void>
@@ -89,6 +108,7 @@ export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>
         }
         setAppState('app')
         onAuthChange?.(true)
+        registerPushToken()
       } else if (!onboardingDone) {
         setAppState('onboarding')
       } else {
@@ -106,6 +126,7 @@ export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>
     const handleLoginSuccess = useCallback(() => {
       setAppState('app')
       onAuthChange?.(true)
+      registerPushToken()
     }, [onAuthChange])
 
     if (appState === 'splash') {

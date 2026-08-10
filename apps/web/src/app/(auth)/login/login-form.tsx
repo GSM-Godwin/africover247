@@ -11,6 +11,7 @@ import { AuthInput } from "@/components/auth/auth-input";
 import { AuthButton } from "@/components/auth/auth-button";
 import api from "@/lib/api";
 import { setToken, setUser, setRole } from "@/lib/auth";
+import { signInWithGoogle } from "@/lib/firebase";
 
 const schema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -31,13 +32,29 @@ export function LoginForm() {
   } = useForm<FormData>({ resolver: zodResolver(schema) });
 
   async function handleGoogleSignIn() {
-    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!clientId) {
-      toast.error("Google Sign-In is not configured yet.");
-      return;
+    setLoading(true);
+    try {
+      const googleUser = await signInWithGoogle();
+      const res = await api.post("/auth/google", googleUser);
+      setToken(res.data.accessToken);
+      setUser(res.data.user);
+      setRole(res.data.user.role);
+      setLoading(false);
+      router.push(res.data.user.role === "admin" ? "/admin" : "/dashboard");
+    } catch (err: unknown) {
+      const response = (
+        err as { response?: { data?: { message?: unknown } } }
+      ).response;
+      const message = response?.data?.message;
+      toast.error(
+        Array.isArray(message)
+          ? String(message[0])
+          : typeof message === "string"
+            ? message
+            : "Google Sign-In failed.",
+      );
+      setLoading(false);
     }
-    // TODO: implement Google OAuth flow when credentials available
-    toast.info("Google Sign-In coming soon.");
   }
 
   async function handleAppleSignIn() {

@@ -14,3 +14,5 @@ coverage/
 
 # Local build guides and planning docs — not pushed to GitHub
 docs/
+apps/mobile/google-services.json
+apps/api/firebase-service-account.json

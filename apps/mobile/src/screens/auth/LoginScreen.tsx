@@ -40,9 +40,8 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
   const [error, setError] = useState('')
 
   const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || '',
-    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || '',
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || '',
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
   })
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
@@ -219,10 +218,10 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
             <TouchableOpacity
               style={[
                 styles.googleBtn,
-                (!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID) && styles.btnDisabledOpacity,
+                (!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) && styles.btnDisabledOpacity,
               ]}
               onPress={() => googlePromptAsync()}
-              disabled={!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID}
+              disabled={!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID}
               activeOpacity={0.8}
             >
               <Ionicons name="logo-google" size={20} color={Colors.text} />
