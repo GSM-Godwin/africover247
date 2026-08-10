@@ -56,30 +56,31 @@ export class PaymentsService {
       throw new BadRequestException('This application has already been paid');
     }
 
-    // --- Reuse existing pending payment or create new ---
-    let payment = await this.prisma.payment.findFirst({
-      where: { applicationId: dto.applicationId, status: 'pending' },
-      orderBy: { createdAt: 'desc' },
-    });
-
     const formData = application.formData as Record<string, any> | null;
     const calculatedPremium = formData?.calculatedPremium
       ? Number(formData.calculatedPremium)
       : null;
 
-    const amount = payment
-      ? Number(payment.amount)
-      : application.product.premiumAmount
-        ? Number(application.product.premiumAmount)
-        : calculatedPremium
-          ? calculatedPremium
-          : null;
+    const annualAmount = application.product.premiumAmount
+      ? Number(application.product.premiumAmount)
+      : calculatedPremium;
 
-    if (!amount) {
+    if (!annualAmount) {
       throw new BadRequestException(
         'No premium amount available. Please complete a quote first.',
       );
     }
+
+    const paymentPlan = dto.paymentPlan || 'annual';
+    const amount =
+      paymentPlan === 'monthly'
+        ? Math.ceil(annualAmount / 12)
+        : annualAmount;
+
+    let payment = await this.prisma.payment.findFirst({
+      where: { applicationId: dto.applicationId, status: 'pending' },
+      orderBy: { createdAt: 'desc' },
+    });
 
     if (!payment) {
       payment = await this.prisma.payment.create({
@@ -87,8 +88,17 @@ export class PaymentsService {
           applicationId: dto.applicationId,
           amount,
           currency: 'NGN',
+          paymentPlan,
           status: 'pending',
         },
+      });
+    } else if (
+      Number(payment.amount) !== amount ||
+      payment.paymentPlan !== paymentPlan
+    ) {
+      payment = await this.prisma.payment.update({
+        where: { id: payment.id },
+        data: { amount, paymentPlan },
       });
     }
 
@@ -110,7 +120,7 @@ export class PaymentsService {
 
     await this.prisma.application.update({
       where: { id: dto.applicationId },
-      data: { status: 'pending_payment' },
+      data: { status: 'pending_payment', paymentPlan },
     });
 
     await this.prisma.payment.update({

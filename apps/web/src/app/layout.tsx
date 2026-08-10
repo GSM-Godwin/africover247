@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk, IBM_Plex_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { InactivityGuard } from "@/components/shared/inactivity-guard";
+import { WhatsAppButton } from "@/components/shared/whatsapp-button";
+import { TawkToChat } from "@/components/shared/tawkto-chat";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -84,6 +86,8 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col bg-paper text-midnight font-body antialiased">
         <InactivityGuard>{children}</InactivityGuard>
+        <WhatsAppButton />
+        <TawkToChat />
         <Toaster position="top-right" richColors />
       </body>
     </html>

@@ -20,9 +20,14 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   const { applicationId, product, amount: presetAmount } = params as any
   const [loading, setLoading] = useState(false)
   const [polling, setPolling] = useState(false)
+  const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'annual'>('annual')
   const [appAmount, setAppAmount] = useState<string | null>(presetAmount || null)
   const [error, setError] = useState('')
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
+
+  const annualAmount = product?.premiumAmount ? parseFloat(product.premiumAmount) : 0
+  const monthlyAmount = annualAmount ? Math.ceil(annualAmount / 12) : 0
+  const displayAmount = paymentPlan === 'monthly' ? monthlyAmount : annualAmount
 
   useEffect(() => {
     return () => clearInterval(pollRef.current)
@@ -60,6 +65,7 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
     try {
       const res = await api.post('/payments/initiate', {
         applicationId: String(applicationId),
+        paymentPlan,
       })
 
       const checkoutUrl = res.data?.checkoutUrl
@@ -174,11 +180,13 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
               <Text style={styles.summaryValue} numberOfLines={2}>{product.name}</Text>
             </View>
           )}
-          {appAmount && (
+          {(appAmount || displayAmount > 0) && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Annual Premium</Text>
+              <Text style={styles.summaryLabel}>
+                {paymentPlan === 'monthly' ? 'Monthly Premium' : 'Annual Premium'}
+              </Text>
               <Text style={[styles.summaryValue, styles.premiumAmount]}>
-                ₦{parseFloat(String(appAmount)).toLocaleString('en-NG')}
+                ₦{(appAmount ? parseFloat(String(appAmount)) : displayAmount).toLocaleString('en-NG')}
               </Text>
             </View>
           )}
@@ -196,6 +204,39 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
+
+        {annualAmount > 0 && (
+          <View style={styles.planSelector}>
+            <Text style={styles.planLabel}>Payment Plan</Text>
+            <View style={styles.planOptions}>
+              <TouchableOpacity
+                style={[styles.planOption, paymentPlan === 'annual' && styles.planOptionActive]}
+                onPress={() => setPaymentPlan('annual')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.planName, paymentPlan === 'annual' && styles.planNameActive]}>Annual</Text>
+                <Text style={[styles.planAmount, paymentPlan === 'annual' && styles.planAmountActive]}>
+                  ₦{annualAmount.toLocaleString('en-NG')}
+                </Text>
+                <Text style={styles.planPeriod}>per year</Text>
+                <Text style={styles.planSave}>Best value</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.planOption, paymentPlan === 'monthly' && styles.planOptionActive]}
+                onPress={() => setPaymentPlan('monthly')}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.planName, paymentPlan === 'monthly' && styles.planNameActive]}>Monthly</Text>
+                <Text style={[styles.planAmount, paymentPlan === 'monthly' && styles.planAmountActive]}>
+                  ₦{monthlyAmount.toLocaleString('en-NG')}
+                </Text>
+                <Text style={styles.planPeriod}>per month</Text>
+                <Text style={styles.planSave}>₦{(monthlyAmount * 12).toLocaleString('en-NG')}/yr</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {polling ? (
           <View style={styles.pollingBox}>
@@ -273,4 +314,24 @@ const styles = StyleSheet.create({
   manualCheck: { alignItems: 'center', marginTop: 12 },
   manualCheckText: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
   secureNote: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginTop: 16 },
+  planSelector: { marginBottom: 20 },
+  planLabel: { fontSize: 14, fontWeight: '700', color: Colors.textDark, marginBottom: 10 },
+  planOptions: { flexDirection: 'row', gap: 12 },
+  planOption: {
+    flex: 1,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    padding: 14,
+  },
+  planOptionActive: {
+    borderColor: Colors.accent,
+    backgroundColor: Colors.accentLight,
+  },
+  planName: { fontSize: 13, fontWeight: '700', color: Colors.textSecondary, marginBottom: 4 },
+  planNameActive: { color: Colors.textDark },
+  planAmount: { fontSize: 20, fontWeight: '800', color: Colors.textSecondary },
+  planAmountActive: { color: Colors.textDark },
+  planPeriod: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  planSave: { fontSize: 11, color: Colors.success, fontWeight: '600', marginTop: 6 },
 })

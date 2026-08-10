@@ -113,6 +113,12 @@ export function HelpScreen({ navigation }: any) {
           <Card style={styles.contactCard} padding={0}>
             {[
               {
+                icon: 'logo-whatsapp' as const,
+                label: 'WhatsApp Support',
+                value: '+234 906 367 5032',
+                onPress: () => Linking.openURL('https://wa.me/2349063675032?text=Hello%2C%20I%20need%20help%20with%20my%20AfriCover247%20insurance.'),
+              },
+              {
                 icon: 'mail-outline' as const,
                 label: 'Email Support',
                 value: 'support@africover247.com',
