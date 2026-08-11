@@ -39,10 +39,14 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder'
+
   const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder',
+    androidClientId: googleClientId,
   })
+
+  const hasGoogleClientId = Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -215,18 +219,20 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
               <View style={styles.dividerLine} />
             </View>
 
-            <TouchableOpacity
-              style={[
-                styles.googleBtn,
-                (!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID) && styles.btnDisabledOpacity,
-              ]}
-              onPress={() => googlePromptAsync()}
-              disabled={!googleRequest || !process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="logo-google" size={20} color={Colors.text} />
-              <Text style={styles.googleBtnText}>Continue with Google</Text>
-            </TouchableOpacity>
+            {process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID && (
+              <TouchableOpacity
+                style={[
+                  styles.googleBtn,
+                  (!googleRequest || !hasGoogleClientId) && styles.btnDisabledOpacity,
+                ]}
+                onPress={() => googlePromptAsync()}
+                disabled={!googleRequest || !hasGoogleClientId}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="logo-google" size={20} color={Colors.text} />
+                <Text style={styles.googleBtnText}>Continue with Google</Text>
+              </TouchableOpacity>
+            )}
 
             {Platform.OS === 'ios' && (
               <AppleAuthentication.AppleAuthenticationButton

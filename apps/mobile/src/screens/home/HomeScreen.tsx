@@ -57,7 +57,13 @@ export function HomeScreen({ navigation }: any) {
         api.get('/products').catch(() => ({ data: [] })),
       ])
       setUser(u)
-      setFeaturedProducts(productsRes.data.slice(0, 4))
+      const seen = new Set<string>()
+      const unique = productsRes.data.filter((p: Product) => {
+        if (seen.has(p.id)) return false
+        seen.add(p.id)
+        return true
+      })
+      setFeaturedProducts(unique.slice(0, 4))
       setData({
         policies: policiesRes.data,
         claims: claimsRes.data,
@@ -218,6 +224,7 @@ export function HomeScreen({ navigation }: any) {
                 key={action.label}
                 style={styles.quickAction}
                 onPress={action.onPress}
+                activeOpacity={0.8}
               >
                 <View style={styles.quickActionIcon}>
                   <Ionicons name={action.icon} size={22} color={Colors.primary} />
@@ -500,14 +507,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 3,
   },
-  quickActionLabel: { fontSize: 11, color: Colors.textSecondary, fontWeight: '500', textAlign: 'center' },
+  quickActionLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+    textAlign: 'center',
+    marginTop: 6,
+  },
   draftCard: { marginBottom: 0 },
   draftRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   progressTrack: { height: 4, backgroundColor: '#E2E8F0', borderRadius: 2, overflow: 'hidden' },
