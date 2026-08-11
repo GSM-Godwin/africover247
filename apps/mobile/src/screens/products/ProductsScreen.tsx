@@ -15,6 +15,7 @@ import { Colors } from '../../constants'
 import { getCategoryIcon, getCategoryColor } from '../../constants/categoryIcons'
 import api from '../../services/api'
 import type { Product } from '../../types'
+import { expandSearchTerms } from '../../utils/searchUtils'
 
 const CATEGORIES = ['All', 'Motor', 'Property', 'Life', 'Health', 'Marine', 'Engineering', 'Financial', 'Liability', 'Agriculture', 'Travel']
 
@@ -52,12 +53,15 @@ export function ProductsScreen({ navigation }: any) {
 
   const filtered = products.filter((p) => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory
-    const term = search.toLowerCase().trim()
-    const matchesSearch = !term ||
+    if (!search.trim()) return matchesCategory
+
+    const expandedTerms = expandSearchTerms(search)
+    const matchesSearch = expandedTerms.some((term) =>
       p.name.toLowerCase().includes(term) ||
       p.description?.toLowerCase().includes(term) ||
       p.category.toLowerCase().includes(term) ||
       (Array.isArray(p.keywords) && p.keywords.some((k: string) => k.includes(term)))
+    )
     return matchesCategory && matchesSearch
   })
 

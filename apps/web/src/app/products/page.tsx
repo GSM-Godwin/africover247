@@ -45,7 +45,7 @@ function ProductsContent() {
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchProducts();
-    }, 400);
+    }, 200);
     return () => clearTimeout(timer);
   }, [search, activeFilter, fetchProducts]);
 
