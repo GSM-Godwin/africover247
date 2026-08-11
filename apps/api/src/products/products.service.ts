@@ -10,11 +10,7 @@ export class ProductsService {
   // --- Customer-facing ---
 
   findAll(search?: string, category?: string) {
-    const where: {
-      status: string;
-      category?: { equals: string; mode: 'insensitive' };
-      OR?: Array<Record<string, unknown>>;
-    } = { status: 'active' };
+    const where: any = { status: 'active' };
 
     if (category) {
       where.category = { equals: category, mode: 'insensitive' };
@@ -22,11 +18,17 @@ export class ProductsService {
 
     if (search) {
       const term = search.toLowerCase().trim();
+      const words = term.split(/\s+/).filter(Boolean);
+
       where.OR = [
         { name: { contains: term, mode: 'insensitive' } },
         { description: { contains: term, mode: 'insensitive' } },
         { category: { contains: term, mode: 'insensitive' } },
-        { keywords: { has: term } },
+        ...words.flatMap((word) => [
+          { name: { contains: word, mode: 'insensitive' } },
+          { description: { contains: word, mode: 'insensitive' } },
+          { category: { contains: word, mode: 'insensitive' } },
+        ]),
       ];
     }
 

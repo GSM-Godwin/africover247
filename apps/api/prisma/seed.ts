@@ -52,7 +52,7 @@ async function main() {
       name: 'Motor Insurance — 3rd Party (Private Car)',
       category: 'Motor',
       description:
-        'Third-party only motor insurance for private cars. Covers damage or injury caused to other people and their property.',
+        'Third-party car and motor insurance for private vehicles on the road. Covers damage or injury caused to other people and their property while driving.',
       pricingType: 'fixed' as const,
       premiumAmount: 15000,
       coverageHighlights:
@@ -67,7 +67,7 @@ async function main() {
       name: 'Motor Insurance — 3rd Party (Goods Vehicle)',
       category: 'Motor',
       description:
-        'Third-party motor insurance for goods-carrying vehicles. Covers liability to third parties arising from use of the vehicle.',
+        'Third-party motor insurance for goods-carrying vehicles and trucks on the road. Covers liability to third parties arising from use of the vehicle.',
       pricingType: 'fixed' as const,
       premiumAmount: 30000,
       coverageHighlights:
@@ -82,7 +82,7 @@ async function main() {
       name: 'Motor Insurance — 3rd Party (Six Tyre Vehicle)',
       category: 'Motor',
       description:
-        'Third-party motor insurance for six-tyre commercial vehicles including tipper trucks and medium haulage vehicles.',
+        'Third-party motor insurance for six-tyre commercial vehicles on the road, including tipper trucks and medium haulage vehicles.',
       pricingType: 'fixed' as const,
       premiumAmount: 50000,
       coverageHighlights:
@@ -97,7 +97,7 @@ async function main() {
       name: 'Motor Insurance — 3rd Party (Trailers / Trucks)',
       category: 'Motor',
       description:
-        'Third-party motor insurance for trailers, articulated trucks, and heavy haulage vehicles.',
+        'Third-party motor insurance for trailers, articulated trucks, and heavy haulage vehicles used on Nigerian roads.',
       pricingType: 'fixed' as const,
       premiumAmount: 100000,
       coverageHighlights:
@@ -112,7 +112,7 @@ async function main() {
       name: 'Motor Comprehensive Insurance',
       category: 'Motor',
       description:
-        'Full comprehensive motor insurance covering own damage, theft, fire, and third-party liability. The most complete motor cover available.',
+        'Full comprehensive car and motor insurance covering own vehicle damage, theft, fire, and third-party liability on the road. The most complete motor cover available.',
       pricingType: 'calculable' as const,
       rate: 0.05,
       calculationBasis: 'vehicle market value',
@@ -400,7 +400,7 @@ async function main() {
       name: 'Fire & Special Perils Insurance',
       category: 'Property',
       description:
-        'Insurance against loss or damage to property caused by fire, lightning, explosion, and a range of special perils including flood and storm.',
+        'Home and building insurance against loss or damage to property caused by fire, lightning, explosion, and a range of special perils including flood and storm.',
       pricingType: 'quote_based' as const,
       assetFields: [
         {
@@ -469,7 +469,7 @@ async function main() {
       name: 'Burglary / Housebreaking Insurance',
       category: 'Property',
       description:
-        'Insurance against loss or damage to contents and property caused by theft involving forcible and violent entry or exit.',
+        'Home and house burglary insurance against loss or damage to contents and property caused by theft involving forcible and violent entry or exit.',
       pricingType: 'quote_based' as const,
       assetFields: [
         {
@@ -1138,7 +1138,7 @@ async function main() {
       name: 'Health Insurance',
       category: 'Health',
       description:
-        'Comprehensive health insurance covering inpatient and outpatient medical expenses for individuals and families at accredited hospitals across Nigeria.',
+        'Comprehensive medical and hospital insurance covering inpatient and outpatient healthcare expenses for individuals and families at accredited hospitals across Nigeria.',
       pricingType: 'quote_based' as const,
       assetFields: [
         {
@@ -1208,7 +1208,7 @@ async function main() {
       name: 'Travel Insurance',
       category: 'Travel',
       description:
-        'Insurance covering travellers against unexpected events during domestic and international travel including medical emergencies, trip cancellation, and baggage loss.',
+        'Holiday and travel cover for trips abroad or at home — insurance for vacation travellers against unexpected events including medical emergencies abroad, trip cancellation, and lost baggage.',
       pricingType: 'quote_based' as const,
       assetFields: [
         {
