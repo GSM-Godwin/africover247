@@ -41,7 +41,7 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
 
   const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID,
   })
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
