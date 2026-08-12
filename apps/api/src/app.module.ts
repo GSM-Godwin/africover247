@@ -22,6 +22,7 @@ import { SmsModule } from './sms/sms.module';
 import { QuotesModule } from './quotes/quotes.module';
 import { ContactModule } from './contact/contact.module';
 import { FirebaseModule } from './firebase/firebase.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { FirebaseModule } from './firebase/firebase.module';
     ScheduleModule.forRoot(),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
     FirebaseModule,
+    SearchModule,
     RedisModule,
     PrismaModule,
     EmailModule,

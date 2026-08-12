@@ -31,10 +31,22 @@ function ProductsContent() {
     setError(false);
     try {
       const params: Record<string, string> = {};
-      if (search) params.search = search;
+      if (search) {
+        params.search = search;
+        params.platform = "web";
+      }
       if (activeFilter) params.category = activeFilter;
       const res = await api.get<Product[]>("/products", { params });
       setAllProducts(res.data);
+      if (search && search.trim().length >= 2) {
+        api
+          .post("/search/log", {
+            query: search.trim(),
+            resultsCount: res.data.length,
+            platform: "web",
+          })
+          .catch(() => {});
+      }
     } catch {
       setError(true);
     } finally {

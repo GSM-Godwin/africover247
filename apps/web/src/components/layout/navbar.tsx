@@ -105,6 +105,7 @@ export function Navbar() {
     const links: NavLinkItem[] = [
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },
+      { label: "Glossary", href: "/insurance-glossary" },
       { label: "Claims", href: "/claims" },
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },

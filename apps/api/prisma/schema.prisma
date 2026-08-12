@@ -321,3 +321,15 @@ model ContactMessage {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 }
+
+model SearchLog {
+  id           String   @id @default(uuid())
+  query        String
+  resultsCount Int
+  platform     String   @default("web")
+  createdAt    DateTime @default(now())
+
+  @@index([query])
+  @@index([resultsCount])
+  @@index([createdAt])
+}

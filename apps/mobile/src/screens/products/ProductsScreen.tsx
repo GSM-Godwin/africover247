@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useMemo } from 'react'
 import {
   View,
   Text,
@@ -51,7 +51,7 @@ export function ProductsScreen({ navigation }: any) {
       .finally(() => setLoading(false))
   }, [])
 
-  const filtered = products.filter((p) => {
+  const filtered = useMemo(() => products.filter((p) => {
     const matchesCategory = activeCategory === 'All' || p.category === activeCategory
     if (!search.trim()) return matchesCategory
 
@@ -63,7 +63,20 @@ export function ProductsScreen({ navigation }: any) {
       (Array.isArray(p.keywords) && p.keywords.some((k: string) => k.includes(term)))
     )
     return matchesCategory && matchesSearch
-  })
+  }), [products, activeCategory, search])
+
+  useEffect(() => {
+    if (search.trim().length >= 2) {
+      const timer = setTimeout(() => {
+        api.post('/search/log', {
+          query: search.trim(),
+          resultsCount: filtered.length,
+          platform: 'mobile',
+        }).catch(() => {})
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [search, filtered.length])
 
   function renderProduct({ item }: { item: Product }) {
     const config = PRICING_TYPE_CONFIG[item.pricingType]

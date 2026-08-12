@@ -1,0 +1,15 @@
+export const PLAIN_ENGLISH_LABELS: Record<string, string> = {
+  Premium: "What you pay",
+  "Sum Insured": "Maximum amount covered",
+  Excess: "What you may pay towards a claim",
+  Exclusion: "What isn't covered",
+  Policy: "Your insurance agreement",
+  Claim: "Request for payment after a loss",
+  Beneficiary: "Who receives the benefit",
+  Renewal: "Continue your cover",
+  Expiry: "When your cover ends",
+  "Effective Date": "When your cover starts",
+  Liability: "Legal responsibility for someone else's loss",
+  Indemnity: "Financial restoration after a covered loss",
+  Deductible: "Amount you contribute before insurer pays",
+};

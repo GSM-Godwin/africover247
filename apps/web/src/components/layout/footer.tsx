@@ -10,6 +10,7 @@ const links = {
   ],
   Company: [
     { label: "About Us", href: "/about" },
+    { label: "Insurance Glossary", href: "/insurance-glossary" },
     { label: "How It Works", href: "/#how-it-works" },
     { label: "NAICOM Insurers", href: "/insurers" },
     { label: "Contact Us", href: "/contact" },

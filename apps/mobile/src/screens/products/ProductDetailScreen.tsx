@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Card, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
+import { PLAIN_ENGLISH_LABELS } from '../../constants/insuranceTerms'
 import { getCategoryIcon, getCategoryColor } from '../../constants/categoryIcons'
 import api from '../../services/api'
 import type { Product, AssetField } from '../../types'
@@ -464,6 +465,7 @@ export function ProductDetailScreen({ route, navigation }: any) {
           <Card style={styles.priceCard} padding={16}>
             <Text style={styles.priceLabel}>Annual Premium</Text>
             <Text style={styles.priceValue}>{getPriceDisplay()}</Text>
+            <Text style={styles.premiumLabel}>{PLAIN_ENGLISH_LABELS.Premium}</Text>
             {product.pricingType === 'calculable' && (
               <Text style={styles.priceNote}>
                 * Premium calculated automatically based on your asset value
@@ -479,7 +481,7 @@ export function ProductDetailScreen({ route, navigation }: any) {
 
         {/* --- Coverage --- */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What's Covered</Text>
+          <Text style={styles.sectionTitle}>What&apos;s covered</Text>
           {coverageItems.map((item, i) => (
             <View key={i} style={styles.coverageItem}>
               <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
@@ -490,7 +492,7 @@ export function ProductDetailScreen({ route, navigation }: any) {
 
         {/* --- Exclusions --- */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>What's Not Covered</Text>
+          <Text style={styles.sectionTitle}>What isn&apos;t covered</Text>
           {exclusionItems.map((item, i) => (
             <View key={i} style={styles.coverageItem}>
               <Ionicons name="close-circle" size={18} color={Colors.error} />
@@ -594,6 +596,7 @@ const styles = StyleSheet.create({
   },
   priceLabel: { fontSize: 11, color: Colors.textSecondary, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   priceValue: { fontSize: 22, fontWeight: '800', color: Colors.primary },
+  premiumLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
   priceNote: { fontSize: 11, color: Colors.textSecondary, marginTop: 6, fontStyle: 'italic' },
   section: {
     paddingHorizontal: 20,

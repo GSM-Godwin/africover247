@@ -19,6 +19,7 @@ import {
 } from "@/lib/utils";
 import { applyStepPath } from "@/types/application";
 import type { Product } from "@/types/product";
+import { InsuranceTooltip } from "@/components/shared/insurance-tooltip";
 
 interface ApplicationDraft {
   id: string;
@@ -220,9 +221,12 @@ export function ProductDetailContent() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-8">
-                  <h2 className="font-display font-bold text-alert-coral text-lg mb-5">
-                    What&apos;s not covered
-                  </h2>
+                  <div className="flex items-center gap-2 mb-5">
+                    <h2 className="font-display font-bold text-alert-coral text-lg">
+                      Exclusions
+                    </h2>
+                    <InsuranceTooltip term="Exclusion" />
+                  </div>
                   <ul className="space-y-3">
                     {excluded.map((item) => (
                       <li
@@ -239,6 +243,12 @@ export function ProductDetailContent() {
                 </div>
 
                 <div className="bg-white rounded-2xl shadow-[0_2px_16px_rgba(16,26,52,0.06)] p-6 sm:p-8 flex flex-col">
+                  <div className="mb-2">
+                    <InsuranceTooltip term="Premium" />
+                    <p className="font-body text-xs text-slate mt-0.5">
+                      What you pay annually
+                    </p>
+                  </div>
                   <p className="font-mono font-bold text-midnight text-4xl mb-2">
                     {getPriceDisplay(product)}
                   </p>

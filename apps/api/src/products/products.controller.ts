@@ -25,8 +25,9 @@ export class ProductsController {
   findAll(
     @Query('search') search?: string,
     @Query('category') category?: string,
+    @Query('platform') platform?: string,
   ) {
-    return this.productsService.findAll(search, category);
+    return this.productsService.findAll(search, category, platform || 'web');
   }
 
   @Get(':id')

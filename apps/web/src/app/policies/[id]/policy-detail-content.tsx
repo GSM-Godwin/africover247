@@ -10,10 +10,23 @@ import api from "@/lib/api";
 import { formatDate, formatNaira } from "@/lib/utils";
 import type { PolicyDetailRecord } from "@/types/policy";
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailRow({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="flex items-center justify-between gap-4 py-4 border-b border-slate/10 last:border-b-0">
-      <span className="font-body text-sm text-slate">{label}</span>
+      <div>
+        <span className="font-body text-sm text-slate">{label}</span>
+        {hint && (
+          <p className="font-body text-xs text-slate">{hint}</p>
+        )}
+      </div>
       <span className="font-body text-sm font-semibold text-midnight text-right">
         {value}
       </span>
@@ -129,14 +142,17 @@ export function PolicyDetailContent() {
                   <DetailRow
                     label="Start date"
                     value={formatDate(policy.startDate)}
+                    hint="When your cover started"
                   />
                   <DetailRow
                     label="Expiry date"
                     value={formatDate(policy.expiryDate)}
+                    hint="When your cover ends"
                   />
                   <DetailRow
                     label="Premium paid"
                     value={formatNaira(parseFloat(policy.premiumPaid))}
+                    hint="What you paid"
                   />
                 </section>
 

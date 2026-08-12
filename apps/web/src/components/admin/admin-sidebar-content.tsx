@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Car,
   Mail,
+  Search,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/admin/policies", label: "Policies", icon: Shield },
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/products", label: "Products", icon: Package },
+  { href: "/admin/search", label: "Search Analytics", icon: Search },
   { href: "/admin/customers", label: "Customers", icon: Users },
   { href: "/admin/vehicle-lookup", label: "Vehicle Lookup", icon: Car },
   { href: "/admin/contact", label: "Contact Messages", icon: Mail },
