@@ -7,6 +7,8 @@ import { useApplicationWizard } from "@/contexts/application-wizard-context";
 import { initiateAndRedirect } from "@/lib/payment";
 import { PENDING_APPLICATION_ID_KEY } from "@/types/payment";
 import { formatNaira } from "@/lib/utils";
+import { ReauthModal } from "@/components/shared/reauth-modal";
+import { useReauth } from "@/hooks/use-reauth";
 
 export default function PaymentPage() {
   const router = useRouter();
@@ -14,6 +16,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentPlan, setPaymentPlan] = useState<"monthly" | "annual">("annual");
+  const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const productName = application?.product?.name ?? "Insurance";
   const calculatedPremium = formData?.calculatedPremium
@@ -38,6 +41,10 @@ export default function PaymentPage() {
       setError("Something went wrong. Please try again.");
       setLoading(false);
     }
+  }
+
+  function handlePayClick() {
+    requireReauth(handleProceed);
   }
 
   return (
@@ -115,7 +122,7 @@ export default function PaymentPage() {
 
       <button
         type="button"
-        onClick={handleProceed}
+        onClick={handlePayClick}
         disabled={loading || !annualAmount}
         className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] disabled:opacity-60 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center gap-2 mb-6"
       >
@@ -130,6 +137,13 @@ export default function PaymentPage() {
       >
         Cancel and return to dashboard
       </button>
+
+      <ReauthModal
+        open={showModal}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+        reason="Please confirm your password before proceeding to payment."
+      />
     </div>
   );
 }

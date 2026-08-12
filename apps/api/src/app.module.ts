@@ -23,6 +23,7 @@ import { QuotesModule } from './quotes/quotes.module';
 import { ContactModule } from './contact/contact.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { SearchModule } from './search/search.module';
+import { SupportModule } from './support/support.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { SearchModule } from './search/search.module';
     PoliciesModule,
     QuotesModule,
     ContactModule,
+    SupportModule,
   ],
   providers: [
     {

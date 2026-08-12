@@ -8,6 +8,8 @@ import { toast } from "sonner";
 import { Loader2, Lock } from "lucide-react";
 import { AuthInput } from "@/components/auth/auth-input";
 import { PasswordStrengthIndicator } from "@/components/shared/password-strength-indicator";
+import { ReauthModal } from "@/components/shared/reauth-modal";
+import { useReauth } from "@/hooks/use-reauth";
 import api from "@/lib/api";
 import { getUser, setUser } from "@/lib/auth";
 import type { UserProfile } from "@/types/user";
@@ -61,6 +63,7 @@ export function AccountContent() {
   const [email, setEmail] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const profileForm = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -153,6 +156,10 @@ export function AccountContent() {
     } finally {
       setPasswordLoading(false);
     }
+  }
+
+  function handlePasswordFormAttempt(data: PasswordFormData) {
+    requireReauth(() => void onPasswordSubmit(data));
   }
 
   return (
@@ -250,7 +257,7 @@ export function AccountContent() {
         </h2>
 
         <form
-          onSubmit={passwordForm.handleSubmit(onPasswordSubmit)}
+          onSubmit={passwordForm.handleSubmit(handlePasswordFormAttempt)}
           className="space-y-6"
         >
               <AuthInput
@@ -293,6 +300,13 @@ export function AccountContent() {
               </div>
             </form>
       </div>
+
+      <ReauthModal
+        open={showModal}
+        onSuccess={onSuccess}
+        onCancel={onCancel}
+        reason="Please confirm your password before changing your password."
+      />
     </div>
   );
 }

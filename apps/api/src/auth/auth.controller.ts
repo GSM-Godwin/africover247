@@ -120,4 +120,14 @@ export class AuthController {
   logout() {
     return { message: 'Logged out successfully' };
   }
+
+  @SkipThrottle()
+  @UseGuards(JwtAuthGuard)
+  @Post('verify-password')
+  verifyPassword(
+    @CurrentUser() user: { id: string },
+    @Body() body: { password: string },
+  ) {
+    return this.authService.verifyPassword(user.id, body.password);
+  }
 }

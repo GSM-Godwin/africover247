@@ -37,7 +37,10 @@ export class AuthService {
   }
 
   private signToken(userId: string, email: string, role: string): string {
-    return this.jwtService.sign({ sub: userId, email, role });
+    return this.jwtService.sign(
+      { sub: userId, email, role },
+      { expiresIn: '12h' },
+    );
   }
 
   private sanitizeUser(user: {
@@ -277,6 +280,14 @@ export class AuthService {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
     return this.sanitizeUser(user);
+  }
+
+  async verifyPassword(userId: string, password: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException('User not found');
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) throw new UnauthorizedException('Incorrect password');
+    return { verified: true };
   }
 
   async sendPhoneOtp(phone: string) {

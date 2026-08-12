@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ChangeEventHandler } from "react";
+import { useState, type ChangeEventHandler, type KeyboardEventHandler } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import type { UseFormRegisterReturn } from "react-hook-form";
 
@@ -15,6 +15,7 @@ interface AuthInputProps {
   maxLength?: number;
   required?: boolean;
   disabled?: boolean;
+  onKeyDown?: KeyboardEventHandler<HTMLInputElement>;
 }
 
 export function AuthInput({
@@ -28,6 +29,7 @@ export function AuthInput({
   maxLength,
   required,
   disabled,
+  onKeyDown,
 }: AuthInputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === "password";
@@ -49,6 +51,7 @@ export function AuthInput({
           type={inputType}
           placeholder={placeholder}
           disabled={disabled}
+          onKeyDown={onKeyDown}
           className={`
             w-full bg-transparent font-body text-base text-midnight placeholder:text-slate/50
             border-b pb-2 outline-none transition-colors duration-200
