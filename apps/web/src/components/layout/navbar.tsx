@@ -106,6 +106,7 @@ export function Navbar() {
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },
       { label: "Glossary", href: "/insurance-glossary" },
+      { label: "Help", href: "/help" },
       { label: "Claims", href: "/claims" },
       { label: "About", href: "/about" },
       { label: "Contact", href: "/contact" },

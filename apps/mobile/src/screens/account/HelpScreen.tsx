@@ -16,6 +16,18 @@ import { Ionicons } from '@expo/vector-icons'
 import { Card } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { getToken } from '../../services/auth'
+
+const QUICK_ACTIONS = [
+  { icon: 'chatbubble-ellipses-outline' as const, label: 'Chat with us', onPress: (navigation: any) => Linking.openURL('https://wa.me/2349063675032?text=Hello%2C%20I%20need%20help%20with%20my%20AfriCover247%20insurance.') },
+  { icon: 'call-outline' as const, label: 'Call us', onPress: () => Linking.openURL('tel:+2349063675032') },
+  { icon: 'calendar-outline' as const, label: 'Book appointment', onPress: (navigation: any) => navigation.navigate('BookAppointment') },
+  { icon: 'document-text-outline' as const, label: 'Make a claim', onPress: (navigation: any) => navigation.navigate('NewClaim') },
+  { icon: 'search-outline' as const, label: 'Track claim', onPress: (navigation: any) => navigation.navigate('Tabs', { screen: 'Claims' }) },
+  { icon: 'download-outline' as const, label: 'Download policy', onPress: (navigation: any) => navigation.navigate('Policies') },
+  { icon: 'refresh-outline' as const, label: 'Renew policy', onPress: (navigation: any) => navigation.navigate('Policies') },
+  { icon: 'alert-circle-outline' as const, label: 'Complaint', onPress: (navigation: any) => navigation.navigate('NewTicket', { category: 'complaint' }) },
+]
 
 const FAQ = [
   {
@@ -51,6 +63,23 @@ export function HelpScreen({ navigation }: any) {
   })
   const [submitting, setSubmitting] = React.useState(false)
   const [submitted, setSubmitted] = React.useState(false)
+  const [tickets, setTickets] = React.useState<any[]>([])
+  const [loadingTickets, setLoadingTickets] = React.useState(false)
+
+  React.useEffect(() => {
+    async function fetchTickets() {
+      const token = await getToken()
+      if (!token) return
+      setLoadingTickets(true)
+      try {
+        const res = await api.get('/support/tickets/my')
+        setTickets(res.data.slice(0, 3))
+      } catch {} finally {
+        setLoadingTickets(false)
+      }
+    }
+    fetchTickets()
+  }, [submitted])
 
   function updateForm(key: string, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -108,6 +137,23 @@ export function HelpScreen({ navigation }: any) {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.quickActionsGrid}>
+            {QUICK_ACTIONS.map((action) => (
+              <TouchableOpacity
+                key={action.label}
+                style={styles.quickActionTile}
+                onPress={() => action.onPress(navigation)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.quickActionIcon}>
+                  <Ionicons name={action.icon} size={22} color={Colors.primary} />
+                </View>
+                <Text style={styles.quickActionLabel}>{action.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <Card style={styles.contactCard} padding={0}>
@@ -278,6 +324,43 @@ export function HelpScreen({ navigation }: any) {
             )}
           </Card>
 
+          {loadingTickets && (
+            <View style={styles.ticketLoading}>
+              <Text style={styles.ticketLoadingText}>Loading requests...</Text>
+            </View>
+          )}
+
+          {tickets.length > 0 && (
+            <View>
+              <Text style={styles.sectionTitle}>My Requests</Text>
+              {tickets.map((ticket) => (
+                <Card key={ticket.id} style={styles.ticketCard} padding={14}>
+                  <View style={styles.ticketRow}>
+                    <View style={styles.ticketInfo}>
+                      <Text style={styles.ticketSubject} numberOfLines={1}>{ticket.subject}</Text>
+                      <Text style={styles.ticketRef}>#{ticket.id.slice(0, 8).toUpperCase()}</Text>
+                    </View>
+                    <View style={[styles.ticketStatus, {
+                      backgroundColor: ticket.status === 'resolved' ? Colors.successLight :
+                        ticket.status === 'in_progress' ? Colors.primaryLight :
+                        ticket.status === 'awaiting_customer' ? Colors.errorLight :
+                        Colors.accentLight,
+                    }]}>
+                      <Text style={[styles.ticketStatusText, {
+                        color: ticket.status === 'resolved' ? Colors.success :
+                          ticket.status === 'in_progress' ? Colors.primary :
+                          ticket.status === 'awaiting_customer' ? Colors.error :
+                          Colors.accent,
+                      }]}>
+                        {ticket.status.replace(/_/g, ' ')}
+                      </Text>
+                    </View>
+                  </View>
+                </Card>
+              ))}
+            </View>
+          )}
+
           <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
           {FAQ.map((item, i) => (
             <TouchableOpacity
@@ -324,6 +407,36 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 16, fontWeight: '700', color: Colors.primary },
   scroll: { padding: 20 },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 24,
+  },
+  quickActionTile: {
+    width: '47%',
+    backgroundColor: Colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 14,
+    alignItems: 'center',
+    gap: 8,
+  },
+  quickActionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: Colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  quickActionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textDark,
+    textAlign: 'center',
+  },
   sectionTitle: {
     fontSize: 14,
     fontWeight: '700',
@@ -423,6 +536,15 @@ const styles = StyleSheet.create({
   successText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
   sendAnotherBtn: { marginTop: 20 },
   sendAnotherText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
+  ticketLoading: { marginBottom: 16 },
+  ticketLoadingText: { fontSize: 13, color: Colors.textSecondary },
+  ticketCard: { marginBottom: 8 },
+  ticketRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  ticketInfo: { flex: 1 },
+  ticketSubject: { fontSize: 13, fontWeight: '600', color: Colors.textDark },
+  ticketRef: { fontSize: 11, color: Colors.textSecondary, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginTop: 2 },
+  ticketStatus: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  ticketStatusText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   faqItem: {
     backgroundColor: Colors.white,
     borderRadius: 12,

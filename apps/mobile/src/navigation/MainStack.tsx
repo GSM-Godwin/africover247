@@ -8,6 +8,8 @@ import { PaymentSuccessScreen } from '../screens/payment/PaymentSuccessScreen'
 import { EditProfileScreen } from '../screens/account/EditProfileScreen'
 import { ChangePasswordScreen } from '../screens/account/ChangePasswordScreen'
 import { HelpScreen } from '../screens/account/HelpScreen'
+import { NewTicketScreen } from '../screens/support/NewTicketScreen'
+import { BookAppointmentScreen } from '../screens/support/BookAppointmentScreen'
 import { PoliciesScreen } from '../screens/policies/PoliciesScreen'
 import { PolicyDetailScreen } from '../screens/policies/PolicyDetailScreen'
 import { NewClaimScreen } from '../screens/claims/NewClaimScreen'
@@ -34,6 +36,8 @@ export function MainStack({ onLogout }: MainStackProps) {
       <Stack.Screen name="EditProfile" component={EditProfileScreen} />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
       <Stack.Screen name="Help" component={HelpScreen} />
+      <Stack.Screen name="NewTicket" component={NewTicketScreen} />
+      <Stack.Screen name="BookAppointment" component={BookAppointmentScreen} />
       <Stack.Screen name="Policies" component={PoliciesScreen} />
       <Stack.Screen name="PolicyDetail" component={PolicyDetailScreen} />
       <Stack.Screen name="NewClaim" component={NewClaimScreen} />

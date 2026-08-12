@@ -134,6 +134,10 @@ export default function ContactPage() {
                   {[
                     { label: "Browse insurance products", href: "/products" },
                     {
+                      label: "Help Centre & Support",
+                      href: "/help",
+                    },
+                    {
                       label: "View NAICOM registered insurers",
                       href: "/insurers",
                     },
