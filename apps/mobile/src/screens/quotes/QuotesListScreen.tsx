@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
@@ -29,9 +30,12 @@ export function QuotesListScreen({ navigation }: any) {
     } catch {}
   }, [])
 
-  useEffect(() => {
-    fetchQuotes().finally(() => setLoading(false))
-  }, [fetchQuotes])
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true)
+      fetchQuotes().finally(() => setLoading(false))
+    }, [fetchQuotes]),
+  )
 
   async function handleRefresh() {
     setRefreshing(true)

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import React, { useState, useCallback } from 'react'
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { useFocusEffect } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
@@ -39,9 +40,12 @@ export function ClaimsScreen({ navigation }: any) {
     } catch {}
   }, [])
 
-  useEffect(() => {
-    fetchClaims().finally(() => setLoading(false))
-  }, [fetchClaims])
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true)
+      fetchClaims().finally(() => setLoading(false))
+    }, [fetchClaims]),
+  )
 
   async function handleRefresh() {
     setRefreshing(true)

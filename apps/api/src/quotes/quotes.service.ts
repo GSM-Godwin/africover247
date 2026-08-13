@@ -359,9 +359,8 @@ export class QuotesService {
         stepCompleted: 4,
         formData: {
           ...(quote.customerDetails as object),
-          quoteId,
-          quotedPremium: Number(finalAmount),
-          fromQuote: true,
+          calculatedPremium: Number(finalAmount),
+          fromQuoteId: quote.id,
         },
         assetDetails: quote.customerDetails as Prisma.InputJsonValue,
       },
@@ -704,9 +703,8 @@ export class QuotesService {
         stepCompleted: 4,
         formData: {
           ...(quote.customerDetails as object),
-          quoteId,
-          quotedPremium: Number(finalAmount),
-          fromQuote: true,
+          calculatedPremium: Number(finalAmount),
+          fromQuoteId: quote.id,
         },
         assetDetails: quote.customerDetails as Prisma.InputJsonValue,
       },
