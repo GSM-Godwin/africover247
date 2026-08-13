@@ -50,9 +50,14 @@ export class QuotesService {
         select: { pushToken: true },
       });
 
-      if (!user?.pushToken) return;
+      if (!user?.pushToken) {
+        this.logger.warn(`[Push] No push token for user ${userId}`);
+        return;
+      }
 
-      await fetch('https://exp.host/--/api/v2/push/send', {
+      this.logger.log(`[Push] Sending to ${user.pushToken.slice(0, 30)}...`);
+
+      const res = await fetch('https://exp.host/--/api/v2/push/send', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,9 +75,15 @@ export class QuotesService {
         }),
       });
 
-      this.logger.log(`[Push] Notification sent to user ${userId}`);
+      const result = await res.json();
+
+      if (result?.data?.status === 'error') {
+        this.logger.error(`[Push] Expo error: ${JSON.stringify(result.data)}`);
+      } else {
+        this.logger.log(`[Push] Sent successfully to user ${userId}`);
+      }
     } catch (err) {
-      this.logger.warn(`[Push] Failed to send notification: ${err}`);
+      this.logger.error(`[Push] Failed: ${err}`);
     }
   }
 

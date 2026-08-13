@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, forwardRef, useImperativeHandle } from 'react'
+import React, { useState, useCallback, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { Alert } from 'react-native'
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native'
 import AsyncStorage from '@react-native-async-storage/async-storage'
@@ -77,6 +77,34 @@ export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>
       logout: handleLogout,
       handleNotificationTap,
     }), [handleLogout, handleNotificationTap])
+
+    useEffect(() => {
+      const notificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
+        console.log('[Push] Foreground notification received:', notification.request.content.title)
+      })
+
+      const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data
+        if (data?.referenceType === 'quote' && data?.referenceId) {
+          navigationRef.current?.navigate('Tabs', {
+            screen: 'Products',
+            params: {
+              screen: 'QuoteDetail',
+              params: { quoteId: data.referenceId },
+            },
+          } as never)
+        } else if (data?.referenceType === 'claim' && data?.referenceId) {
+          navigationRef.current?.navigate('ClaimDetail', { claimId: data.referenceId } as never)
+        } else if (data?.referenceType === 'policy' && data?.referenceId) {
+          navigationRef.current?.navigate('PolicyDetail', { policyId: data.referenceId } as never)
+        }
+      })
+
+      return () => {
+        notificationSubscription.remove()
+        responseSubscription.remove()
+      }
+    }, [])
 
     const handleSplashFinish = useCallback(async () => {
       const rooted = await isDeviceRooted()
