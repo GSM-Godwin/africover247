@@ -3,6 +3,11 @@ export interface QuoteProduct {
   name: string;
   category: string;
   pricingType?: string;
+  rate?: number | string | null;
+  rateMin?: number | string | null;
+  rateMax?: number | string | null;
+  calculationBasis?: string | null;
+  assetFields?: unknown;
 }
 
 export interface QuoteRecord {

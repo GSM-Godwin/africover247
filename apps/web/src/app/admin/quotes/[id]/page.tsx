@@ -11,6 +11,39 @@ import type { QuoteRecord } from "@/types/quote";
 
 const MAX_ROUNDS = 3;
 
+function parseAmount(raw: string): number {
+  return parseFloat(raw.replace(/,/g, "")) || 0;
+}
+
+function extractDeclaredValue(
+  customerDetails: Record<string, unknown>,
+): number | null {
+  const valueKeys = [
+    "vehicleValue",
+    "propertyValue",
+    "buildingValue",
+    "contentsValue",
+    "equipmentValue",
+    "plantValue",
+    "cargoValue",
+    "contractValue",
+    "annualFeeIncome",
+    "annualTurnover",
+    "coverLimit",
+    "bondAmount",
+    "sumAssured",
+    "totalAnnualSalary",
+    "advanceAmount",
+  ];
+  for (const key of valueKeys) {
+    const val = customerDetails?.[key];
+    if (val && !Number.isNaN(parseFloat(String(val).replace(/,/g, "")))) {
+      return parseFloat(String(val).replace(/,/g, ""));
+    }
+  }
+  return null;
+}
+
 function decodeHtml(html: string): string {
   return html
     .replace(/&#x27;/g, "'")
@@ -44,14 +77,14 @@ export default function AdminQuoteDetailPage() {
   }, [id, router]);
 
   async function handleRespond() {
-    if (!quoteAmount || parseFloat(quoteAmount) <= 0) {
+    if (!quoteAmount || parseAmount(quoteAmount) <= 0) {
       toast.error("Please enter a valid quote amount.");
       return;
     }
     setSubmitting(true);
     try {
       await api.post(`/admin/quotes/${id}/respond`, {
-        quoteAmount: parseFloat(quoteAmount),
+        quoteAmount: parseAmount(quoteAmount),
         note: note || undefined,
       });
       setSubmitting(false);
@@ -84,14 +117,14 @@ export default function AdminQuoteDetailPage() {
   }
 
   async function handleCounter() {
-    if (!quoteAmount || parseFloat(quoteAmount) <= 0) {
+    if (!quoteAmount || parseAmount(quoteAmount) <= 0) {
       toast.error("Please enter a counter amount.");
       return;
     }
     setSubmitting(true);
     try {
       await api.post(`/admin/quotes/${id}/counter`, {
-        counterAmount: parseFloat(quoteAmount),
+        counterAmount: parseAmount(quoteAmount),
         note: note || undefined,
       });
       setSubmitting(false);
@@ -143,8 +176,49 @@ export default function AdminQuoteDetailPage() {
     ? quote.negotiationHistory
     : [];
 
+  const customerDetailsObj =
+    typeof quote.customerDetails === "object" && quote.customerDetails
+      ? (quote.customerDetails as Record<string, unknown>)
+      : {};
+
+  const declaredValue = extractDeclaredValue(customerDetailsObj);
+  const rateMin = quote.product?.rateMin ? Number(quote.product.rateMin) : null;
+  const rateMax = quote.product?.rateMax ? Number(quote.product.rateMax) : null;
+  const suggestedMin =
+    declaredValue && rateMin ? Math.ceil(declaredValue * rateMin) : null;
+  const suggestedMax =
+    declaredValue && rateMax ? Math.ceil(declaredValue * rateMax) : null;
+  const hasRange =
+    suggestedMin !== null &&
+    suggestedMax !== null &&
+    suggestedMin !== suggestedMax;
+
+  const parsedQuoteAmount = quoteAmount ? parseAmount(quoteAmount) : 0;
+
   return (
     <div className="p-6 sm:p-8 max-w-4xl">
+      <style jsx>{`
+        input[type="range"]::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #f68b1e;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+        input[type="range"]::-moz-range-thumb {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #f68b1e;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+        }
+      `}</style>
       <button
         type="button"
         onClick={() => router.push("/admin/quotes")}
@@ -262,19 +336,115 @@ export default function AdminQuoteDetailPage() {
 
           {(isPendingReview || isCounteredByCustomer) && (
             <div className="space-y-4 mb-4">
-              <div>
+              <div className="mb-4">
                 <label className="block font-body text-sm font-medium text-midnight mb-1.5">
                   {isCounteredByCustomer
                     ? "Your counter amount (₦/year)"
                     : "Quote amount (₦/year)"}
                 </label>
-                <NumberInput
-                  value={quoteAmount}
-                  onChange={(raw) => setQuoteAmount(raw)}
-                  placeholder="Enter quote amount"
-                  prefix="₦"
-                  className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
-                />
+
+                {hasRange && (
+                  <div className="mb-4 bg-daybreak/5 border border-daybreak/20 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="font-body text-xs font-semibold text-midnight uppercase tracking-wide">
+                        Suggested Range
+                      </p>
+                      <p className="font-body text-xs text-slate">
+                        Based on declared value of ₦
+                        {declaredValue?.toLocaleString("en-NG")}
+                      </p>
+                    </div>
+
+                    <div className="relative mb-3">
+                      <input
+                        type="range"
+                        min={suggestedMin!}
+                        max={suggestedMax!}
+                        step={Math.max(
+                          1,
+                          Math.ceil((suggestedMax! - suggestedMin!) / 100),
+                        )}
+                        value={
+                          parsedQuoteAmount >= suggestedMin! &&
+                          parsedQuoteAmount <= suggestedMax!
+                            ? parsedQuoteAmount
+                            : suggestedMin!
+                        }
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value, 10);
+                          setQuoteAmount(String(val));
+                        }}
+                        className="w-full h-2 bg-slate/20 rounded-full appearance-none cursor-pointer accent-daybreak"
+                      />
+                      <div className="flex justify-between mt-1">
+                        <span className="font-body text-xs text-slate">
+                          ₦{suggestedMin?.toLocaleString("en-NG")}{" "}
+                          <span className="text-slate/60">
+                            ({(rateMin! * 100).toFixed(2)}%)
+                          </span>
+                        </span>
+                        <span className="font-body text-xs text-slate">
+                          ₦{suggestedMax?.toLocaleString("en-NG")}{" "}
+                          <span className="text-slate/60">
+                            ({(rateMax! * 100).toFixed(2)}%)
+                          </span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {quoteAmount && (
+                      <p className="font-body text-xs text-center text-midnight font-semibold">
+                        Selected: ₦{parsedQuoteAmount.toLocaleString("en-NG")}
+                        {parsedQuoteAmount < suggestedMin! ||
+                        parsedQuoteAmount > suggestedMax! ? (
+                          <span className="text-alert-coral ml-2">
+                            (outside suggested range)
+                          </span>
+                        ) : null}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  {hasRange && (
+                    <p className="font-body text-xs text-slate mb-1.5">
+                      Or enter amount manually — you can go outside the
+                      suggested range if needed:
+                    </p>
+                  )}
+                  <NumberInput
+                    value={quoteAmount}
+                    onChange={(raw) => setQuoteAmount(raw)}
+                    placeholder={
+                      hasRange
+                        ? `Suggested: ₦${suggestedMin?.toLocaleString("en-NG")} – ₦${suggestedMax?.toLocaleString("en-NG")}`
+                        : "Enter quote amount"
+                    }
+                    prefix="₦"
+                    className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+                  />
+                </div>
+
+                {!hasRange && declaredValue && (rateMin || rateMax) && (
+                  <p className="font-body text-xs text-slate mt-1.5">
+                    Rate guide:{" "}
+                    {rateMin ? `${(rateMin * 100).toFixed(2)}%` : ""}
+                    {rateMin && rateMax ? " – " : ""}
+                    {rateMax ? `${(rateMax * 100).toFixed(2)}%` : ""} of
+                    declared value
+                  </p>
+                )}
+
+                {!hasRange && !declaredValue && (rateMin || rateMax) && (
+                  <p className="font-body text-xs text-slate mt-1.5">
+                    Rate guide:{" "}
+                    {rateMin ? `${(rateMin * 100).toFixed(2)}%` : ""}
+                    {rateMin && rateMax ? " – " : ""}
+                    {rateMax ? `${(rateMax * 100).toFixed(2)}%` : ""} — no
+                    declared value found to calculate range
+                  </p>
+                )}
               </div>
               <div>
                 <label className="block font-body text-sm font-medium text-midnight mb-1.5">

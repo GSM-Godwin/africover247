@@ -16,6 +16,18 @@ import { CounterQuoteDto } from './dto/counter-quote.dto';
 const MAX_ROUNDS = 3;
 const QUOTE_EXPIRY_DAYS = 7;
 
+const QUOTE_PRODUCT_SELECT = {
+  id: true,
+  name: true,
+  category: true,
+  pricingType: true,
+  rate: true,
+  rateMin: true,
+  rateMax: true,
+  calculationBasis: true,
+  assetFields: true,
+} as const;
+
 @Injectable()
 export class QuotesService {
   private readonly logger = new Logger(QuotesService.name);
@@ -157,7 +169,7 @@ export class QuotesService {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
       include: {
-        product: true,
+        product: { select: QUOTE_PRODUCT_SELECT },
         customer: {
           select: {
             id: true,
