@@ -301,9 +301,16 @@ export class AuthService {
 
   async sendPhoneOtp(phone: string) {
     const normalized = this.normalizePhone(phone);
+    const raw = phone.trim();
 
     const user = await this.prisma.user.findFirst({
-      where: { phone: normalized },
+      where: {
+        OR: [
+          { phone: normalized },
+          { phone: raw },
+          { phone: raw.startsWith('0') ? `+234${raw.slice(1)}` : raw },
+        ],
+      },
     });
     if (!user) throw new NotFoundException('No account found with this phone number. Please register first.');
     if (user.suspended) {
@@ -328,9 +335,16 @@ export class AuthService {
 
   async verifyPhoneOtp(phone: string, otp: string) {
     const normalized = this.normalizePhone(phone);
+    const raw = phone.trim();
 
     const record = await this.prisma.phoneOtp.findFirst({
-      where: { phone: normalized, used: false },
+      where: {
+        OR: [
+          { phone: normalized },
+          { phone: raw },
+        ],
+        used: false,
+      },
       orderBy: { createdAt: 'desc' },
     });
 
