@@ -115,12 +115,9 @@ export default function RegisterPage() {
 
   return (
     <div className="w-full max-w-md">
-      <h1 className="font-display font-bold text-midnight text-4xl mb-2">
+      <h1 className="font-display font-bold text-midnight text-4xl mb-10">
         Create your account
       </h1>
-      <p className="font-body text-slate text-base mb-10">
-        Step 1 of 2 — takes about a minute.
-      </p>
 
       <button
         type="button"

@@ -358,7 +358,13 @@ export class AuthService {
     });
 
     const user = await this.prisma.user.findFirst({
-      where: { phone: normalized },
+      where: {
+        OR: [
+          { phone: normalized },
+          { phone: raw },
+          { phone: raw.startsWith('0') ? `+234${raw.slice(1)}` : raw },
+        ],
+      },
     });
     if (!user) throw new NotFoundException('User not found');
 

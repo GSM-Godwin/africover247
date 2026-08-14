@@ -126,13 +126,6 @@ export function RegisterScreen({ navigation, onRegisterSuccess }: RegisterScreen
 
           <View style={styles.header}>
             <Text style={styles.title}>Create your account</Text>
-            <Text style={styles.subtitle}>
-              Step 1 of 2 — takes about a minute.
-            </Text>
-          </View>
-
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressBar, { width: '50%' }]} />
           </View>
 
           <View style={styles.form}>
@@ -270,26 +263,12 @@ const styles = StyleSheet.create({
   scroll: { flexGrow: 1, paddingHorizontal: 24 },
   back: { paddingTop: 16, marginBottom: 8 },
   backText: { fontSize: 14, color: Colors.primary, fontWeight: '600' },
-  header: { paddingBottom: 16 },
+  header: { paddingBottom: 24 },
   title: {
     fontSize: 28,
     fontWeight: '800',
     color: Colors.textDark,
-    marginBottom: 6,
     letterSpacing: -0.5,
-  },
-  subtitle: { fontSize: 14, color: Colors.textSecondary },
-  progressTrack: {
-    height: 4,
-    backgroundColor: Colors.border,
-    borderRadius: 2,
-    marginBottom: 24,
-    overflow: 'hidden',
-  },
-  progressBar: {
-    height: '100%',
-    backgroundColor: Colors.accent,
-    borderRadius: 2,
   },
   form: {},
   nameRow: { flexDirection: 'row' },
