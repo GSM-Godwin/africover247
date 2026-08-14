@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import {
   View,
   Text,
@@ -12,9 +12,15 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import * as WebBrowser from 'expo-web-browser'
+import * as Google from 'expo-auth-session/providers/google'
+import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { setToken, setUser } from '../../services/auth'
+
+WebBrowser.maybeCompleteAuthSession()
 
 const schema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
@@ -31,15 +37,55 @@ type FormData = z.infer<typeof schema>
 
 interface RegisterScreenProps {
   navigation: any
+  onRegisterSuccess: () => void
 }
 
-export function RegisterScreen({ navigation }: RegisterScreenProps) {
+export function RegisterScreen({ navigation, onRegisterSuccess }: RegisterScreenProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder'
+  const hasGoogleClientId = Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
+
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+    webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder',
+    androidClientId: googleClientId,
+  })
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
+
+  useEffect(() => {
+    if (googleResponse?.type === 'success') {
+      handleGoogleResponse(googleResponse.authentication?.accessToken || '')
+    }
+  }, [googleResponse])
+
+  async function handleGoogleResponse(accessToken: string) {
+    if (!accessToken) return
+    setLoading(true)
+    try {
+      const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+      const userInfo = await userInfoRes.json()
+      const res = await api.post('/auth/google', {
+        googleId: userInfo.id,
+        email: userInfo.email,
+        firstName: userInfo.given_name || userInfo.name?.split(' ')[0] || '',
+        lastName: userInfo.family_name || userInfo.name?.split(' ').slice(1).join(' ') || '',
+      })
+      await setToken(res.data.accessToken)
+      await setUser(res.data.user)
+      onRegisterSuccess()
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+      setError(Array.isArray(msg) ? msg[0] : (msg || 'Google Sign-Up failed.'))
+    } finally {
+      setLoading(false)
+    }
+  }
 
   async function onSubmit(data: FormData) {
     setLoading(true)
@@ -49,8 +95,12 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
       navigation.navigate('VerifyEmail', { email: data.email })
     } catch (err: any) {
       const status = err.response?.status
-      if (status === 409) setError('An account with this email already exists.')
-      else setError('Something went wrong. Please try again.')
+      const msg = err?.response?.data?.message
+      if (status === 409) {
+        setError(Array.isArray(msg) ? msg[0] : (msg || 'An account with this email already exists.'))
+      } else {
+        setError('Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }
@@ -91,6 +141,29 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
                 <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
+
+            {process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID && (
+              <>
+                <TouchableOpacity
+                  style={[
+                    styles.googleBtn,
+                    (!googleRequest || !hasGoogleClientId) && styles.btnDisabledOpacity,
+                  ]}
+                  onPress={() => googlePromptAsync()}
+                  disabled={!googleRequest || !hasGoogleClientId || loading}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="logo-google" size={20} color={Colors.text} />
+                  <Text style={styles.googleBtnText}>Sign up with Google</Text>
+                </TouchableOpacity>
+
+                <View style={styles.divider}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>or register with email</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+              </>
+            )}
 
             <View style={styles.nameRow}>
               <View style={{ flex: 1 }}>
@@ -227,6 +300,28 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   errorText: { color: Colors.error, fontSize: 13, fontWeight: '500' },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 20,
+  },
+  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
+  dividerText: { fontSize: 12, color: Colors.textSecondary },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 14,
+    paddingVertical: 14,
+    backgroundColor: Colors.white,
+    marginBottom: 4,
+  },
+  btnDisabledOpacity: { opacity: 0.5 },
+  googleBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textDark },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',

@@ -84,7 +84,7 @@ model User {
   firstName          String
   lastName           String
   email              String         @unique
-  phone              String?
+  phone              String?        @unique
   alternativePhone   String?
   passwordHash       String
   role               Role           @default(customer)

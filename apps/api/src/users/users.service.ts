@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -169,6 +170,15 @@ export class UsersService {
   ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
+
+    if (dto.phone) {
+      const existingPhone = await this.prisma.user.findFirst({
+        where: { phone: dto.phone, NOT: { id } },
+      });
+      if (existingPhone) {
+        throw new ConflictException('This phone number is already used by another account.');
+      }
+    }
 
     const { role, ...rest } = dto;
 

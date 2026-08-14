@@ -93,6 +93,15 @@ export class AuthService {
     if (existing)
       throw new ConflictException('An account with this email already exists');
 
+    if (dto.phone) {
+      const existingPhone = await this.prisma.user.findUnique({
+        where: { phone: dto.phone },
+      });
+      if (existingPhone) {
+        throw new ConflictException('An account with this phone number already exists.');
+      }
+    }
+
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const user = await this.prisma.user.create({
       data: {
@@ -296,7 +305,7 @@ export class AuthService {
     const user = await this.prisma.user.findFirst({
       where: { phone: normalized },
     });
-    if (!user) throw new NotFoundException('No account found with this phone number');
+    if (!user) throw new NotFoundException('No account found with this phone number. Please register first.');
     if (user.suspended) {
       throw new UnauthorizedException(
         `Your account has been suspended. ${user.suspendedReason ? `Reason: ${user.suspendedReason}` : 'Please contact support.'}`,

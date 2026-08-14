@@ -37,7 +37,9 @@ export function AuthStack({ onLoginSuccess }: AuthStackProps) {
       <Stack.Screen name="PhoneLogin">
         {(props) => <PhoneLoginScreen {...props} onLoginSuccess={onLoginSuccess} />}
       </Stack.Screen>
-      <Stack.Screen name="Register" component={RegisterScreen} />
+      <Stack.Screen name="Register">
+        {(props) => <RegisterScreen {...props} onRegisterSuccess={onLoginSuccess} />}
+      </Stack.Screen>
       <Stack.Screen name="VerifyEmail">
         {(props) => <VerifyEmailScreen {...props} onLoginSuccess={onLoginSuccess} />}
       </Stack.Screen>

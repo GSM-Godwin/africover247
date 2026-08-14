@@ -180,14 +180,21 @@ export class PoliciesService {
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + application.product.durationMonths);
 
-    if (application.product.premiumAmount == null) {
+    const formData = application.formData as Record<string, any> | null;
+    const calculatedPremium = formData?.calculatedPremium
+      ? Number(formData.calculatedPremium)
+      : null;
+
+    const premiumAmount = application.product.premiumAmount != null
+      ? Number(application.product.premiumAmount)
+      : calculatedPremium;
+
+    if (!premiumAmount) {
       this.logger.error(
-        `Application ${applicationId} product has no premium amount for policy generation`,
+        `Application ${applicationId} has no premium amount for policy generation — product: ${application.product.name}`,
       );
       return;
     }
-
-    const premiumAmount = application.product.premiumAmount;
 
     const pdfBuffer = await this.generatePdfBuffer({
       policyNumber,
