@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Linking,
+  Modal,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -46,6 +48,8 @@ export function PolicyDetailScreen({ route, navigation }: any) {
   const { policyId } = route.params
   const [policy, setPolicy] = useState<PolicyDetail | null>(null)
   const [loading, setLoading] = useState(true)
+  const [showSnooze, setShowSnooze] = useState(false)
+  const [snoozed, setSnoozed] = useState(false)
 
   useEffect(() => {
     api.get(`/policies/${policyId}`)
@@ -92,6 +96,21 @@ export function PolicyDetailScreen({ route, navigation }: any) {
         await Clipboard.setStringAsync('')
       }
     }, 30000)
+  }
+
+  async function handleSnooze(days: number) {
+    if (!policy) return
+    try {
+      const until = new Date(Date.now() + days * 24 * 60 * 60 * 1000)
+      await api.post(`/policies/${policy.id}/snooze-reminder`, {
+        until: until.toISOString(),
+      })
+      setSnoozed(true)
+      setShowSnooze(false)
+      Alert.alert('Reminder snoozed', `We'll remind you again in ${days} day${days !== 1 ? 's' : ''}.`)
+    } catch {
+      Alert.alert('Error', 'Could not snooze reminder.')
+    }
   }
 
   return (
@@ -213,9 +232,44 @@ export function PolicyDetailScreen({ route, navigation }: any) {
                   <Text style={styles.expertText}>Speak to Expert</Text>
                 </TouchableOpacity>
               </View>
+              {!snoozed && (
+                <TouchableOpacity
+                  style={styles.snoozeBtn}
+                  onPress={() => setShowSnooze(true)}
+                >
+                  <Text style={styles.snoozeBtnText}>Remind me later</Text>
+                </TouchableOpacity>
+              )}
             </View>
           )
         })()}
+
+        <Modal visible={showSnooze} transparent animationType="slide" onRequestClose={() => setShowSnooze(false)}>
+          <View style={styles.snoozeBackdrop}>
+            <View style={styles.snoozeSheet}>
+              <Text style={styles.snoozeTitle}>When should we remind you?</Text>
+              {[
+                { label: 'Tomorrow', days: 1 },
+                { label: 'In 3 days', days: 3 },
+                { label: 'In 7 days', days: 7 },
+              ].map((opt) => (
+                <TouchableOpacity
+                  key={opt.days}
+                  style={styles.snoozeOption}
+                  onPress={() => handleSnooze(opt.days)}
+                >
+                  <Text style={styles.snoozeOptionText}>{opt.label}</Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                style={styles.snoozeCancelBtn}
+                onPress={() => setShowSnooze(false)}
+              >
+                <Text style={styles.snoozeCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {policy.policyPdfUrl && (
           <TouchableOpacity
@@ -356,6 +410,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   expertText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
+  snoozeBtn: { alignItems: 'center', paddingVertical: 10, marginTop: 4 },
+  snoozeBtnText: { fontSize: 13, color: Colors.textSecondary, fontWeight: '500' },
+  snoozeBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  snoozeSheet: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 24,
+    paddingBottom: 40,
+  },
+  snoozeTitle: { fontSize: 18, fontWeight: '800', color: Colors.textDark, marginBottom: 16 },
+  snoozeOption: {
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  snoozeOptionText: { fontSize: 15, color: Colors.textDark, fontWeight: '500' },
+  snoozeCancelBtn: { paddingVertical: 16, alignItems: 'center', marginTop: 4 },
+  snoozeCancelText: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
   downloadButton: {
     flexDirection: 'row',
     alignItems: 'center',

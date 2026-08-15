@@ -7,6 +7,8 @@ export interface UserProfile {
   alternativePhone: string | null;
   role: string;
   emailVerified: boolean;
+  preferredChannel?: string;
+  renewalReminderPref?: string;
   createdAt: string;
   updatedAt: string;
 }

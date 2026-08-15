@@ -55,6 +55,14 @@ export class UsersController {
     return this.usersService.savePushToken(user.id, body.token, body.platform);
   }
 
+  @Patch('me/preferences')
+  updatePreferences(
+    @CurrentUser() user: { id: string },
+    @Body() body: { preferredChannel?: string; renewalReminderPref?: string },
+  ) {
+    return this.usersService.updatePreferences(user.id, body);
+  }
+
   @Get('admin/all')
   @UseGuards(RolesGuard)
   @Roles('admin')

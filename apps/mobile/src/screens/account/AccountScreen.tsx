@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Switch,
+  Alert,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -42,6 +43,8 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   const [logoutModalVisible, setLogoutModalVisible] = useState(false)
   const [biometricAvailable, setBiometricAvailable] = useState(false)
   const [biometricEnabled, setBiometricEnabledState] = useState(false)
+  const [preferredChannel, setPreferredChannel] = useState('email')
+  const [reminderPref, setReminderPref] = useState('standard')
 
   useEffect(() => {
     getUser().then((u) => {
@@ -70,6 +73,11 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
       }
     }
     loadBiometricSettings()
+
+    api.get('/users/me').then((res) => {
+      setPreferredChannel(res.data.preferredChannel || 'email')
+      setReminderPref(res.data.renewalReminderPref || 'standard')
+    }).catch(() => {})
   }, [])
 
   function handleLogout() {
@@ -88,6 +96,18 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
     }
     await setBiometricEnabled(value)
     setBiometricEnabledState(value)
+  }
+
+  async function handleSavePrefs() {
+    try {
+      await api.patch('/users/me/preferences', {
+        preferredChannel,
+        renewalReminderPref: reminderPref,
+      })
+      Alert.alert('Saved', 'Communication preferences updated.')
+    } catch {
+      Alert.alert('Error', 'Could not save preferences.')
+    }
   }
 
   function getUserInitials(): string {
@@ -216,6 +236,49 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
           </Card>
         )}
 
+        <View style={styles.prefsSection}>
+          <Text style={styles.sectionTitle}>Communication Preferences</Text>
+          <Card padding={16}>
+            <Text style={styles.prefLabel}>Preferred notification channel</Text>
+            {['email', 'sms', 'push', 'whatsapp'].map((ch) => (
+              <TouchableOpacity
+                key={ch}
+                style={styles.prefOption}
+                onPress={() => setPreferredChannel(ch)}
+              >
+                <Text style={styles.prefOptionText}>
+                  {ch === 'email' ? 'Email' : ch === 'sms' ? 'SMS' : ch === 'push' ? 'Push notification' : 'WhatsApp'}
+                </Text>
+                {preferredChannel === ch && (
+                  <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+
+            <Text style={[styles.prefLabel, { marginTop: 16 }]}>Renewal reminder frequency</Text>
+            {[
+              { value: 'standard', label: 'Standard — all reminders' },
+              { value: 'fewer', label: 'Fewer reminders — key dates only' },
+              { value: 'advisor', label: 'Advisor-assisted' },
+            ].map((opt) => (
+              <TouchableOpacity
+                key={opt.value}
+                style={styles.prefOption}
+                onPress={() => setReminderPref(opt.value)}
+              >
+                <Text style={styles.prefOptionText}>{opt.label}</Text>
+                {reminderPref === opt.value && (
+                  <Ionicons name="checkmark-circle" size={20} color={Colors.primary} />
+                )}
+              </TouchableOpacity>
+            ))}
+
+            <TouchableOpacity style={styles.savePrefsBtn} onPress={handleSavePrefs}>
+              <Text style={styles.savePrefsBtnText}>Save preferences</Text>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         {/* --- Menu --- */}
         <Card style={styles.menuCard} padding={0}>
           {menuItems.map((item, index) => (
@@ -328,6 +391,25 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 22, fontWeight: '800', color: Colors.primary },
   statLabel: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
   securityCard: { marginHorizontal: 20, marginBottom: 16 },
+  prefsSection: { marginHorizontal: 20, marginBottom: 16 },
+  prefLabel: { fontSize: 13, fontWeight: '600', color: Colors.textDark, marginBottom: 8 },
+  prefOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderLight,
+  },
+  prefOptionText: { fontSize: 14, color: Colors.textDark },
+  savePrefsBtn: {
+    marginTop: 16,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  savePrefsBtnText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
   sectionTitle: {
     fontSize: 13,
     fontWeight: '700',

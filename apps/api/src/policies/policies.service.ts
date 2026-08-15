@@ -414,4 +414,111 @@ export class PoliciesService {
 
     return { cancelled: true, policyNumber: policy.policyNumber };
   }
+
+  async snoozeRenewalReminder(policyId: string, userId: string, until: Date) {
+    const policy = await this.prisma.policy.findUnique({ where: { id: policyId } });
+    if (!policy) throw new NotFoundException('Policy not found');
+    if (policy.userId !== userId) throw new ForbiddenException('Access denied');
+
+    await this.prisma.policy.update({
+      where: { id: policyId },
+      data: { remindersSupressed: true },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { reminderSnoozedUntil: until },
+    });
+
+    return { snoozedUntil: until };
+  }
+
+  async unsnoozePolicies() {
+    const now = new Date();
+    await this.prisma.user.updateMany({
+      where: {
+        reminderSnoozedUntil: { lte: now },
+      },
+      data: { reminderSnoozedUntil: null },
+    });
+
+    const users = await this.prisma.user.findMany({
+      where: { reminderSnoozedUntil: null },
+      select: { id: true },
+    });
+
+    const userIds = users.map((u) => u.id);
+    if (userIds.length === 0) return;
+
+    await this.prisma.policy.updateMany({
+      where: {
+        userId: { in: userIds },
+        remindersSupressed: true,
+        status: { in: ['active', 'renewal_due'] as any },
+      },
+      data: { remindersSupressed: false },
+    });
+  }
+
+  async getRenewalsForAdmin(days: number) {
+    const now = new Date();
+
+    if (days === -1) {
+      return this.prisma.policy.findMany({
+        where: { status: 'expired' as any },
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+          product: { select: { name: true, category: true } },
+        },
+        orderBy: { expiryDate: 'desc' },
+        take: 100,
+      });
+    }
+
+    const targetDate = new Date(now);
+    targetDate.setDate(targetDate.getDate() + days);
+
+    return this.prisma.policy.findMany({
+      where: {
+        status: { in: ['active', 'renewal_due'] as any },
+        expiryDate: { lte: targetDate, gte: now },
+      },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, phone: true } },
+        product: { select: { name: true, category: true } },
+      },
+      orderBy: { expiryDate: 'asc' },
+      take: 100,
+    });
+  }
+
+  async getRenewalStats() {
+    const now = new Date();
+
+    function futureDate(days: number) {
+      const d = new Date(now);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    const [d7, d14, d30, d60, d90, expired, total] = await Promise.all([
+      this.prisma.policy.count({ where: { status: { in: ['active', 'renewal_due'] as any }, expiryDate: { lte: futureDate(7), gte: now } } }),
+      this.prisma.policy.count({ where: { status: { in: ['active', 'renewal_due'] as any }, expiryDate: { lte: futureDate(14), gte: now } } }),
+      this.prisma.policy.count({ where: { status: { in: ['active', 'renewal_due'] as any }, expiryDate: { lte: futureDate(30), gte: now } } }),
+      this.prisma.policy.count({ where: { status: { in: ['active', 'renewal_due'] as any }, expiryDate: { lte: futureDate(60), gte: now } } }),
+      this.prisma.policy.count({ where: { status: { in: ['active', 'renewal_due'] as any }, expiryDate: { lte: futureDate(90), gte: now } } }),
+      this.prisma.policy.count({ where: { status: 'expired' as any } }),
+      this.prisma.policy.count({ where: { status: 'active' as any } }),
+    ]);
+
+    return {
+      dueSoon7: d7,
+      dueSoon14: d14,
+      dueSoon30: d30,
+      dueSoon60: d60,
+      dueSoon90: d90,
+      expired,
+      totalActive: total,
+    };
+  }
 }

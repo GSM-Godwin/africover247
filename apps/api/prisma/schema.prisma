@@ -101,6 +101,9 @@ model User {
   appleId            String?        @unique
   pushToken          String?
   pushPlatform       String?
+  preferredChannel   String         @default("email")
+  renewalReminderPref String        @default("standard")
+  reminderSnoozedUntil DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   applications       Application[]

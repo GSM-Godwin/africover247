@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Download } from "lucide-react";
+import { toast } from "sonner";
 import { Navbar } from "@/components/layout/navbar";
 import { StatusBadge } from "@/components/shared/status-badge";
 import api from "@/lib/api";
@@ -51,6 +52,9 @@ export function PolicyDetailContent() {
   const [policy, setPolicy] = useState<PolicyDetailRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [showSnooze, setShowSnooze] = useState(false);
+  const [snoozing, setSnoozing] = useState(false);
+  const [snoozed, setSnoozed] = useState(false);
 
   const fetchPolicy = useCallback(async () => {
     setLoading(true);
@@ -77,6 +81,25 @@ export function PolicyDetailContent() {
   function handleDownload() {
     if (policy?.policyPdfUrl) {
       window.open(policy.policyPdfUrl, "_blank");
+    }
+  }
+
+  async function handleSnooze(days: number | null, customDate?: string) {
+    if (!policy) return;
+    setSnoozing(true);
+    try {
+      const until = customDate
+        ? new Date(customDate)
+        : new Date(Date.now() + (days || 1) * 24 * 60 * 60 * 1000);
+      await api.post(`/policies/${policy.id}/snooze-reminder`, {
+        until: until.toISOString(),
+      });
+      setSnoozed(true);
+      setShowSnooze(false);
+    } catch {
+      toast.error("Could not snooze reminder.");
+    } finally {
+      setSnoozing(false);
     }
   }
 
@@ -225,9 +248,68 @@ export function PolicyDetailContent() {
                         Speak to an Expert
                       </Link>
                     </div>
+                    {!snoozed && (
+                      <button
+                        type="button"
+                        onClick={() => setShowSnooze(true)}
+                        className="font-body text-sm text-slate hover:text-midnight transition-colors mt-2"
+                      >
+                        Remind me later
+                      </button>
+                    )}
+                    {snoozed && (
+                      <p className="font-body text-xs text-slate mt-2">
+                        ✓ Reminder snoozed. We&apos;ll remind you again later.
+                      </p>
+                    )}
                   </div>
                 );
               })()}
+
+              {showSnooze && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                  <div className="bg-white rounded-2xl w-full max-w-sm p-6">
+                    <h3 className="font-display font-bold text-midnight text-lg mb-4">
+                      When should we remind you?
+                    </h3>
+                    <div className="space-y-2 mb-4">
+                      {[
+                        { label: "Tomorrow", days: 1 },
+                        { label: "In 3 days", days: 3 },
+                        { label: "In 7 days", days: 7 },
+                      ].map((opt) => (
+                        <button
+                          key={opt.days}
+                          type="button"
+                          onClick={() => handleSnooze(opt.days)}
+                          disabled={snoozing}
+                          className="w-full text-left px-4 py-3 rounded-xl border border-slate/20 font-body text-sm text-midnight hover:bg-slate/5 transition-colors disabled:opacity-60"
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="mb-4">
+                      <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                        Choose a date
+                      </label>
+                      <input
+                        type="date"
+                        min={new Date().toISOString().split("T")[0]}
+                        onChange={(e) => e.target.value && handleSnooze(null, e.target.value)}
+                        className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm focus:outline-none focus:border-daybreak"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowSnooze(false)}
+                      className="w-full border border-slate/20 text-slate font-body font-medium text-sm py-2.5 rounded-xl hover:bg-slate/5"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </div>

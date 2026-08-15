@@ -17,6 +17,7 @@ import {
   Car,
   Mail,
   Search,
+  RefreshCw,
 } from "lucide-react";
 import { logout } from "@/lib/auth";
 
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { href: "/admin/quotes", label: "Quotes", icon: MessageSquare },
   { href: "/admin/applications", label: "Applications", icon: FileText },
   { href: "/admin/policies", label: "Policies", icon: Shield },
+  { href: "/admin/renewals", label: "Renewals", icon: RefreshCw },
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/support", label: "Support Tickets", icon: MessageCircle },
   { href: "/admin/products", label: "Products", icon: Package },

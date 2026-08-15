@@ -281,4 +281,15 @@ export class UsersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+
+  async updatePreferences(userId: string, dto: { preferredChannel?: string; renewalReminderPref?: string }) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        preferredChannel: dto.preferredChannel,
+        renewalReminderPref: dto.renewalReminderPref,
+      },
+      select: { preferredChannel: true, renewalReminderPref: true },
+    });
+  }
 }

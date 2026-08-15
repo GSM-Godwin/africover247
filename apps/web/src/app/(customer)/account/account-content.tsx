@@ -63,6 +63,11 @@ export function AccountContent() {
   const [email, setEmail] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
+  const [commPrefs, setCommPrefs] = useState({
+    preferredChannel: "email",
+    renewalReminderPref: "standard",
+  });
+  const [savingPrefs, setSavingPrefs] = useState(false);
   const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const profileForm = useForm<ProfileFormData>({
@@ -108,6 +113,10 @@ export function AccountContent() {
           alternativePhone: res.data.alternativePhone ?? "",
         });
         setEmail(res.data.email);
+        setCommPrefs({
+          preferredChannel: res.data.preferredChannel || "email",
+          renewalReminderPref: res.data.renewalReminderPref || "standard",
+        });
       })
       .catch(() => {});
   }, []);
@@ -160,6 +169,18 @@ export function AccountContent() {
 
   function handlePasswordFormAttempt(data: PasswordFormData) {
     requireReauth(() => void onPasswordSubmit(data));
+  }
+
+  async function handleSavePrefs() {
+    setSavingPrefs(true);
+    try {
+      await api.patch("/users/me/preferences", commPrefs);
+      toast.success("Communication preferences saved.");
+    } catch {
+      toast.error("Could not save preferences.");
+    } finally {
+      setSavingPrefs(false);
+    }
   }
 
   return (
@@ -299,6 +320,51 @@ export function AccountContent() {
                 </button>
               </div>
             </form>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate/10 p-6">
+        <h2 className="font-body font-semibold text-midnight text-base mb-5">
+          Communication Preferences
+        </h2>
+        <div className="space-y-4">
+          <div>
+            <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+              Preferred notification channel
+            </label>
+            <select
+              value={commPrefs.preferredChannel}
+              onChange={(e) => setCommPrefs((p) => ({ ...p, preferredChannel: e.target.value }))}
+              className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm focus:outline-none focus:border-daybreak"
+            >
+              <option value="email">Email</option>
+              <option value="sms">SMS</option>
+              <option value="push">Push notification</option>
+              <option value="whatsapp">WhatsApp</option>
+            </select>
+          </div>
+          <div>
+            <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+              Renewal reminder frequency
+            </label>
+            <select
+              value={commPrefs.renewalReminderPref}
+              onChange={(e) => setCommPrefs((p) => ({ ...p, renewalReminderPref: e.target.value }))}
+              className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm focus:outline-none focus:border-daybreak"
+            >
+              <option value="standard">Standard — all reminders</option>
+              <option value="fewer">Fewer reminders — key dates only</option>
+              <option value="advisor">Advisor-assisted — I prefer to speak to someone</option>
+            </select>
+          </div>
+          <button
+            type="button"
+            onClick={handleSavePrefs}
+            disabled={savingPrefs}
+            className="font-body font-bold text-sm bg-daybreak text-midnight px-5 py-2.5 rounded-xl hover:bg-[#D4921A] disabled:opacity-60 transition-colors"
+          >
+            {savingPrefs ? "Saving..." : "Save preferences"}
+          </button>
+        </div>
       </div>
 
       <ReauthModal

@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SmsService } from '../sms/sms.service';
+import { PoliciesService } from './policies.service';
 
 const REMINDER_SCHEDULE = [
   { days: 90, type: 'reminder_90d', urgent: false, channels: ['email', 'inapp'] },
@@ -92,10 +93,13 @@ export class PolicySchedulerService {
     private readonly emailService: EmailService,
     private readonly notificationsService: NotificationsService,
     private readonly smsService: SmsService,
+    private readonly policiesService: PoliciesService,
   ) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_8AM)
   async runRenewalEngine() {
+    await this.policiesService.unsnoozePolicies();
+
     this.logger.log('[RenewalEngine] Starting daily renewal check');
     const now = new Date();
     now.setHours(0, 0, 0, 0);
