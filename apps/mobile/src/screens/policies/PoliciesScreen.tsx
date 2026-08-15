@@ -15,6 +15,25 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 import type { Policy } from '../../types'
 
+function getRenewalBadge(expiryDate: string, status: string): {
+  label: string
+  bg: string
+  color: string
+} | null {
+  if (status === 'expired') return { label: 'Expired', bg: Colors.errorLight, color: Colors.error }
+
+  const days = Math.round(
+    (new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+  )
+
+  if (days < 0) return { label: 'Expired', bg: Colors.errorLight, color: Colors.error }
+  if (days === 0) return { label: 'Expires Today', bg: Colors.errorLight, color: Colors.error }
+  if (days <= 14) return { label: `Renewal Required — ${days}d`, bg: Colors.errorLight, color: Colors.error }
+  if (days <= 30) return { label: `Renewal Due — ${days}d`, bg: Colors.accentLight, color: Colors.accent }
+  if (days <= 60) return { label: `Renew Soon — ${days}d`, bg: Colors.accentLight, color: Colors.accent }
+  return null
+}
+
 export function PoliciesScreen({ navigation }: any) {
   const [policies, setPolicies] = useState<Policy[]>([])
   const [loading, setLoading] = useState(true)
@@ -56,6 +75,14 @@ export function PoliciesScreen({ navigation }: any) {
                 {item.product.name}
               </Text>
               <Text style={styles.policyNumber}>{item.policyNumber}</Text>
+              {(() => {
+                const badge = getRenewalBadge(item.expiryDate, item.status)
+                return badge ? (
+                  <View style={[styles.renewalBadge, { backgroundColor: badge.bg }]}>
+                    <Text style={[styles.renewalBadgeText, { color: badge.color }]}>{badge.label}</Text>
+                  </View>
+                ) : null
+              })()}
             </View>
             <StatusBadge status={item.status} />
           </View>
@@ -126,6 +153,14 @@ const styles = StyleSheet.create({
   policyInfo: { flex: 1 },
   policyName: { fontSize: 14, fontWeight: '700', color: Colors.text },
   policyNumber: { fontSize: 12, color: Colors.textSecondary, fontFamily: 'monospace', marginTop: 2 },
+  renewalBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    alignSelf: 'flex-start',
+    marginTop: 4,
+  },
+  renewalBadgeText: { fontSize: 11, fontWeight: '600' },
   policyMeta: {
     flexDirection: 'row',
     justifyContent: 'space-between',

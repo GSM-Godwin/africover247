@@ -182,6 +182,52 @@ export function PolicyDetailContent() {
                   </div>
                 </section>
               </div>
+
+              {(() => {
+                const days = Math.round(
+                  (new Date(policy.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+                );
+                const isExpired = days < 0 || policy.status === "expired";
+                const isUrgent = days <= 14 && days >= 0;
+                const isDueSoon = days > 14 && days <= 60;
+
+                if (!isExpired && !isUrgent && !isDueSoon) return null;
+
+                return (
+                  <div className={`rounded-2xl p-6 border mt-8 ${
+                    isExpired ? "bg-alert-coral/5 border-alert-coral/20" :
+                    isUrgent ? "bg-alert-coral/5 border-alert-coral/20" :
+                    "bg-daybreak/5 border-daybreak/20"
+                  }`}>
+                    <h3 className={`font-display font-bold text-lg mb-2 ${
+                      isExpired || isUrgent ? "text-alert-coral" : "text-midnight"
+                    }`}>
+                      {isExpired ? "Your policy has expired" :
+                       isUrgent ? `Your policy expires in ${days} day${days !== 1 ? "s" : ""}` :
+                       `Your policy expires in ${days} days`}
+                    </h3>
+                    <p className="font-body text-slate text-sm mb-4">
+                      {isExpired
+                        ? "You may need to complete a new application to reinstate cover. Contact our team for help."
+                        : "Renew your policy to avoid any gap in your insurance cover."}
+                    </p>
+                    <div className="flex gap-3 flex-wrap">
+                      <Link
+                        href={`/products/${policy.productId}`}
+                        className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-bold text-sm px-5 py-2.5 rounded-xl hover:bg-[#D4921A] transition-colors"
+                      >
+                        {isExpired ? "Check Renewal Options" : "Renew Now"}
+                      </Link>
+                      <Link
+                        href="/help"
+                        className="inline-flex items-center gap-2 border border-slate/20 text-slate font-body font-medium text-sm px-5 py-2.5 rounded-xl hover:bg-slate/5 transition-colors"
+                      >
+                        Speak to an Expert
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })()}
             </>
           )}
         </div>

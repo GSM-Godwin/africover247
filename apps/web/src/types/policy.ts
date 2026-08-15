@@ -6,7 +6,7 @@ export interface PolicyRecord {
   issueDate: string;
   startDate: string;
   expiryDate: string;
-  status: "active" | "expired" | "cancelled";
+  status: "active" | "renewal_due" | "renewal_in_progress" | "renewed" | "expired" | "cancelled" | "non_renewed" | "pending_underwriting";
   createdAt: string;
   policyPdfUrl: string | null;
   product: {

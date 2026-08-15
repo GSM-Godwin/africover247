@@ -22,8 +22,13 @@ enum ApplicationStatus {
 
 enum PolicyStatus {
   active
+  renewal_due
+  renewal_in_progress
+  renewed
   expired
   cancelled
+  non_renewed
+  pending_underwriting
 }
 
 enum PaymentStatus {
@@ -219,23 +224,40 @@ model KycDocument {
 }
 
 model Policy {
-  id            String        @id @default(uuid())
-  applicationId String        @unique
-  userId        String
-  productId     String
-  policyNumber  String        @unique
-  issueDate     DateTime      @default(now())
-  startDate     DateTime
-  expiryDate    DateTime
-  premiumPaid   Decimal
-  policyPdfUrl  String?
-  status        PolicyStatus  @default(active)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  application   Application   @relation(fields: [applicationId], references: [id])
-  user          User          @relation(fields: [userId], references: [id])
-  product       Product       @relation(fields: [productId], references: [id])
-  claims        Claim[]
+  id                 String        @id @default(uuid())
+  applicationId      String        @unique
+  userId             String
+  productId          String
+  policyNumber       String        @unique
+  issueDate          DateTime      @default(now())
+  startDate          DateTime
+  expiryDate         DateTime
+  premiumPaid        Decimal
+  policyPdfUrl       String?
+  status             PolicyStatus  @default(active)
+  renewalStatus      String        @default("NOT_YET_DUE")
+  lastReminderSentAt DateTime?
+  lastReminderType   String?
+  remindersSupressed Boolean       @default(false)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  application        Application   @relation(fields: [applicationId], references: [id])
+  user               User          @relation(fields: [userId], references: [id])
+  product            Product       @relation(fields: [productId], references: [id])
+  claims             Claim[]
+  renewalLogs        RenewalLog[]
+}
+
+model RenewalLog {
+  id           String   @id @default(uuid())
+  policyId     String
+  reminderType String
+  channels     String[]
+  sentAt       DateTime @default(now())
+  policy       Policy   @relation(fields: [policyId], references: [id])
+
+  @@index([policyId])
+  @@index([sentAt])
 }
 
 model Payment {

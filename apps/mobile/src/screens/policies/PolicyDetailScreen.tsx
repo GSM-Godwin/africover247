@@ -19,6 +19,7 @@ import { markRelatedNotificationsRead } from '../../services/notifications'
 
 interface PolicyDetail {
   id: string
+  productId: string
   policyNumber: string
   status: string
   premiumPaid: string
@@ -166,6 +167,56 @@ export function PolicyDetailScreen({ route, navigation }: any) {
           ))}
         </Card>
 
+        {(() => {
+          const days = Math.round(
+            (new Date(policy.expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+          )
+          const isExpired = days < 0 || policy.status === 'expired'
+          const isUrgent = days <= 14 && days >= 0
+          const isDueSoon = days > 14 && days <= 60
+
+          if (!isExpired && !isUrgent && !isDueSoon) return null
+
+          return (
+            <View style={[styles.renewalCard, {
+              backgroundColor: isExpired || isUrgent ? Colors.errorLight : Colors.accentLight,
+              borderColor: isExpired || isUrgent ? Colors.error + '30' : Colors.accent + '30',
+            }]}>
+              <Text style={[styles.renewalTitle, {
+                color: isExpired || isUrgent ? Colors.error : Colors.accent,
+              }]}>
+                {isExpired ? 'Your policy has expired' :
+                 isUrgent ? `Expires in ${days} day${days !== 1 ? 's' : ''}` :
+                 `Expires in ${days} days`}
+              </Text>
+              <Text style={styles.renewalMessage}>
+                {isExpired
+                  ? 'Contact our team to explore reinstatement options.'
+                  : 'Renew your policy now to avoid any gap in cover.'}
+              </Text>
+              <View style={styles.renewalActions}>
+                <TouchableOpacity
+                  style={styles.renewNowBtn}
+                  onPress={() => navigation.navigate('Products', {
+                    screen: 'ProductDetail',
+                    params: { productId: policy.productId },
+                  })}
+                >
+                  <Text style={styles.renewNowText}>
+                    {isExpired ? 'Check Options' : 'Renew Now'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.expertBtn}
+                  onPress={() => navigation.navigate('Help' as never)}
+                >
+                  <Text style={styles.expertText}>Speak to Expert</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )
+        })()}
+
         {policy.policyPdfUrl && (
           <TouchableOpacity
             style={styles.downloadButton}
@@ -279,6 +330,32 @@ const styles = StyleSheet.create({
   },
   summaryLabel: { fontSize: 13, color: Colors.textSecondary },
   summaryValue: { fontSize: 13, fontWeight: '600', color: Colors.text },
+  renewalCard: {
+    margin: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 16,
+  },
+  renewalTitle: { fontSize: 16, fontWeight: '800', marginBottom: 6 },
+  renewalMessage: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18, marginBottom: 14 },
+  renewalActions: { flexDirection: 'row', gap: 10 },
+  renewNowBtn: {
+    flex: 1,
+    backgroundColor: Colors.accent,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  renewNowText: { fontSize: 14, fontWeight: '700', color: Colors.textDark },
+  expertBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  expertText: { fontSize: 14, fontWeight: '600', color: Colors.textSecondary },
   downloadButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -6,6 +6,25 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { formatPolicyDateRange } from "@/lib/utils";
 import type { PolicyRecord } from "@/types/policy";
 
+function getRenewalBadge(expiryDate: string, status: string): {
+  label: string;
+  color: string;
+} | null {
+  if (status === "expired") return { label: "Expired", color: "bg-alert-coral/10 text-alert-coral" };
+  if (status === "cancelled") return null;
+
+  const days = Math.round(
+    (new Date(expiryDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+  );
+
+  if (days < 0) return { label: "Expired", color: "bg-alert-coral/10 text-alert-coral" };
+  if (days === 0) return { label: "Expires Today", color: "bg-alert-coral/10 text-alert-coral" };
+  if (days <= 14) return { label: `Renewal Required — ${days}d left`, color: "bg-alert-coral/10 text-alert-coral" };
+  if (days <= 30) return { label: `Renewal Due — ${days}d left`, color: "bg-daybreak/10 text-daybreak" };
+  if (days <= 60) return { label: `Renewal Due Soon — ${days}d left`, color: "bg-daybreak/5 text-daybreak" };
+  return null;
+}
+
 interface PolicyListCardProps {
   policy: PolicyRecord;
 }
@@ -49,7 +68,18 @@ export function PolicyListCard({ policy }: PolicyListCardProps) {
         </div>
 
         <div className="flex items-center gap-4 shrink-0">
-          <StatusBadge status={policy.status} kind="policy" />
+          <div className="flex flex-col items-end gap-2">
+            <StatusBadge status={policy.status} kind="policy" />
+            {(() => {
+              const badge = getRenewalBadge(policy.expiryDate, policy.status);
+              return badge ? (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ${badge.color}`}>
+                  <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                  {badge.label}
+                </span>
+              ) : null;
+            })()}
+          </div>
           {policy.policyPdfUrl ? (
             <button
               type="button"
