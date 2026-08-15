@@ -1,22 +1,31 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { TouchableWithoutFeedback, View, AppState, AppStateStatus } from 'react-native'
+import * as Notifications from 'expo-notifications'
 import * as ScreenCapture from 'expo-screen-capture'
 import { RootNavigator, RootNavigatorHandle } from './src/navigation/RootNavigator'
 import { ErrorBoundary } from './src/components/ErrorBoundary'
 import { InactivityModal } from './src/components/shared/InactivityModal'
+import { InAppNotificationBanner } from './src/components/shared/InAppNotificationBanner'
 import { useInactivityTimeout } from './src/hooks/useInactivityTimeout'
 import { getToken } from './src/services/auth'
 import { NotificationProvider } from './src/contexts/NotificationContext'
+import { Colors } from './src/constants'
 
 const COUNTDOWN_SECONDS = 60
 
-export function App() {
+function AppShell() {
+  const insets = useSafeAreaInsets()
   const [showModal, setShowModal] = useState(false)
   const [countdown, setCountdown] = useState(COUNTDOWN_SECONDS)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [foregroundNotification, setForegroundNotification] = useState<{
+    title: string
+    body: string
+    data?: Record<string, string>
+  } | null>(null)
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const navigationRef = useRef<RootNavigatorHandle>(null)
 
@@ -87,10 +96,41 @@ export function App() {
     return () => subscription.remove()
   }, [])
 
+  useEffect(() => {
+    const subscription = Notifications.addNotificationReceivedListener((notification) => {
+      setForegroundNotification({
+        title: notification.request.content.title || 'AfriCover247',
+        body: notification.request.content.body || '',
+        data: notification.request.content.data as Record<string, string>,
+      })
+    })
+
+    return () => subscription.remove()
+  }, [])
+
+  function handleBannerPress(data?: Record<string, string>) {
+    if (!data) return
+  }
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <StatusBar style="auto" />
+    <View style={{ flex: 1 }}>
+      <View
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: insets.top,
+          backgroundColor: Colors.primary,
+          zIndex: 1,
+        }}
+      />
+      <StatusBar
+        style="light"
+        backgroundColor={Colors.primary}
+        translucent={false}
+      />
+      <View style={{ flex: 1 }}>
         <NotificationProvider
           isAuthenticated={isLoggedIn}
           onNotificationTap={handleNotificationTap}
@@ -112,6 +152,22 @@ export function App() {
             </TouchableWithoutFeedback>
           </ErrorBoundary>
         </NotificationProvider>
+
+        <InAppNotificationBanner
+          notification={foregroundNotification}
+          onPress={handleBannerPress}
+          onDismiss={() => setForegroundNotification(null)}
+        />
+      </View>
+    </View>
+  )
+}
+
+export function App() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <AppShell />
       </SafeAreaProvider>
     </GestureHandlerRootView>
   )

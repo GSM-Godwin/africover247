@@ -12,11 +12,17 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#ffffff"
     },
+    androidStatusBar: {
+      backgroundColor: "#15679b",
+      barStyle: "light-content",
+      translucent: false,
+    },
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.africover247.app",
       infoPlist: {
         NSFaceIDUsageDescription: "AfriCover247 uses Face ID to keep your account secure.",
+        UIStatusBarStyle: "UIStatusBarStyleLightContent",
       },
     },
     android: {
