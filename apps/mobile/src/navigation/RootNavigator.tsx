@@ -79,30 +79,19 @@ export const RootNavigator = forwardRef<RootNavigatorHandle, RootNavigatorProps>
     }), [handleLogout, handleNotificationTap])
 
     useEffect(() => {
-      const notificationSubscription = Notifications.addNotificationReceivedListener((notification) => {
-        console.log('[Push] Foreground notification received:', notification.request.content.title)
-      })
-
-      const responseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-        const data = response.notification.request.content.data
+      const responseListener = Notifications.addNotificationResponseReceivedListener((response) => {
+        const data = response.notification.request.content.data as Record<string, string>
         if (data?.referenceType === 'quote' && data?.referenceId) {
-          navigationRef.current?.navigate('Tabs', {
-            screen: 'Products',
-            params: {
-              screen: 'QuoteDetail',
-              params: { quoteId: data.referenceId },
-            },
-          } as never)
+          navigationRef.current?.navigate('Quotes' as never)
         } else if (data?.referenceType === 'claim' && data?.referenceId) {
-          navigationRef.current?.navigate('ClaimDetail', { claimId: data.referenceId } as never)
+          navigationRef.current?.navigate('Claims' as never)
         } else if (data?.referenceType === 'policy' && data?.referenceId) {
-          navigationRef.current?.navigate('PolicyDetail', { policyId: data.referenceId } as never)
+          navigationRef.current?.navigate('Policies' as never)
         }
       })
 
       return () => {
-        notificationSubscription.remove()
-        responseSubscription.remove()
+        responseListener.remove()
       }
     }, [])
 

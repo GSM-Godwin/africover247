@@ -212,12 +212,10 @@ export class PoliciesService {
 
     let policyPdfUrl = '';
     try {
-      policyPdfUrl = await this.storageService.uploadPdf(
-        pdfBuffer,
-        `${policyNumber}.pdf`,
-      );
+      const safeFilename = `${policyNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+      policyPdfUrl = await this.storageService.uploadPdf(pdfBuffer, safeFilename);
     } catch (error) {
-      this.logger.error(`Failed to upload policy PDF to S3`, error);
+      this.logger.error(`Failed to upload policy PDF`, error);
     }
 
     const policy = await this.prisma.policy.create({

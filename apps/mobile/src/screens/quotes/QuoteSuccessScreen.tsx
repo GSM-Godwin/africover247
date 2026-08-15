@@ -35,7 +35,7 @@ export function QuoteSuccessScreen({ route, navigation }: any) {
           />
           <Button
             title="View My Quotes"
-            onPress={() => navigation.navigate('QuotesList')}
+            onPress={() => navigation.navigate('Quotes' as never)}
             variant="outline"
             style={{ marginTop: 10 }}
           />

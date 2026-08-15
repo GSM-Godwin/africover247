@@ -4,7 +4,7 @@ import { View, StyleSheet } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { HomeScreen } from '../screens/home/HomeScreen'
 import { ClaimsScreen } from '../screens/claims/ClaimsScreen'
-import { QuotesListScreen } from '../screens/quotes/QuotesListScreen'
+import { QuotesStack } from './QuotesStack'
 import { AccountScreen } from '../screens/account/AccountScreen'
 import { ProductsStack } from './ProductsStack'
 import { Colors } from '../constants'
@@ -68,7 +68,8 @@ export function AppTabs({ onLogout }: AppTabsProps) {
           ),
         }}
         listeners={({ navigation }) => ({
-          tabPress: () => {
+          tabPress: (e) => {
+            e.preventDefault()
             navigation.navigate('Products', { screen: 'ProductsList' })
           },
         })}
@@ -85,7 +86,7 @@ export function AppTabs({ onLogout }: AppTabsProps) {
       />
       <Tab.Screen
         name="Quotes"
-        component={QuotesListScreen}
+        component={QuotesStack}
         options={{
           tabBarLabel: 'Quotes',
           tabBarIcon: ({ focused }) => (

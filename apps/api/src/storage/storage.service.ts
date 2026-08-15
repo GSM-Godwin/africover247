@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import { Upload } from '@aws-sdk/lib-storage'
+import { v2 as cloudinary } from 'cloudinary'
 import { v4 as uuidv4 } from 'uuid'
 import * as path from 'path'
 
@@ -30,6 +31,12 @@ export class StorageService {
         credentials: { accessKeyId, secretAccessKey },
       })
       this.logger.log(`S3 configured — bucket: ${this.bucket}, region: ${region}`)
+    }
+
+    const cloudinaryUrl = this.configService.get<string>('CLOUDINARY_URL')
+    if (cloudinaryUrl) {
+      cloudinary.config({ cloud_url: cloudinaryUrl })
+      this.logger.log('Cloudinary configured')
     }
   }
 
@@ -83,10 +90,39 @@ export class StorageService {
     this.logger.log(`S3 delete complete: ${key}`)
   }
 
+  async uploadPdfToCloudinary(buffer: Buffer, filename: string): Promise<string> {
+    const cloudinaryUrl = this.configService.get<string>('CLOUDINARY_URL')
+    if (!cloudinaryUrl) {
+      this.logger.warn('[STUB] Cloudinary not configured — returning stub URL')
+      return `https://stub-cloudinary.africover247.com/policies/${filename}`
+    }
+
+    return new Promise((resolve, reject) => {
+      const publicId = `policies/${filename.replace('.pdf', '')}`
+      const stream = cloudinary.uploader.upload_stream(
+        {
+          resource_type: 'raw',
+          public_id: publicId,
+          format: 'pdf',
+          overwrite: true,
+        },
+        (error, result) => {
+          if (error) {
+            this.logger.error(`Cloudinary upload failed: ${error.message}`)
+            reject(error)
+          } else {
+            this.logger.log(`Cloudinary upload complete: ${result!.secure_url}`)
+            resolve(result!.secure_url)
+          }
+        }
+      )
+      stream.end(buffer)
+    })
+  }
+
   // --- Upload PDF buffer ---
   async uploadPdf(buffer: Buffer, filename: string): Promise<string> {
-    const { url } = await this.uploadFile(buffer, filename, 'application/pdf', 'policies')
-    return url
+    return this.uploadPdfToCloudinary(buffer, filename)
   }
 
   // --- Upload document ---
