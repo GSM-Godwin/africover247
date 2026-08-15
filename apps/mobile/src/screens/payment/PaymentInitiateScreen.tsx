@@ -22,10 +22,29 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   const [polling, setPolling] = useState(false)
   const [paymentPlan, setPaymentPlan] = useState<'monthly' | 'annual'>('annual')
   const [appAmount, setAppAmount] = useState<string | null>(presetAmount || null)
+  const [appData, setAppData] = useState<any>(null)
   const [error, setError] = useState('')
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
-  const annualAmount = product?.premiumAmount ? parseFloat(product.premiumAmount) : 0
+  useEffect(() => {
+    if (!applicationId) return
+    api.get(`/applications/${applicationId}`)
+      .then((res) => setAppData(res.data))
+      .catch(() => {})
+  }, [applicationId])
+
+  const calculatedPremium = appData?.formData?.calculatedPremium
+    ? Number(appData.formData.calculatedPremium)
+    : null
+
+  const annualAmount = product?.premiumAmount
+    ? parseFloat(product.premiumAmount)
+    : calculatedPremium
+    ? calculatedPremium
+    : presetAmount
+    ? parseFloat(String(presetAmount))
+    : 0
+
   const monthlyAmount = annualAmount ? Math.ceil(annualAmount / 12) : 0
   const displayAmount = paymentPlan === 'monthly' ? monthlyAmount : annualAmount
 

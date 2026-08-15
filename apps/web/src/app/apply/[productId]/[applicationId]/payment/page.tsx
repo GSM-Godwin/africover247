@@ -19,8 +19,12 @@ export default function PaymentPage() {
   const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const productName = application?.product?.name ?? "Insurance";
-  const calculatedPremium = formData?.calculatedPremium
-    ? Number(formData.calculatedPremium)
+  const calculatedPremiumSource =
+    formData?.calculatedPremium ??
+    (application?.formData as Record<string, unknown> | undefined)
+      ?.calculatedPremium;
+  const calculatedPremium = calculatedPremiumSource
+    ? Number(calculatedPremiumSource)
     : null;
   const annualAmount = application?.product?.premiumAmount
     ? parseFloat(String(application.product.premiumAmount))
