@@ -33,10 +33,19 @@ export class StorageService {
       this.logger.log(`S3 configured — bucket: ${this.bucket}, region: ${region}`)
     }
 
-    const cloudinaryUrl = this.configService.get<string>('CLOUDINARY_URL')
-    if (cloudinaryUrl) {
-      cloudinary.config({ cloud_url: cloudinaryUrl })
-      this.logger.log('Cloudinary configured')
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME')
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY')
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET')
+
+    if (cloudName && apiKey && apiSecret) {
+      cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+      })
+      this.logger.log(`Cloudinary configured — cloud: ${cloudName}`)
+    } else {
+      this.logger.warn('[STUB] Cloudinary not configured — PDF uploads will use stub')
     }
   }
 
@@ -91,8 +100,11 @@ export class StorageService {
   }
 
   async uploadPdfToCloudinary(buffer: Buffer, filename: string): Promise<string> {
-    const cloudinaryUrl = this.configService.get<string>('CLOUDINARY_URL')
-    if (!cloudinaryUrl) {
+    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME')
+    const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY')
+    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET')
+
+    if (!cloudName || !apiKey || !apiSecret) {
       this.logger.warn('[STUB] Cloudinary not configured — returning stub URL')
       return `https://stub-cloudinary.africover247.com/policies/${filename}`
     }
