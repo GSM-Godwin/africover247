@@ -41,6 +41,25 @@ export function Footer() {
             <p className="font-body text-paper/50 text-sm leading-relaxed max-w-[180px] mb-4">
               The always-on front door to insurance in Lagos.
             </p>
+            <div className="space-y-2 mb-4">
+              <p className="font-body text-sm text-white/70">
+                141c Oshodi/Gbagada Expressway,
+                <br />
+                Anthony, Lagos, Nigeria
+              </p>
+              <a
+                href="tel:+2348101315330"
+                className="block font-body text-sm text-white/70 hover:text-white transition-colors"
+              >
+                08101315330 / 09063675032
+              </a>
+              <a
+                href="mailto:info@afriglobal.com.ng"
+                className="block font-body text-sm text-white/70 hover:text-white transition-colors"
+              >
+                info@afriglobal.com.ng
+              </a>
+            </div>
             <a
               href="https://wa.me/2349063675032"
               target="_blank"

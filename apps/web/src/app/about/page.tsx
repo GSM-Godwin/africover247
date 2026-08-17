@@ -276,6 +276,63 @@ export default function AboutPage() {
         </div>
       </section>
 
+      <section className="py-16 px-6 bg-white">
+        <div className="max-w-[1140px] mx-auto">
+          <h2 className="font-display font-bold text-midnight text-3xl mb-10 text-center">
+            Our Offices
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                city: "Lagos (Head Office)",
+                address:
+                  "141c Oshodi/Gbagada Expressway, Anthony, Lagos, Nigeria",
+                phone: "08101315330 / 09063675032",
+              },
+              {
+                city: "Abuja",
+                address:
+                  "Polaris Bank Building, 3 Kaura Namoda Street Area, Garki FCT, Abuja, Nigeria",
+                phone: "08033000728",
+              },
+              {
+                city: "Port Harcourt",
+                address:
+                  "Polaris Bank Building, 204 Aba Road, Beside Mr. Biggs, Rumuola, Port Harcourt",
+                phone: "08037605330",
+              },
+            ].map((office) => (
+              <div
+                key={office.city}
+                className="bg-paper rounded-2xl p-6 border border-slate/10"
+              >
+                <h3 className="font-body font-bold text-midnight text-base mb-3">
+                  {office.city}
+                </h3>
+                <p className="font-body text-slate text-sm mb-2 leading-relaxed">
+                  {office.address}
+                </p>
+                <a
+                  href={`tel:+234${office.phone.split("/")[0].trim().slice(1)}`}
+                  className="font-body text-sm text-midnight font-semibold hover:text-daybreak transition-colors"
+                >
+                  {office.phone}
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="font-body text-sm text-slate text-center mt-8">
+            Email:{" "}
+            <a
+              href="mailto:info@afriglobal.com.ng"
+              className="text-midnight font-semibold hover:text-daybreak transition-colors"
+            >
+              info@afriglobal.com.ng
+            </a>
+          </p>
+        </div>
+      </section>
+
       <section className="py-20 px-6 bg-paper">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="font-display font-bold text-midnight text-3xl mb-4">

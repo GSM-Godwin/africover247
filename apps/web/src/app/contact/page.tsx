@@ -6,6 +6,50 @@ import { Phone, Mail, MapPin, Clock, Send, CheckCircle } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 
+const CONTACT_INFO = [
+  {
+    icon: MapPin,
+    label: "Head Office (Lagos)",
+    value: "141c Oshodi/Gbagada Expressway, Anthony, Lagos, Nigeria",
+  },
+  {
+    icon: MapPin,
+    label: "Abuja Office",
+    value:
+      "Polaris Bank Building, 3 Kaura Namoda Street Area, Garki FCT, Abuja, Nigeria",
+  },
+  {
+    icon: MapPin,
+    label: "Port Harcourt Office",
+    value:
+      "Polaris Bank Building, 204 Aba Road, Beside Mr. Biggs, Rumuola, Port Harcourt",
+  },
+  {
+    icon: Phone,
+    label: "Lagos",
+    value: "08101315330 / 09063675032",
+    href: "tel:+2348101315330",
+  },
+  {
+    icon: Phone,
+    label: "Abuja",
+    value: "08033000728",
+    href: "tel:+2348033000728",
+  },
+  {
+    icon: Phone,
+    label: "Port Harcourt",
+    value: "08037605330",
+    href: "tel:+2348037605330",
+  },
+  {
+    icon: Mail,
+    label: "Email",
+    value: "info@afriglobal.com.ng",
+    href: "mailto:info@afriglobal.com.ng",
+  },
+];
+
 export default function ContactPage() {
   const [form, setForm] = useState({
     name: "",
@@ -70,36 +114,7 @@ export default function ContactPage() {
               </h2>
 
               <div className="space-y-6 mb-10">
-                {[
-                  {
-                    icon: Phone,
-                    label: "Phone",
-                    value: "+234 800 000 0000",
-                    sub: "Mon – Fri, 8am – 6pm",
-                    href: "tel:+2348000000000",
-                  },
-                  {
-                    icon: Mail,
-                    label: "Email",
-                    value: "info@afriglobal.com.ng",
-                    sub: "We respond within 24 hours",
-                    href: "mailto:info@afriglobal.com.ng",
-                  },
-                  {
-                    icon: MapPin,
-                    label: "Office Address",
-                    value: "Lagos, Nigeria",
-                    sub: "Visit by appointment only",
-                    href: undefined,
-                  },
-                  {
-                    icon: Clock,
-                    label: "Working Hours",
-                    value: "Monday – Friday",
-                    sub: "8:00 AM – 6:00 PM WAT",
-                    href: undefined,
-                  },
-                ].map((item) => (
+                {CONTACT_INFO.map((item) => (
                   <div key={item.label} className="flex gap-4">
                     <div className="w-11 h-11 rounded-xl bg-midnight/10 flex items-center justify-center shrink-0">
                       <item.icon size={18} className="text-midnight" />
@@ -108,7 +123,7 @@ export default function ContactPage() {
                       <p className="font-body text-xs text-slate uppercase tracking-wide mb-0.5">
                         {item.label}
                       </p>
-                      {item.href ? (
+                      {"href" in item && item.href ? (
                         <a
                           href={item.href}
                           className="font-body text-base font-semibold text-midnight hover:text-daybreak transition-colors"
@@ -120,10 +135,26 @@ export default function ContactPage() {
                           {item.value}
                         </p>
                       )}
-                      <p className="font-body text-sm text-slate">{item.sub}</p>
                     </div>
                   </div>
                 ))}
+
+                <div className="flex gap-4">
+                  <div className="w-11 h-11 rounded-xl bg-midnight/10 flex items-center justify-center shrink-0">
+                    <Clock size={18} className="text-midnight" />
+                  </div>
+                  <div>
+                    <p className="font-body text-xs text-slate uppercase tracking-wide mb-0.5">
+                      Working Hours
+                    </p>
+                    <p className="font-body text-base font-semibold text-midnight">
+                      Monday – Friday
+                    </p>
+                    <p className="font-body text-sm text-slate">
+                      8:00 AM – 6:00 PM WAT
+                    </p>
+                  </div>
+                </div>
               </div>
 
               <div className="bg-daybreak/10 border border-daybreak/20 rounded-2xl p-6">

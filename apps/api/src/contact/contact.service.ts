@@ -17,7 +17,7 @@ export class ContactService {
     const contact = await this.prisma.contactMessage.create({ data: dto })
 
     await this.emailService.sendEmail({
-      to: 'admin@afriglobal.com.ng',
+      to: 'info@afriglobal.com.ng',
       subject: `New Contact Message — ${dto.subject}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">

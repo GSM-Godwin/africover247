@@ -69,7 +69,7 @@ export class SupportService {
       });
 
       await this.emailService.sendEmail({
-        to: 'support@afriglobal.com.ng',
+        to: 'info@afriglobal.com.ng',
         subject: `New support ticket #${ticket.id.slice(0, 8).toUpperCase()} — ${dto.category}`,
         html: `
           <p>New support ticket from ${dto.name} (${dto.email})</p>
@@ -238,7 +238,7 @@ export class SupportService {
       });
 
       await this.emailService.sendEmail({
-        to: 'support@afriglobal.com.ng',
+        to: 'info@afriglobal.com.ng',
         subject: `New appointment request — ${dto.name}`,
         html: `
           <p><strong>Name:</strong> ${dto.name}</p>

@@ -20,13 +20,52 @@ import { getToken } from '../../services/auth'
 
 const QUICK_ACTIONS = [
   { icon: 'chatbubble-ellipses-outline' as const, label: 'Chat with us', onPress: (navigation: any) => Linking.openURL('https://wa.me/2349063675032?text=Hello%2C%20I%20need%20help%20with%20my%20AfriCover247%20insurance.') },
-  { icon: 'call-outline' as const, label: 'Call us', onPress: () => Linking.openURL('tel:+2349063675032') },
+  { icon: 'call-outline' as const, label: 'Call us', onPress: () => Linking.openURL('tel:+2348101315330') },
   { icon: 'calendar-outline' as const, label: 'Book appointment', onPress: (navigation: any) => navigation.navigate('BookAppointment') },
   { icon: 'document-text-outline' as const, label: 'Make a claim', onPress: (navigation: any) => navigation.navigate('NewClaim') },
   { icon: 'search-outline' as const, label: 'Track claim', onPress: (navigation: any) => navigation.navigate('Tabs', { screen: 'Claims' }) },
   { icon: 'download-outline' as const, label: 'Download policy', onPress: (navigation: any) => navigation.navigate('Policies') },
   { icon: 'refresh-outline' as const, label: 'Renew policy', onPress: (navigation: any) => navigation.navigate('Policies') },
   { icon: 'alert-circle-outline' as const, label: 'Complaint', onPress: (navigation: any) => navigation.navigate('NewTicket', { category: 'complaint' }) },
+]
+
+const CONTACT_ITEMS = [
+  {
+    icon: 'logo-whatsapp' as const,
+    label: 'WhatsApp Support',
+    value: '+234 906 367 5032',
+    onPress: () => Linking.openURL('https://wa.me/2349063675032?text=Hello%2C%20I%20need%20help%20with%20my%20AfriCover247%20insurance.'),
+  },
+  {
+    icon: 'call-outline' as const,
+    label: 'Lagos Office',
+    value: '08101315330 / 09063675032',
+    onPress: () => Linking.openURL('tel:+2348101315330'),
+  },
+  {
+    icon: 'call-outline' as const,
+    label: 'Abuja Office',
+    value: '08033000728',
+    onPress: () => Linking.openURL('tel:+2348033000728'),
+  },
+  {
+    icon: 'call-outline' as const,
+    label: 'Port Harcourt Office',
+    value: '08037605330',
+    onPress: () => Linking.openURL('tel:+2348037605330'),
+  },
+  {
+    icon: 'mail-outline' as const,
+    label: 'Email',
+    value: 'info@afriglobal.com.ng',
+    onPress: () => Linking.openURL('mailto:info@afriglobal.com.ng'),
+  },
+  {
+    icon: 'location-outline' as const,
+    label: 'Head Office',
+    value: '141c Oshodi/Gbagada Expressway, Anthony, Lagos',
+    onPress: () => Linking.openURL('https://maps.google.com/?q=141c+Oshodi+Gbagada+Expressway+Anthony+Lagos'),
+  },
 ]
 
 const FAQ = [
@@ -157,32 +196,7 @@ export function HelpScreen({ navigation }: any) {
 
           <Text style={styles.sectionTitle}>Contact Us</Text>
           <Card style={styles.contactCard} padding={0}>
-            {[
-              {
-                icon: 'logo-whatsapp' as const,
-                label: 'WhatsApp Support',
-                value: '+234 906 367 5032',
-                onPress: () => Linking.openURL('https://wa.me/2349063675032?text=Hello%2C%20I%20need%20help%20with%20my%20AfriCover247%20insurance.'),
-              },
-              {
-                icon: 'mail-outline' as const,
-                label: 'Email Support',
-                value: 'support@africover247.com',
-                onPress: () => Linking.openURL('mailto:support@africover247.com'),
-              },
-              {
-                icon: 'call-outline' as const,
-                label: 'Phone Support',
-                value: '+234 800 000 0000',
-                onPress: () => Linking.openURL('tel:+2348000000000'),
-              },
-              {
-                icon: 'time-outline' as const,
-                label: 'Support Hours',
-                value: 'Mon – Fri, 8am – 6pm',
-                onPress: undefined,
-              },
-            ].map((item, i, arr) => (
+            {CONTACT_ITEMS.map((item, i, arr) => (
               <TouchableOpacity
                 key={item.label}
                 style={[
@@ -190,8 +204,7 @@ export function HelpScreen({ navigation }: any) {
                   i < arr.length - 1 && styles.contactItemBorder,
                 ]}
                 onPress={item.onPress}
-                disabled={!item.onPress}
-                activeOpacity={item.onPress ? 0.7 : 1}
+                activeOpacity={0.7}
               >
                 <View style={styles.contactIcon}>
                   <Ionicons name={item.icon} size={18} color={Colors.primary} />
@@ -200,9 +213,7 @@ export function HelpScreen({ navigation }: any) {
                   <Text style={styles.contactLabel}>{item.label}</Text>
                   <Text style={styles.contactValue}>{item.value}</Text>
                 </View>
-                {item.onPress && (
-                  <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-                )}
+                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
               </TouchableOpacity>
             ))}
           </Card>

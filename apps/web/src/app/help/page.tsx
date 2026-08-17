@@ -79,7 +79,7 @@ const QUICK_ACTIONS = [
   {
     icon: Phone,
     label: "Call us",
-    href: "tel:+2349063675032",
+    href: "tel:+2348101315330",
     action: null,
     color: "bg-daybreak/10 text-daybreak",
   },
