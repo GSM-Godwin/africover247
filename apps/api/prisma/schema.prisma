@@ -104,6 +104,10 @@ model User {
   preferredChannel   String         @default("email")
   renewalReminderPref String        @default("standard")
   reminderSnoozedUntil DateTime?
+  kycVerified        Boolean        @default(false)
+  kycVerifiedAt      DateTime?
+  kycVerificationType String?
+  kycData            Json?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   applications       Application[]

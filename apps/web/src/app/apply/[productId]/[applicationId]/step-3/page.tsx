@@ -96,6 +96,21 @@ export default function Step3Page() {
     );
   }, [application, slots]);
 
+  useEffect(() => {
+    async function checkKycStatus() {
+      try {
+        const res = await api.get(`/applications/${applicationId}`);
+        if (res.data.kycVerified) {
+          setVerificationResult({
+            verified: true,
+            message: "Previously verified",
+          });
+        }
+      } catch {}
+    }
+    checkKycStatus();
+  }, [applicationId]);
+
   const uploadedCount = slotStates.filter((slot) => slot.status === "uploaded").length;
 
   const updateSlot = useCallback((index: number, next: SlotState) => {
@@ -246,9 +261,16 @@ export default function Step3Page() {
         {verificationResult?.verified ? (
           <div className="flex items-center gap-3 bg-cover-green/10 border border-cover-green/20 rounded-xl px-4 py-3">
             <CheckCircle size={18} className="text-cover-green shrink-0" />
-            <p className="font-body text-sm text-cover-green font-semibold">
-              Identity verified successfully
-            </p>
+            <div>
+              <p className="font-body text-sm text-cover-green font-semibold">
+                Identity verified
+              </p>
+              {verificationResult.message === "Previously verified" && (
+                <p className="font-body text-xs text-cover-green/70 mt-0.5">
+                  Your identity was verified in a previous session
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-4">

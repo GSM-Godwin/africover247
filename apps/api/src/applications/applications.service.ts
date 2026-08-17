@@ -342,29 +342,45 @@ export class ApplicationsService {
         );
         break;
       default:
-        throw new BadRequestException('Unsupported verification type');
+        throw new BadRequestException('Invalid verification type');
     }
 
-    const existingFormData =
-      (application.formData as Record<string, unknown>) || {};
+    const existingFormData = (application.formData as Record<string, any>) || {};
 
-    const updatedFormData = {
-      ...existingFormData,
-      kycVerification: {
-        type: dto.verificationType,
-        verified: result.verified,
-        verifiedAt: new Date().toISOString(),
-        message: result.message ?? null,
-      },
+    const verificationRecord = {
+      type: dto.verificationType,
+      verified: result.verified,
+      verifiedAt: new Date().toISOString(),
+      message: result.message || null,
+      dojahData: result.data || null,
     };
 
     await this.prisma.application.update({
       where: { id },
       data: {
-        formData: updatedFormData as Prisma.InputJsonValue,
-        ...(result.verified ? { kycVerified: true } : {}),
+        kycVerified: result.verified,
+        formData: {
+          ...existingFormData,
+          kycVerification: verificationRecord,
+        } as Prisma.InputJsonValue,
       },
     });
+
+    if (result.verified) {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          kycVerified: true,
+          kycVerifiedAt: new Date(),
+          kycVerificationType: dto.verificationType,
+          kycData: (result.data || {}) as Prisma.InputJsonValue,
+        },
+      });
+    }
+
+    this.logger.log(
+      `[KYC] ${dto.verificationType.toUpperCase()} verification for user ${userId} / application ${id} — result: ${result.verified}`,
+    );
 
     return result;
   }

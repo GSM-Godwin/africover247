@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN "kycVerified" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "User" ADD COLUMN "kycVerifiedAt" TIMESTAMP(3);
+ALTER TABLE "User" ADD COLUMN "kycVerificationType" TEXT;
+ALTER TABLE "User" ADD COLUMN "kycData" JSONB;

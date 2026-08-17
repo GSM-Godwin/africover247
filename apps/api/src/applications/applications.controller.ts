@@ -27,6 +27,7 @@ import { StorageService } from '../storage/storage.service';
 import { KycService } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 import { VerifyVehicleDto } from '../kyc/dto/verify-vehicle.dto';
+import { PrismaService } from '../prisma/prisma.service';
 
 @UseGuards(JwtAuthGuard)
 @Controller('applications')
@@ -35,6 +36,7 @@ export class ApplicationsController {
     private applicationsService: ApplicationsService,
     private storageService: StorageService,
     private kycService: KycService,
+    private prisma: PrismaService,
   ) {}
 
   @Post()
@@ -99,11 +101,32 @@ export class ApplicationsController {
 
   @Post(':id/verify-identity')
   @HttpCode(HttpStatus.OK)
-  verifyIdentity(
+  async verifyIdentity(
     @CurrentUser() user: { id: string },
     @Param('id') id: string,
     @Body() dto: VerifyIdentityDto,
   ) {
+    const existingUser = await this.prisma.user.findUnique({
+      where: { id: user.id },
+      select: {
+        kycVerified: true,
+        kycVerifiedAt: true,
+        kycVerificationType: true,
+      },
+    });
+
+    if (existingUser?.kycVerified) {
+      await this.prisma.application.update({
+        where: { id },
+        data: { kycVerified: true },
+      });
+      return {
+        verified: true,
+        message: `Identity already verified via ${existingUser.kycVerificationType} on ${new Date(existingUser.kycVerifiedAt!).toLocaleDateString('en-NG')}`,
+        cached: true,
+      };
+    }
+
     return this.applicationsService.verifyIdentity(id, user.id, dto);
   }
 

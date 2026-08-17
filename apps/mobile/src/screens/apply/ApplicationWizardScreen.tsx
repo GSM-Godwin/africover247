@@ -418,6 +418,9 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         if (app.stepCompleted && app.stepCompleted > 0) {
           setStep(Math.min(app.stepCompleted, STEPS.length - 1))
         }
+        if (app.kycVerified) {
+          setIdVerified(true)
+        }
       } catch {}
     }
     loadDraft()

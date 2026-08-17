@@ -89,6 +89,13 @@ export default function AdminApplicationDetailPage() {
 
   const formData = (app.formData || {}) as Record<string, unknown>;
   const assetDetails = (app.assetDetails || {}) as Record<string, unknown>;
+  const kycVerification = formData.kycVerification as
+    | {
+        type?: string;
+        verifiedAt?: string;
+        dojahData?: unknown;
+      }
+    | undefined;
 
   return (
     <div className="p-6 sm:p-8 max-w-4xl">
@@ -158,6 +165,44 @@ export default function AdminApplicationDetailPage() {
             />
           </div>
         </Section>
+
+        <div className="bg-white rounded-xl border border-slate/10 p-5">
+          <h3 className="font-body font-semibold text-midnight text-sm mb-3">
+            KYC Verification
+          </h3>
+          <div className="flex items-center gap-3">
+            {app.kycVerified ? (
+              <>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cover-green/10 text-cover-green text-xs font-semibold">
+                  <CheckCircle size={12} />
+                  Verified
+                </span>
+                {kycVerification && (
+                  <span className="font-body text-xs text-slate">
+                    via {kycVerification.type?.toUpperCase()} ·{" "}
+                    {new Date(kycVerification.verifiedAt!).toLocaleDateString(
+                      "en-NG",
+                    )}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate/10 text-slate text-xs font-semibold">
+                Not verified
+              </span>
+            )}
+          </div>
+          {kycVerification?.dojahData != null ? (
+            <div className="mt-3 bg-slate/5 rounded-lg p-3">
+              <p className="font-body text-xs font-semibold text-midnight mb-2">
+                Dojah Response
+              </p>
+              <pre className="font-mono text-xs text-slate overflow-auto">
+                {JSON.stringify(kycVerification.dojahData, null, 2)}
+              </pre>
+            </div>
+          ) : null}
+        </div>
 
         {Object.keys(formData).length > 0 && (
           <Section title="Application Form Data" icon={FileText}>
