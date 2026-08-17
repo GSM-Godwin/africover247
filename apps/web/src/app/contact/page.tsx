@@ -107,7 +107,7 @@ export default function ContactPage() {
 
       <section className="py-20 px-6 bg-paper">
         <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
             <div>
               <h2 className="font-display font-bold text-midnight text-2xl mb-8">
                 AfriGlobal Insurance Brokers Limited
@@ -187,7 +187,7 @@ export default function ContactPage() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl border border-slate/10 p-8">
+            <div className="bg-white rounded-2xl border border-slate/10 p-8 sticky top-24">
               {submitted ? (
                 <div className="flex flex-col items-center justify-center h-full text-center py-8">
                   <div className="w-16 h-16 bg-cover-green/10 rounded-full flex items-center justify-center mb-4">
