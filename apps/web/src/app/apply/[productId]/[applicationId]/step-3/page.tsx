@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import {
   DocumentUploadSlot,
@@ -65,6 +66,17 @@ export default function Step3Page() {
   const [removingIndex, setRemovingIndex] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [idType, setIdType] = useState<
+    "bvn" | "nin" | "drivers_licence" | "passport"
+  >("bvn");
+  const [idValue, setIdValue] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [verifying, setVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState<{
+    verified: boolean;
+    message?: string;
+  } | null>(null);
 
   const slots = useMemo(
     () =>
@@ -151,6 +163,50 @@ export default function Step3Page() {
     }
   }
 
+  async function handleVerifyIdentity() {
+    if (!idValue.trim()) {
+      toast.error("Please enter your ID number.");
+      return;
+    }
+    setVerifying(true);
+    setVerificationResult(null);
+    try {
+      const payload: Record<string, string> = {
+        verificationType: idType,
+        value: idValue.trim(),
+      };
+      if (idType === "drivers_licence" || idType === "passport") {
+        payload.dateOfBirth = dateOfBirth;
+      }
+      if (idType === "passport") {
+        payload.lastName = lastName;
+      }
+      const res = await api.post(
+        `/applications/${applicationId}/verify-identity`,
+        payload,
+      );
+      setVerificationResult({
+        verified: res.data.verified,
+        message: res.data.message,
+      });
+      if (res.data.verified) {
+        toast.success("Identity verified successfully.");
+      } else {
+        toast.error(
+          "Verification failed. Please check your details and try again.",
+        );
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { response?: { data?: { message?: string } } }).response?.data
+          ?.message || "Verification failed. Please try again.";
+      toast.error(message);
+      setVerificationResult({ verified: false });
+    } finally {
+      setVerifying(false);
+    }
+  }
+
   async function handleContinue() {
     if (uploadedCount === 0) {
       toast.error("Please upload at least one document to proceed.");
@@ -178,6 +234,140 @@ export default function Step3Page() {
 
   return (
     <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-slate/10 p-6 mb-6">
+        <h2 className="font-body font-semibold text-midnight text-base mb-1">
+          Identity Verification
+        </h2>
+        <p className="font-body text-slate text-sm mb-5">
+          Verify your identity using your BVN, NIN, Driver&apos;s Licence, or
+          Passport.
+        </p>
+
+        {verificationResult?.verified ? (
+          <div className="flex items-center gap-3 bg-cover-green/10 border border-cover-green/20 rounded-xl px-4 py-3">
+            <CheckCircle size={18} className="text-cover-green shrink-0" />
+            <p className="font-body text-sm text-cover-green font-semibold">
+              Identity verified successfully
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                ID Type
+              </label>
+              <select
+                value={idType}
+                onChange={(e) => {
+                  setIdType(
+                    e.target.value as
+                      | "bvn"
+                      | "nin"
+                      | "drivers_licence"
+                      | "passport",
+                  );
+                  setIdValue("");
+                  setVerificationResult(null);
+                }}
+                className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+              >
+                <option value="bvn">BVN (Bank Verification Number)</option>
+                <option value="nin">NIN (National Identification Number)</option>
+                <option value="drivers_licence">Driver&apos;s Licence</option>
+                <option value="passport">International Passport</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                {idType === "bvn"
+                  ? "BVN"
+                  : idType === "nin"
+                    ? "NIN"
+                    : idType === "drivers_licence"
+                      ? "Licence Number"
+                      : "Passport Number"}
+              </label>
+              <input
+                type="text"
+                value={idValue}
+                onChange={(e) => setIdValue(e.target.value)}
+                placeholder={
+                  idType === "bvn"
+                    ? "Enter your 11-digit BVN"
+                    : idType === "nin"
+                      ? "Enter your 11-digit NIN"
+                      : idType === "drivers_licence"
+                        ? "Enter your licence number"
+                        : "Enter your passport number"
+                }
+                className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+              />
+            </div>
+
+            {(idType === "drivers_licence" || idType === "passport") && (
+              <div>
+                <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+                />
+              </div>
+            )}
+
+            {idType === "passport" && (
+              <div>
+                <label className="block font-body text-sm font-medium text-midnight mb-1.5">
+                  Last Name
+                </label>
+                <input
+                  type="text"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="As on passport"
+                  className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
+                />
+              </div>
+            )}
+
+            {verificationResult && !verificationResult.verified && (
+              <div className="flex items-center gap-3 bg-alert-coral/10 border border-alert-coral/20 rounded-xl px-4 py-3">
+                <AlertCircle size={16} className="text-alert-coral shrink-0" />
+                <p className="font-body text-sm text-alert-coral">
+                  Verification failed. Please check your details and try again.
+                </p>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleVerifyIdentity}
+              disabled={verifying || !idValue.trim()}
+              className="w-full flex items-center justify-center gap-2 bg-midnight text-white font-body font-bold text-sm py-3 rounded-xl hover:bg-midnight/90 disabled:opacity-60 transition-colors"
+            >
+              {verifying ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify Identity"
+              )}
+            </button>
+
+            <p className="font-body text-xs text-slate text-center">
+              Your information is encrypted and only used for KYC verification.
+              You can still proceed without verification but may be required to
+              verify before your policy is issued.
+            </p>
+          </div>
+        )}
+      </div>
+
       {slots.map((slot, index) => (
         <DocumentUploadSlot
           key={slot.documentType}

@@ -42,6 +42,13 @@ const KYC_DOC_TYPES = [
   { key: 'other', label: 'Other Supporting Documents' },
 ]
 
+const ID_TYPES = [
+  { value: 'bvn', label: 'BVN', placeholder: 'Enter your 11-digit BVN' },
+  { value: 'nin', label: 'NIN', placeholder: 'Enter your 11-digit NIN' },
+  { value: 'drivers_licence', label: "Driver's Licence", placeholder: 'Enter licence number' },
+  { value: 'passport', label: 'Passport', placeholder: 'Enter passport number' },
+]
+
 function StepIndicator({ current, total }: { current: number; total: number }) {
   return (
     <View style={stepStyles.container}>
@@ -367,6 +374,13 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     occupation: '',
     annualIncome: '',
   })
+  const [idType, setIdType] = useState<'bvn' | 'nin' | 'drivers_licence' | 'passport'>('bvn')
+  const [idValue, setIdValue] = useState('')
+  const [idDob, setIdDob] = useState('')
+  const [idLastName, setIdLastName] = useState('')
+  const [verifying, setVerifying] = useState(false)
+  const [idVerified, setIdVerified] = useState(false)
+  const [idError, setIdError] = useState('')
 
   const requiredDocTypes: string[] = (() => {
     if (!product?.requiredDocuments) return []
@@ -418,6 +432,38 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
 
   function update(key: keyof FormData, value: string) {
     setFormData((prev) => ({ ...prev, [key]: value }))
+  }
+
+  async function handleVerifyIdentity() {
+    if (!idValue.trim()) {
+      Alert.alert('Missing', 'Please enter your ID number.')
+      return
+    }
+    setVerifying(true)
+    setIdError('')
+    try {
+      const payload: Record<string, string> = {
+        verificationType: idType,
+        value: idValue.trim(),
+      }
+      if (idType === 'drivers_licence' || idType === 'passport') {
+        payload.dateOfBirth = idDob
+      }
+      if (idType === 'passport') {
+        payload.lastName = idLastName
+      }
+      const res = await api.post(`/applications/${applicationId}/verify-identity`, payload)
+      if (res.data.verified) {
+        setIdVerified(true)
+      } else {
+        setIdError('Verification failed. Please check your details.')
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message
+      setIdError(Array.isArray(msg) ? msg[0] : (msg || 'Verification failed. Please try again.'))
+    } finally {
+      setVerifying(false)
+    }
   }
 
   async function validateStep(): Promise<boolean> {
@@ -648,7 +694,100 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         }
         return (
           <View>
-            <Text style={styles.reviewTitle}>Upload KYC Documents</Text>
+            <View style={styles.idVerifySection}>
+              <Text style={styles.sectionSubtitle}>Step 1: Verify your identity</Text>
+
+              {idVerified ? (
+                <View style={styles.verifiedBox}>
+                  <Ionicons name="checkmark-circle" size={20} color={Colors.success} />
+                  <Text style={styles.verifiedText}>Identity verified successfully</Text>
+                </View>
+              ) : (
+                <>
+                  <Text style={styles.label}>ID Type</Text>
+                  <View style={styles.idTypePills}>
+                    {ID_TYPES.map((t) => (
+                      <TouchableOpacity
+                        key={t.value}
+                        style={[styles.idTypePill, idType === t.value && styles.idTypePillActive]}
+                        onPress={() => {
+                          setIdType(t.value as 'bvn' | 'nin' | 'drivers_licence' | 'passport')
+                          setIdValue('')
+                          setIdError('')
+                        }}
+                      >
+                        <Text style={[styles.idTypePillText, idType === t.value && styles.idTypePillTextActive]}>
+                          {t.label}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+
+                  <Text style={styles.label}>
+                    {ID_TYPES.find((t) => t.value === idType)?.label} Number
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    value={idValue}
+                    onChangeText={setIdValue}
+                    placeholder={ID_TYPES.find((t) => t.value === idType)?.placeholder}
+                    placeholderTextColor={Colors.textSecondary + '80'}
+                    keyboardType={idType === 'bvn' || idType === 'nin' ? 'numeric' : 'default'}
+                  />
+
+                  {(idType === 'drivers_licence' || idType === 'passport') && (
+                    <>
+                      <Text style={styles.label}>Date of Birth</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={idDob}
+                        onChangeText={setIdDob}
+                        placeholder="YYYY-MM-DD"
+                        placeholderTextColor={Colors.textSecondary + '80'}
+                      />
+                    </>
+                  )}
+
+                  {idType === 'passport' && (
+                    <>
+                      <Text style={styles.label}>Last Name</Text>
+                      <TextInput
+                        style={styles.input}
+                        value={idLastName}
+                        onChangeText={setIdLastName}
+                        placeholder="As on passport"
+                        placeholderTextColor={Colors.textSecondary + '80'}
+                      />
+                    </>
+                  )}
+
+                  {idError !== '' && (
+                    <View style={styles.errorBox}>
+                      <Text style={styles.errorText}>{idError}</Text>
+                    </View>
+                  )}
+
+                  <TouchableOpacity
+                    style={[styles.verifyBtn, (verifying || !idValue.trim()) && styles.verifyBtnDisabled]}
+                    onPress={handleVerifyIdentity}
+                    disabled={verifying || !idValue.trim()}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.verifyBtnText}>
+                      {verifying ? 'Verifying...' : 'Verify Identity'}
+                    </Text>
+                  </TouchableOpacity>
+
+                  <Text style={styles.idNote}>
+                    You can proceed without verification but may be required to verify before your policy is issued.
+                  </Text>
+                </>
+              )}
+            </View>
+
+            <View style={styles.sectionDivider} />
+            <Text style={styles.sectionSubtitle}>Step 2: Upload supporting documents</Text>
+
             <Text style={styles.reviewSubtitle}>
               Upload the required documents to verify your identity and complete your application.
             </Text>
@@ -893,4 +1032,56 @@ const styles = StyleSheet.create({
   },
   noDocsTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
   noDocsText: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  idVerifySection: { marginBottom: 20 },
+  sectionSubtitle: { fontSize: 14, fontWeight: '700', color: Colors.primary, marginBottom: 12 },
+  label: { fontSize: 13, fontWeight: '600', color: Colors.text, marginBottom: 8 },
+  input: {
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: Colors.text,
+    backgroundColor: Colors.white,
+    marginBottom: 16,
+  },
+  idTypePills: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 16 },
+  idTypePill: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+  },
+  idTypePillActive: { borderColor: Colors.primary, backgroundColor: Colors.primaryLight },
+  idTypePillText: { fontSize: 12, color: Colors.textSecondary, fontWeight: '500' },
+  idTypePillTextActive: { color: Colors.primary, fontWeight: '700' },
+  verifiedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.successLight,
+    borderRadius: 12,
+    padding: 12,
+  },
+  verifiedText: { fontSize: 14, fontWeight: '600', color: Colors.success },
+  errorBox: {
+    backgroundColor: Colors.errorLight,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
+  },
+  errorText: { fontSize: 13, color: Colors.error },
+  verifyBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  verifyBtnDisabled: { opacity: 0.6 },
+  verifyBtnText: { fontSize: 14, fontWeight: '700', color: Colors.white },
+  idNote: { fontSize: 11, color: Colors.textSecondary, textAlign: 'center', marginTop: 8 },
+  sectionDivider: { height: 1, backgroundColor: Colors.borderLight, marginVertical: 20 },
 })
