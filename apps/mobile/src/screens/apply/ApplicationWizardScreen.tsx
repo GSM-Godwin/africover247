@@ -577,6 +577,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
   }
 
   async function handleSubmit() {
+    if (!(await validateStep())) return
     setSaving(true)
     try {
       await api.put(`/applications/${applicationId}`, {
@@ -584,6 +585,26 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         stepCompleted: 4,
       })
       setSaving(false)
+
+      if (product?.pricingType === 'quote_based') {
+        Alert.alert(
+          'Application Saved',
+          'Your application details have been saved. You need to request a quote before proceeding to payment. Go to Products → Get a Quote to request your quote.',
+          [
+            {
+              text: 'Request Quote',
+              onPress: () => navigation.navigate('QuoteRequest', { product }),
+            },
+            {
+              text: 'Go to Dashboard',
+              onPress: () => navigation.navigate('Tabs', { screen: 'Home' } as never),
+              style: 'cancel',
+            },
+          ]
+        )
+        return
+      }
+
       navigation.replace('PaymentInitiate', { applicationId, product })
     } catch (err: any) {
       setSaving(false)
@@ -898,6 +919,15 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
               </View>
             ))}
 
+            {product?.pricingType === 'quote_based' ? (
+              <View style={styles.quoteNotice}>
+                <Ionicons name="information-circle-outline" size={20} color={Colors.accent} />
+                <Text style={styles.quoteNoticeText}>
+                  This product requires a quote. After saving your details, you'll be directed to request a quote from AfriGlobal.
+                </Text>
+              </View>
+            ) : null}
+
             <View style={styles.disclaimer}>
               <Ionicons name="information-circle-outline" size={16} color={Colors.textSecondary} />
               <Text style={styles.disclaimerText}>
@@ -1006,6 +1036,21 @@ const styles = StyleSheet.create({
     borderRadius: 10, padding: 12, marginTop: 8, alignItems: 'flex-start',
   },
   disclaimerText: { flex: 1, fontSize: 12, color: Colors.textSecondary, lineHeight: 18 },
+  quoteNotice: {
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: Colors.accentLight,
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    alignItems: 'flex-start',
+  },
+  quoteNoticeText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.accent,
+    lineHeight: 18,
+  },
   docTypeSection: { marginBottom: 20 },
   docTypeHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8,

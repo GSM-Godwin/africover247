@@ -20,7 +20,7 @@ interface Draft {
   status: string
   stepCompleted: number
   createdAt: string
-  product: { id: string; name: string; category: string }
+  product: { id: string; name: string; category: string; pricingType?: string }
 }
 
 export function DraftsScreen({ navigation }: any) {
@@ -77,10 +77,16 @@ export function DraftsScreen({ navigation }: any) {
 
     return (
       <TouchableOpacity
-        onPress={() => navigation.navigate('ApplicationWizard', {
-          applicationId: item.id,
-          product: item.product,
-        })}
+        onPress={() => {
+          if (item.product?.pricingType === 'quote_based') {
+            navigation.navigate('QuoteRequest', { product: item.product })
+          } else {
+            navigation.navigate('ApplicationWizard', {
+              applicationId: item.id,
+              product: item.product,
+            })
+          }
+        }}
         activeOpacity={0.85}
         disabled={isDeleting}
       >

@@ -15,12 +15,18 @@ const SUMMARY_SECTIONS = [
 
 export default function Step4Page() {
   const router = useRouter();
-  const { productId, applicationId, application } = useApplicationWizard();
+  const { productId, applicationId, application, formData } =
+    useApplicationWizard();
 
   function handleProceedToPayment() {
     router.push(`/apply/${productId}/${applicationId}/payment`);
   }
 
+  const isQuoteBased = application?.product?.pricingType === "quote_based";
+  const hasCalculatedPremium = !!(
+    formData?.calculatedPremium || application?.product?.premiumAmount
+  );
+  const needsQuote = isQuoteBased && !hasCalculatedPremium;
   const premium = application?.product?.premiumAmount ?? 0;
 
   return (
@@ -53,13 +59,31 @@ export default function Step4Page() {
         </span>
       </div>
 
-      <WizardActions
-        step={4}
-        productId={productId}
-        applicationId={applicationId}
-        onSubmit={handleProceedToPayment}
-        submitLabel="Proceed to Payment"
-      />
+      {needsQuote ? (
+        <div className="text-center p-6 bg-daybreak/5 border border-daybreak/20 rounded-2xl mt-10">
+          <p className="font-body text-sm text-midnight mb-2 font-semibold">
+            This product requires a quote before payment
+          </p>
+          <p className="font-body text-xs text-slate mb-4">
+            Your application details have been saved. Request a quote and
+            AfriGlobal will respond within 3 business days.
+          </p>
+          <Link
+            href={`/quotes/new?productId=${application?.product?.id}&applicationId=${applicationId}`}
+            className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#D4921A] transition-colors"
+          >
+            Request a Quote
+          </Link>
+        </div>
+      ) : (
+        <WizardActions
+          step={4}
+          productId={productId}
+          applicationId={applicationId}
+          onSubmit={handleProceedToPayment}
+          submitLabel="Proceed to Payment"
+        />
+      )}
     </div>
   );
 }
