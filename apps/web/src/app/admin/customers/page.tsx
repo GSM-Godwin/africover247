@@ -284,7 +284,7 @@ export default function AdminCustomersPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate/10 rounded-2xl overflow-hidden">
+      <div className="bg-white border border-slate/10 rounded-2xl overflow-x-auto">
         {loading ? (
           <div className="p-12 text-center">
             <div className="w-8 h-8 border-2 border-daybreak border-t-transparent rounded-full animate-spin mx-auto" />
