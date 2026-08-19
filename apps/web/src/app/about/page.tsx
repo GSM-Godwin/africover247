@@ -1,364 +1,314 @@
-import Image from "next/image";
-import Link from "next/link";
-import {
-  Shield,
-  Users,
-  Award,
-  TrendingUp,
-  CheckCircle,
-} from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
+import type { Metadata } from "next";
 
-export const metadata = {
-  title: "About Us",
+export const metadata: Metadata = {
+  title: "About Us — AfriCover247 by AfriGlobal Insurance Brokers",
   description:
-    "Learn about AfriGlobal Insurance Brokers Limited and the AfriCover247 digital insurance portal.",
+    "AfriGlobal Insurance Brokers Limited is a NAICOM-licensed insurance brokerage committed to providing innovative insurance solutions across Nigeria.",
 };
+
+const BOARD = [
+  {
+    name: "Sylverius Okoli",
+    title: "Chairman",
+    bio: "Sylverius Okoli has held various top management positions in the Oil sector and is a former Director of a number of Shell companies in Africa. He was Managing Director of Shell Sierra Leone and National Oil & Chemical Marketing Plc (now Conoil Plc) and is currently the Executive Chairman of West Africa Bitumen Emulsion Co. Limited (WABECO) and Safecon Sierra Leone Limited.",
+  },
+  {
+    name: "Casmir Azubuike",
+    title: "MD/CEO",
+    bio: "Casmir Chibuzor Azubuike is an insurance technocrat with over 20 years experience in insurance underwriting, marketing and insurance broking. He is a graduate of Insurance & Actuarial Science and an Associate of the Chartered Insurance Institute of Nigeria (ACIIN). He holds an MBA in Management Technology and is a Certified Alumni of Cornell University USA in Strategic Leadership.",
+  },
+  {
+    name: "Sulaiman Adedokun",
+    title: "Non-Executive Director",
+    bio: "Sulaiman Adedokun started his career with Security Swaps Limited and later Nigerian Stockbrokers Limited. He pioneered the establishment of Meristem Wealth Management Ltd, a wholly owned subsidiary of Meristem Securities Ltd, and currently manages the Wealth Management Firm.",
+  },
+  {
+    name: "Solomon Egbeleye",
+    title: "Executive Director",
+    bio: "Solomon Egbeleye is an experienced financial expert with skill competence in Finance, Accounting, Auditing and Investment. He has over 25 years cognate working experience across Trading, Publishing, Manufacturing, Oil & Gas and Insurance. He is a Fellow of the Institute of Chartered Accountants of Nigeria.",
+  },
+];
+
+const MANAGEMENT = [
+  {
+    name: "Casmir Azubuike",
+    title: "MD/CEO",
+    bio: "Insurance technocrat with over 20 years experience in insurance underwriting, marketing and broking. Associate of the Chartered Insurance Institute of Nigeria (ACIIN), MBA in Management Technology, and Certified Alumni of Cornell University USA in Strategic Leadership.",
+  },
+  {
+    name: "Solomon Egbeleye",
+    title: "Executive Director",
+    bio: "Experienced financial expert with over 25 years experience across Trading, Publishing, Manufacturing, Oil & Gas and Insurance. Fellow of the Institute of Chartered Accountants of Nigeria.",
+  },
+  {
+    name: "Motunrayo Fagbemi",
+    title: "Head, Marketing",
+    bio: "Graduate of Business Administration and Management with a Master's Degree in Human Resources. Over 13 years experience in marketing and customer service in the insurance broking industry.",
+  },
+  {
+    name: "Ubu Oluchukwu",
+    title: "Head, South-East Zone",
+    bio: "Associate member of the Nigeria Institute of Management Chartered with over 10 years experience in business development, client advisory services, technical operations and claims handling across multiple insurance firms.",
+  },
+];
+
+const GOALS = [
+  "Customer satisfaction through quality services",
+  "Upholding the highest level of integrity in every aspect of our business",
+  "Meet and exceed client's expectations",
+  "Teamwork and harmony of purpose",
+  "Training and continuous development",
+  "Maintain a conducive work environment",
+];
+
+const SERVICES = [
+  "Risk Identification, Evaluation & Control",
+  "Evaluation of Underwriters",
+  "Negotiation with Underwriters",
+  "Risk placement and Review of Policy Documents",
+  "Speedy Claims Processing and Recovery",
+  "Insurance Portfolio Management and Advisory Services",
+  "Alternative Risk Management and Consultancy",
+];
+
+const OFFICES = [
+  {
+    city: "Head Office — Lagos",
+    address: "141c Oshodi/Gbagada Expressway, Anthony, Lagos, Nigeria",
+    phone: "08101315330 / 09063675032",
+    email: "info@afriglobal.com.ng",
+  },
+  {
+    city: "Abuja Office",
+    address:
+      "Polaris Bank Building, 3 Kaura Namoda Street Area, Garki FCT, Abuja, Nigeria",
+    phone: "08033000728",
+    email: "info@afriglobal.com.ng",
+  },
+  {
+    city: "Port Harcourt Office",
+    address:
+      "Polaris Bank Building, 204 Aba Road, Beside Mr. Biggs, Rumuola, Port Harcourt",
+    phone: "08037605330",
+    email: "info@afriglobal.com.ng",
+  },
+];
 
 export default function AboutPage() {
   return (
     <>
       <Navbar />
-
-      <section className="bg-midnight text-white py-20 px-6 pt-[130px]">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex bg-white rounded-2xl px-8 py-5 mb-8">
-            <Image
-              src="/afriglobal_logo.png"
-              alt="AfriGlobal Insurance Brokers"
-              width={220}
-              height={70}
-              className="h-16 w-auto object-contain"
-            />
+      <main className="pt-16 min-h-screen">
+        <section className="bg-midnight text-white py-20 px-6 pt-[130px]">
+          <div className="max-w-3xl mx-auto text-center">
+            <p className="font-body text-daybreak text-sm font-semibold uppercase tracking-widest mb-3">
+              About Us
+            </p>
+            <h1 className="font-display font-bold text-4xl sm:text-5xl mb-6">
+              In keeping with international best practice
+            </h1>
+            <p className="font-body text-white/70 text-lg max-w-2xl mx-auto leading-relaxed">
+              We are always one step ahead to give our customers the unique
+              advantage of mitigating against risk using the best people,
+              process and technology.
+            </p>
           </div>
-          <h1 className="font-display font-bold text-4xl sm:text-5xl mb-6 leading-tight">
-            Protecting What Matters Most to{" "}
-            <span className="text-daybreak">Nigerians</span>
-          </h1>
-          <p className="font-body text-white/70 text-lg max-w-2xl mx-auto leading-relaxed">
-            AfriGlobal Insurance Brokers Limited is a NAICOM-licensed insurance
-            brokerage firm dedicated to making quality insurance accessible to
-            every Nigerian — individuals, families, and businesses alike.
-          </p>
-        </div>
-      </section>
+        </section>
 
-      <section className="bg-daybreak py-14 px-6">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-8">
-          {[
-            { value: "20+", label: "Insurance Products" },
-            { value: "NAICOM", label: "Licensed & Regulated" },
-            { value: "24/7", label: "Digital Access" },
-            { value: "100%", label: "Secure Payments" },
-          ].map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="font-display font-bold text-midnight text-4xl mb-1">
-                {stat.value}
-              </p>
-              <p className="font-body text-midnight/70 text-sm font-medium">
-                {stat.label}
-              </p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <section className="py-20 px-6 bg-paper">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <p className="font-body text-daybreak text-sm font-semibold uppercase tracking-widest mb-4">
-                Who We Are
-              </p>
-              <h2 className="font-display font-bold text-midnight text-3xl sm:text-4xl mb-6 leading-tight">
-                AfriGlobal Insurance Brokers Limited
+        <section className="py-16 px-6 bg-paper">
+          <div className="max-w-[1140px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="bg-white rounded-2xl border border-slate/10 p-8">
+              <h2 className="font-display font-bold text-midnight text-2xl mb-4">
+                Our Mission
               </h2>
-              <p className="font-body text-slate text-base leading-relaxed mb-4">
-                AfriGlobal Insurance Brokers Limited is a registered insurance
-                brokerage firm licensed by the National Insurance Commission
-                (NAICOM) of Nigeria. We act as intermediaries between our
-                clients and leading underwriting companies, ensuring our clients
-                get the best possible coverage at competitive rates.
+              <p className="font-body text-slate text-base leading-relaxed">
+                To continuously provide innovative solutions to suit the current
+                and future needs of our customers, thereby increasing
+                stakeholders&apos; value.
               </p>
-              <p className="font-body text-slate text-base leading-relaxed mb-6">
-                Through our digital platform, AfriCover247, we have brought the
-                insurance experience into the 21st century — making it possible
-                for anyone to browse, apply for, and manage their insurance
-                policies entirely online, without visiting an office.
-              </p>
-              <div className="space-y-3">
-                {[
-                  "NAICOM Licensed Insurance Broker",
-                  "Access to 50+ underwriting partners",
-                  "Digital-first insurance experience",
-                  "Instant e-policy certificate delivery",
-                ].map((item) => (
-                  <div key={item} className="flex items-center gap-3">
-                    <CheckCircle
-                      size={18}
-                      className="text-cover-green shrink-0"
-                    />
-                    <p className="font-body text-slate text-sm">{item}</p>
-                  </div>
-                ))}
-              </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                {
-                  icon: Shield,
-                  title: "Licensed & Regulated",
-                  desc: "Fully licensed by NAICOM and operating within Nigeria's regulatory framework.",
-                  color: "bg-midnight/10",
-                  iconColor: "text-midnight",
-                },
-                {
-                  icon: Users,
-                  title: "Customer First",
-                  desc: "Every product, every process, every decision is made with our clients in mind.",
-                  color: "bg-daybreak/10",
-                  iconColor: "text-daybreak",
-                },
-                {
-                  icon: Award,
-                  title: "Quality Partners",
-                  desc: "We work only with reputable, NAICOM-licensed underwriting companies.",
-                  color: "bg-cover-green/10",
-                  iconColor: "text-cover-green",
-                },
-                {
-                  icon: TrendingUp,
-                  title: "Digital Innovation",
-                  desc: "AfriCover247 is our commitment to making insurance simple and accessible.",
-                  color: "bg-info/10",
-                  iconColor: "text-info",
-                },
-              ].map((card) => (
+            <div className="bg-white rounded-2xl border border-slate/10 p-8">
+              <h2 className="font-display font-bold text-midnight text-2xl mb-4">
+                Our Vision
+              </h2>
+              <p className="font-body text-slate text-base leading-relaxed">
+                To be the preferred Insurance Brokers in Nigeria in the
+                provision of insurance risk advisory and intermediation
+                services.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 px-6 bg-white">
+          <div className="max-w-[1140px] mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="font-display font-bold text-midnight text-3xl mb-4">
+                Our Role as Insurance Brokers
+              </h2>
+              <p className="font-body text-slate text-base mb-6 leading-relaxed">
+                As Insurance Professionals, we intermediate between buyers of
+                insurance products and insurance underwriters (insurance
+                companies).
+              </p>
+              <ul className="space-y-3">
+                {SERVICES.map((service) => (
+                  <li key={service} className="flex items-start gap-3">
+                    <span className="w-5 h-5 rounded-full bg-daybreak/20 flex items-center justify-center shrink-0 mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-daybreak" />
+                    </span>
+                    <span className="font-body text-slate text-sm leading-relaxed">
+                      {service}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="bg-midnight rounded-2xl p-8">
+              <h3 className="font-display font-bold text-white text-xl mb-6">
+                Our Goals
+              </h3>
+              <ul className="space-y-4">
+                {GOALS.map((goal) => (
+                  <li key={goal} className="flex items-start gap-3">
+                    <span className="text-daybreak mt-0.5 shrink-0">✓</span>
+                    <span className="font-body text-white/80 text-sm leading-relaxed">
+                      {goal}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <section className="py-16 px-6 bg-paper">
+          <div className="max-w-[1140px] mx-auto">
+            <h2 className="font-display font-bold text-midnight text-3xl mb-2 text-center">
+              Meet the Board
+            </h2>
+            <p className="font-body text-slate text-base text-center mb-10">
+              Experienced leaders guiding AfriGlobal&apos;s mission and vision
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {BOARD.map((member) => (
                 <div
-                  key={card.title}
-                  className="bg-white rounded-2xl p-5 shadow-sm"
+                  key={member.name}
+                  className="bg-white rounded-2xl border border-slate/10 p-6"
                 >
-                  <div
-                    className={`w-10 h-10 rounded-xl ${card.color} flex items-center justify-center mb-4`}
-                  >
-                    <card.icon size={20} className={card.iconColor} />
+                  <div className="w-14 h-14 rounded-full bg-midnight/10 flex items-center justify-center mb-4">
+                    <span className="font-display font-bold text-midnight text-xl">
+                      {member.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </span>
                   </div>
-                  <h3 className="font-body font-bold text-midnight text-sm mb-2">
-                    {card.title}
+                  <h3 className="font-body font-bold text-midnight text-base mb-0.5">
+                    {member.name}
                   </h3>
-                  <p className="font-body text-slate text-xs leading-relaxed">
-                    {card.desc}
+                  <p className="font-body text-daybreak text-xs font-semibold uppercase tracking-wide mb-3">
+                    {member.title}
+                  </p>
+                  <p className="font-body text-slate text-sm leading-relaxed">
+                    {member.bio}
                   </p>
                 </div>
               ))}
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-20 px-6 bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
-            <div className="bg-midnight rounded-2xl p-8">
-              <div className="w-12 h-12 bg-daybreak rounded-xl flex items-center justify-center mb-6">
-                <Shield size={24} className="text-midnight" />
-              </div>
-              <h3 className="font-display font-bold text-white text-2xl mb-4">
-                Our Mission
-              </h3>
-              <p className="font-body text-white/70 text-base leading-relaxed">
-                To democratise access to quality insurance in Nigeria by
-                providing a transparent, digital-first platform where every
-                individual and business can protect what matters most — simply,
-                quickly, and affordably.
-              </p>
-            </div>
-            <div className="bg-daybreak rounded-2xl p-8">
-              <div className="w-12 h-12 bg-midnight rounded-xl flex items-center justify-center mb-6">
-                <TrendingUp size={24} className="text-white" />
-              </div>
-              <h3 className="font-display font-bold text-midnight text-2xl mb-4">
-                Our Vision
-              </h3>
-              <p className="font-body text-midnight/70 text-base leading-relaxed">
-                To become Nigeria&apos;s most trusted digital insurance platform
-                — the first choice for Nigerians seeking reliable, affordable,
-                and accessible insurance coverage for every stage of life and
-                business.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section className="py-20 px-6 bg-paper">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <p className="font-body text-daybreak text-sm font-semibold uppercase tracking-widest mb-3">
-              Why Choose Us
-            </p>
-            <h2 className="font-display font-bold text-midnight text-3xl sm:text-4xl">
-              The AfriCover247 Difference
+        <section className="py-16 px-6 bg-white">
+          <div className="max-w-[1140px] mx-auto">
+            <h2 className="font-display font-bold text-midnight text-3xl mb-2 text-center">
+              Management Team
             </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: "No Office Visits",
-                desc: "Browse, apply, and receive your policy entirely online. No paperwork, no queues.",
-              },
-              {
-                title: "Instant Policy Delivery",
-                desc: "Your e-policy certificate is generated and emailed the moment your payment clears.",
-              },
-              {
-                title: "Transparent Pricing",
-                desc: "See exactly what you're paying and why. No hidden fees, no surprises.",
-              },
-              {
-                title: "Secure Payments",
-                desc: "All payments processed by Monnify. We never store your card details.",
-              },
-              {
-                title: "Real-Time Claims Tracking",
-                desc: "File a claim and track its status in real time from your dashboard.",
-              },
-              {
-                title: "Expert Broker Support",
-                desc: "AfriGlobal's team of licensed brokers is available to guide you at every step.",
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="bg-white rounded-2xl p-6 border border-slate/10"
-              >
-                <h3 className="font-body font-bold text-midnight text-base mb-3">
-                  {item.title}
-                </h3>
-                <p className="font-body text-slate text-sm leading-relaxed">
-                  {item.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 px-6 bg-midnight">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="font-display font-bold text-white text-2xl mb-4">
-            Fully Licensed and Regulated
-          </h2>
-          <p className="font-body text-white/60 text-base leading-relaxed mb-8">
-            AfriGlobal Insurance Brokers Limited operates under a valid license
-            issued by the National Insurance Commission (NAICOM) — the apex
-            regulatory authority for insurance in Nigeria. All our products and
-            operations comply with Nigerian insurance law.
-          </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            {[
-              "NAICOM Licensed",
-              "NDPA Compliant",
-              "Secured by Monnify",
-              "Protected by Cloudflare",
-            ].map((badge) => (
-              <div
-                key={badge}
-                className="bg-white/10 rounded-xl px-5 py-3"
-              >
-                <p className="font-body text-white text-sm font-semibold">
-                  {badge}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="py-16 px-6 bg-white">
-        <div className="max-w-[1140px] mx-auto">
-          <h2 className="font-display font-bold text-midnight text-3xl mb-10 text-center">
-            Our Offices
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                city: "Lagos (Head Office)",
-                address:
-                  "141c Oshodi/Gbagada Expressway, Anthony, Lagos, Nigeria",
-                phone: "08101315330 / 09063675032",
-              },
-              {
-                city: "Abuja",
-                address:
-                  "Polaris Bank Building, 3 Kaura Namoda Street Area, Garki FCT, Abuja, Nigeria",
-                phone: "08033000728",
-              },
-              {
-                city: "Port Harcourt",
-                address:
-                  "Polaris Bank Building, 204 Aba Road, Beside Mr. Biggs, Rumuola, Port Harcourt",
-                phone: "08037605330",
-              },
-            ].map((office) => (
-              <div
-                key={office.city}
-                className="bg-paper rounded-2xl p-6 border border-slate/10"
-              >
-                <h3 className="font-body font-bold text-midnight text-base mb-3">
-                  {office.city}
-                </h3>
-                <p className="font-body text-slate text-sm mb-2 leading-relaxed">
-                  {office.address}
-                </p>
-                <a
-                  href={`tel:+234${office.phone.split("/")[0].trim().slice(1)}`}
-                  className="font-body text-sm text-midnight font-semibold hover:text-daybreak transition-colors"
+            <p className="font-body text-slate text-base text-center mb-10">
+              The team driving AfriGlobal&apos;s day-to-day operations
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {MANAGEMENT.map((member) => (
+                <div
+                  key={member.name + member.title}
+                  className="bg-paper rounded-2xl border border-slate/10 p-6"
                 >
-                  {office.phone}
-                </a>
-              </div>
-            ))}
+                  <div className="w-14 h-14 rounded-full bg-daybreak/10 flex items-center justify-center mb-4">
+                    <span className="font-display font-bold text-daybreak text-xl">
+                      {member.name
+                        .split(" ")
+                        .map((n) => n[0])
+                        .join("")
+                        .slice(0, 2)}
+                    </span>
+                  </div>
+                  <h3 className="font-body font-bold text-midnight text-base mb-0.5">
+                    {member.name}
+                  </h3>
+                  <p className="font-body text-daybreak text-xs font-semibold uppercase tracking-wide mb-3">
+                    {member.title}
+                  </p>
+                  <p className="font-body text-slate text-sm leading-relaxed">
+                    {member.bio}
+                  </p>
+                </div>
+              ))}
+            </div>
           </div>
-          <p className="font-body text-sm text-slate text-center mt-8">
-            Email:{" "}
-            <a
-              href="mailto:info@afriglobal.com.ng"
-              className="text-midnight font-semibold hover:text-daybreak transition-colors"
-            >
-              info@afriglobal.com.ng
-            </a>
-          </p>
-        </div>
-      </section>
+        </section>
 
-      <section className="py-20 px-6 bg-paper">
-        <div className="max-w-2xl mx-auto text-center">
-          <h2 className="font-display font-bold text-midnight text-3xl mb-4">
-            Ready to Get Covered?
-          </h2>
-          <p className="font-body text-slate text-base mb-8">
-            Browse our full range of insurance products and get covered in
-            minutes.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/products"
-              className="bg-daybreak text-midnight font-body font-bold text-base px-8 py-4 rounded-xl hover:bg-[#C4700E] transition-colors"
-            >
-              Browse Products
-            </Link>
-            <Link
-              href="/contact"
-              className="border border-midnight text-midnight font-body font-semibold text-base px-8 py-4 rounded-xl hover:bg-midnight hover:text-white transition-colors"
-            >
-              Contact Us
-            </Link>
+        <section className="py-16 px-6 bg-midnight">
+          <div className="max-w-[1140px] mx-auto">
+            <h2 className="font-display font-bold text-white text-3xl mb-2 text-center">
+              Our Offices
+            </h2>
+            <p className="font-body text-white/60 text-base text-center mb-10">
+              Visit us at any of our offices across Nigeria
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {OFFICES.map((office) => (
+                <div
+                  key={office.city}
+                  className="bg-white/5 border border-white/10 rounded-2xl p-6"
+                >
+                  <h3 className="font-body font-bold text-white text-base mb-4">
+                    {office.city}
+                  </h3>
+                  <p className="font-body text-white/70 text-sm leading-relaxed mb-3">
+                    {office.address}
+                  </p>
+                  <a
+                    href={`tel:+234${office.phone.split("/")[0].trim().replace(/^0/, "")}`}
+                    className="block font-body text-daybreak text-sm font-semibold hover:text-white transition-colors mb-1"
+                  >
+                    {office.phone}
+                  </a>
+                  <a
+                    href={`mailto:${office.email}`}
+                    className="block font-body text-white/60 text-sm hover:text-white transition-colors"
+                  >
+                    {office.email}
+                  </a>
+                </div>
+              ))}
+            </div>
+            <p className="font-body text-white/40 text-xs text-center mt-8">
+              Download our company profile:{" "}
+              <a
+                href="https://afriglobal.com.ng/img/company.pdf"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-daybreak hover:text-white transition-colors"
+              >
+                afriglobal.com.ng/img/company.pdf
+              </a>
+            </p>
           </div>
-        </div>
-      </section>
-
+        </section>
+      </main>
       <Footer />
     </>
   );
