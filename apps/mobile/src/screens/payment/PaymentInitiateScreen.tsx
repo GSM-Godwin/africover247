@@ -35,6 +35,8 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
 
   const calculatedPremium = appData?.formData?.calculatedPremium
     ? Number(appData.formData.calculatedPremium)
+    : appData?.formData?.quotedPremium
+    ? Number(appData.formData.quotedPremium)
     : null
 
   const annualAmount = product?.premiumAmount

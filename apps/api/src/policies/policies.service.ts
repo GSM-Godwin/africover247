@@ -183,6 +183,8 @@ export class PoliciesService {
     const formData = application.formData as Record<string, any> | null;
     const calculatedPremium = formData?.calculatedPremium
       ? Number(formData.calculatedPremium)
+      : formData?.quotedPremium
+      ? Number(formData.quotedPremium)
       : null;
 
     const premiumAmount = application.product.premiumAmount != null
