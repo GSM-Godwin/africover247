@@ -35,7 +35,7 @@ function AssetModal({
   visible: boolean
   product: Product
   onClose: () => void
-  onConfirm: (values: Record<string, string>, premium: number) => void
+  onConfirm: (values: Record<string, string>, premium?: number) => void
 }) {
   const [values, setValues] = useState<Record<string, string>>({})
   const [premium, setPremium] = useState<number | null>(null)
@@ -95,7 +95,7 @@ function AssetModal({
   function handleConfirm() {
     const missing = fields.filter((f) => f.required && !values[f.key]).map((f) => f.label)
     if (missing.length > 0) return
-    onConfirm(values, premium || 0)
+    onConfirm(values, premium ?? undefined)
   }
 
   return (
@@ -533,7 +533,7 @@ export function ProductDetailScreen({ route, navigation }: any) {
           onClose={() => setShowAssetModal(false)}
           onConfirm={(values, premium) => {
             setShowAssetModal(false)
-            handleGetCovered(values, premium || 0)
+            handleGetCovered(values, premium)
           }}
         />
       )}

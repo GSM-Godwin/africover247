@@ -128,6 +128,7 @@ export function AssetDetailsModal({
       const res = await api.post("/applications", {
         productId: product.id,
         assetDetails: values,
+        ...(calculatedPremium ? { calculatedPremium } : {}),
       });
 
       setLoading(false);
