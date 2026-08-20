@@ -362,14 +362,28 @@ model AuditLog {
 }
 
 model ContactMessage {
-  id        String   @id @default(uuid())
+  id        String         @id @default(uuid())
   name      String
   email     String
   phone     String?
   subject   String
   message   String
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
+  read      Boolean        @default(false)
+  replied   Boolean        @default(false)
+  repliedAt DateTime?
+  createdAt DateTime       @default(now())
+  replies   ContactReply[]
+}
+
+model ContactReply {
+  id        String         @id @default(uuid())
+  messageId String
+  adminName String
+  content   String
+  sentAt    DateTime       @default(now())
+  message   ContactMessage @relation(fields: [messageId], references: [id])
+
+  @@index([messageId])
 }
 
 model SearchLog {

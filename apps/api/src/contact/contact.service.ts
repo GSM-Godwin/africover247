@@ -57,6 +57,14 @@ export class ContactService {
   async findAll() {
     return this.prisma.contactMessage.findMany({
       orderBy: { createdAt: 'desc' },
+      include: { replies: { orderBy: { sentAt: 'asc' } } },
+    })
+  }
+
+  async findOne(id: string) {
+    return this.prisma.contactMessage.findUnique({
+      where: { id },
+      include: { replies: { orderBy: { sentAt: 'asc' } } },
     })
   }
 
@@ -69,7 +77,10 @@ export class ContactService {
   }
 
   async replyToMessage(id: string, replyMessage: string, adminName: string) {
-    const message = await this.prisma.contactMessage.findUnique({ where: { id } })
+    const message = await this.prisma.contactMessage.findUnique({
+      where: { id },
+      include: { replies: { orderBy: { sentAt: 'asc' } } },
+    })
     if (!message) throw new NotFoundException('Message not found')
 
     await this.emailService.sendEmail({
@@ -82,9 +93,7 @@ export class ContactService {
             <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0; font-size: 13px;">AfriGlobal Insurance Brokers Limited</p>
           </div>
           <div style="padding: 32px;">
-            <p style="color: #5C6478; font-size: 13px; margin-bottom: 24px;">
-              Re: ${message.subject}
-            </p>
+            <p style="color: #5C6478; font-size: 13px; margin-bottom: 24px;">Re: ${message.subject}</p>
             <p style="color: #0d1b2e; font-size: 15px; margin-bottom: 8px;">Dear ${message.name},</p>
             <div style="background: #F7F8FA; border-left: 4px solid #15679b; padding: 16px 20px; border-radius: 4px; margin: 20px 0;">
               <p style="color: #0d1b2e; font-size: 14px; line-height: 1.7; margin: 0; white-space: pre-wrap;">${replyMessage}</p>
@@ -97,9 +106,7 @@ export class ContactService {
             <hr style="border: none; border-top: 1px solid #E2E8F0; margin: 24px 0;" />
             <p style="color: #5C6478; font-size: 12px;">
               This is a reply to your enquiry sent on ${new Date(message.createdAt).toLocaleDateString('en-NG')}.
-              If you need further assistance, contact us at 
-              <a href="mailto:info@afriglobal.com.ng" style="color: #15679b;">info@afriglobal.com.ng</a>
-              or call 08101315330.
+              Contact us at <a href="mailto:info@afriglobal.com.ng" style="color: #15679b;">info@afriglobal.com.ng</a> or call 08101315330.
             </p>
           </div>
           <div style="background: #F0F4F8; padding: 16px; text-align: center;">
@@ -111,9 +118,17 @@ export class ContactService {
       `,
     })
 
+    await this.prisma.contactReply.create({
+      data: {
+        messageId: id,
+        adminName,
+        content: replyMessage,
+      },
+    })
+
     await this.prisma.contactMessage.update({
       where: { id },
-      data: { read: true },
+      data: { read: true, replied: true, repliedAt: new Date() },
     })
 
     return { success: true }

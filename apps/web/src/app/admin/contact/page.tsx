@@ -6,6 +6,13 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 
+interface ContactReply {
+  id: string;
+  adminName: string;
+  content: string;
+  sentAt: string;
+}
+
 interface ContactMessage {
   id: string;
   name: string;
@@ -14,7 +21,10 @@ interface ContactMessage {
   subject: string;
   message: string;
   read: boolean;
+  replied: boolean;
+  repliedAt: string | null;
   createdAt: string;
+  replies: ContactReply[];
 }
 
 export default function AdminContactPage() {
@@ -23,9 +33,8 @@ export default function AdminContactPage() {
   const [selected, setSelected] = useState<ContactMessage | null>(null);
   const [showReply, setShowReply] = useState(false);
   const [replyMessage, setReplyMessage] = useState("");
-  const [adminName, setAdminName] = useState("");
   const [sending, setSending] = useState(false);
-  const [replySent, setReplySent] = useState<string | null>(null);
+  const [replySent, setReplySent] = useState(false);
 
   useEffect(() => {
     api
@@ -39,7 +48,7 @@ export default function AdminContactPage() {
     setSelected(msg);
     setShowReply(false);
     setReplyMessage("");
-    setReplySent(null);
+    setReplySent(false);
     if (!msg.read) {
       await api.patch(`/contact/${msg.id}/read`);
       setMessages((prev) =>
@@ -49,16 +58,24 @@ export default function AdminContactPage() {
   }
 
   async function handleSendReply() {
-    if (!selected || !replyMessage.trim() || !adminName.trim()) return;
+    if (!selected || !replyMessage.trim()) return;
     setSending(true);
     try {
       await api.post(`/contact/${selected.id}/reply`, {
         message: replyMessage,
-        adminName,
       });
-      setReplySent(selected.email);
+      setReplySent(true);
       setShowReply(false);
       setReplyMessage("");
+      const res = await api.get(`/contact/${selected.id}`);
+      setSelected(res.data);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === selected.id
+            ? { ...m, replied: true, replies: res.data.replies }
+            : m,
+        ),
+      );
     } catch {
       toast.error("Could not send reply. Please try again.");
     } finally {
@@ -118,9 +135,17 @@ export default function AdminContactPage() {
                         {new Date(msg.createdAt).toLocaleDateString("en-NG")}
                       </p>
                     </div>
-                    <p className="font-body text-xs text-slate truncate">
-                      {msg.subject}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      <p className="font-body text-xs text-slate truncate flex-1">
+                        {msg.subject}
+                      </p>
+                      {msg.replied && (
+                        <span className="shrink-0 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cover-green/10 text-cover-green text-xs font-semibold">
+                          <CheckCircle size={10} />
+                          Replied
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </button>
@@ -128,14 +153,14 @@ export default function AdminContactPage() {
           )}
         </div>
 
-        <div className="bg-white border border-slate/10 rounded-xl p-6">
+        <div className="bg-white border border-slate/10 rounded-xl p-6 min-h-[32rem]">
           {selected ? (
-            <div>
-              <div className="mb-6 pb-6 border-b border-slate/10">
-                <h2 className="font-body font-bold text-midnight text-lg mb-4">
+            <div className="flex flex-col h-full">
+              <div className="mb-5 pb-5 border-b border-slate/10">
+                <h2 className="font-body font-bold text-midnight text-lg mb-3">
                   {selected.subject}
                 </h2>
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {[
                     { label: "From", value: selected.name },
                     { label: "Email", value: selected.email },
@@ -158,51 +183,89 @@ export default function AdminContactPage() {
                   ))}
                 </div>
               </div>
-              <p className="font-body text-sm text-midnight leading-relaxed whitespace-pre-wrap">
-                {selected.message}
-              </p>
-              {replySent ? (
-                <div className="mt-6 flex items-center gap-2 bg-cover-green/10 border border-cover-green/20 rounded-xl px-4 py-3">
-                  <CheckCircle size={16} className="text-cover-green shrink-0" />
-                  <p className="font-body text-sm text-cover-green">
-                    Reply sent to {replySent}
+
+              <div className="flex-1 space-y-4 overflow-y-auto mb-5 max-h-96">
+                <div className="bg-slate/5 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-7 h-7 rounded-full bg-midnight/10 flex items-center justify-center">
+                      <span className="font-body text-xs font-bold text-midnight">
+                        {selected.name.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="font-body text-xs font-semibold text-midnight">
+                        {selected.name}
+                      </p>
+                      <p className="font-body text-xs text-slate">
+                        {new Date(selected.createdAt).toLocaleString("en-NG")}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="font-body text-sm text-midnight leading-relaxed whitespace-pre-wrap">
+                    {selected.message}
                   </p>
                 </div>
-              ) : showReply ? (
-                <div className="mt-6 space-y-4 bg-slate/5 border border-slate/10 rounded-xl p-5">
-                  <h3 className="font-body font-semibold text-midnight text-sm">
+
+                {selected.replies?.map((reply) => (
+                  <div
+                    key={reply.id}
+                    className="bg-daybreak/5 border border-daybreak/20 rounded-xl p-4"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-7 h-7 rounded-full bg-daybreak/20 flex items-center justify-center">
+                        <span className="font-body text-xs font-bold text-daybreak">
+                          {reply.adminName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-body text-xs font-semibold text-midnight">
+                          {reply.adminName}{" "}
+                          <span className="text-daybreak font-normal">
+                            (AfriGlobal)
+                          </span>
+                        </p>
+                        <p className="font-body text-xs text-slate">
+                          {new Date(reply.sentAt).toLocaleString("en-NG")}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="font-body text-sm text-midnight leading-relaxed whitespace-pre-wrap">
+                      {reply.content}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {replySent && (
+                <div className="flex items-center gap-2 bg-cover-green/10 border border-cover-green/20 rounded-xl px-4 py-3 mb-3">
+                  <CheckCircle
+                    size={16}
+                    className="text-cover-green shrink-0"
+                  />
+                  <p className="font-body text-sm text-cover-green">
+                    Reply sent successfully
+                  </p>
+                </div>
+              )}
+
+              {showReply ? (
+                <div className="space-y-3 bg-slate/5 border border-slate/10 rounded-xl p-4">
+                  <p className="font-body text-xs font-semibold text-midnight uppercase tracking-wide">
                     Reply to {selected.name}
-                  </h3>
-                  <div className="bg-slate/5 rounded-lg px-3 py-2 border border-slate/10">
+                  </p>
+                  <div className="bg-white rounded-lg px-3 py-2 border border-slate/10">
                     <p className="font-body text-xs text-slate">Subject</p>
                     <p className="font-body text-sm text-midnight font-medium">
                       Re: {selected.subject}
                     </p>
                   </div>
-                  <div>
-                    <label className="block font-body text-xs text-slate mb-1.5">
-                      Your name
-                    </label>
-                    <input
-                      type="text"
-                      value={adminName}
-                      onChange={(e) => setAdminName(e.target.value)}
-                      placeholder="e.g. Casmir Azubuike"
-                      className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-body text-xs text-slate mb-1.5">
-                      Message
-                    </label>
-                    <textarea
-                      rows={6}
-                      value={replyMessage}
-                      onChange={(e) => setReplyMessage(e.target.value)}
-                      placeholder={`Dear ${selected.name},\n\nThank you for reaching out...`}
-                      className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak resize-none"
-                    />
-                  </div>
+                  <textarea
+                    rows={5}
+                    value={replyMessage}
+                    onChange={(e) => setReplyMessage(e.target.value)}
+                    placeholder={`Dear ${selected.name},\n\nThank you for reaching out...`}
+                    className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak resize-none"
+                  />
                   <div className="flex gap-3">
                     <button
                       type="button"
@@ -214,9 +277,7 @@ export default function AdminContactPage() {
                     <button
                       type="button"
                       onClick={handleSendReply}
-                      disabled={
-                        sending || !replyMessage.trim() || !adminName.trim()
-                      }
+                      disabled={sending || !replyMessage.trim()}
                       className="flex-1 bg-daybreak text-midnight font-body font-bold text-sm py-2.5 rounded-xl hover:bg-[#C4700E] disabled:opacity-60 transition-colors flex items-center justify-center gap-2"
                     >
                       {sending ? (
@@ -237,10 +298,10 @@ export default function AdminContactPage() {
                 <button
                   type="button"
                   onClick={() => setShowReply(true)}
-                  className="inline-flex items-center gap-2 mt-6 bg-daybreak text-midnight font-body font-bold text-sm px-4 py-2.5 rounded-lg hover:bg-[#C4700E] transition-colors"
+                  className="inline-flex items-center gap-2 bg-daybreak text-midnight font-body font-bold text-sm px-4 py-2.5 rounded-lg hover:bg-[#C4700E] transition-colors"
                 >
                   <Mail size={14} />
-                  Reply via Email
+                  Reply
                 </button>
               )}
             </div>
