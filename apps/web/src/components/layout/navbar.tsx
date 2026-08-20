@@ -105,17 +105,14 @@ export function Navbar() {
     const links: NavLinkItem[] = [
       { label: "Home", href: "/" },
       { label: "Products", href: "/products" },
+      { label: "About", href: "/about" },
       { label: "Glossary", href: "/insurance-glossary" },
       { label: "Help", href: "/help" },
-      { label: "Claims", href: "/claims" },
-      { label: "About", href: "/about" },
-      { label: "Contact", href: "/contact" },
     ];
-
     if (authenticated) {
-      links.splice(1, 0, { label: "Dashboard", href: "/dashboard" });
+      links.push({ label: "Dashboard", href: "/dashboard" });
     }
-
+    links.push({ label: "Contact", href: "/contact" });
     return links;
   }, [authenticated]);
 
