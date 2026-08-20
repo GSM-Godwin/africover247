@@ -107,7 +107,7 @@ export default function AdminSupportPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 sm:p-8 max-w-7xl space-y-6">
       <AdminPageHeader
         title="Support Tickets"
         subtitle="Manage customer support requests."

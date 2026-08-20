@@ -34,7 +34,7 @@ export default function AdminLayout({
       <div className="flex-1 flex flex-col min-w-0">
         <AdminTopbar onMenuClick={() => setDrawerOpen(true)} />
 
-        <main className="flex-1 overflow-auto p-6 sm:p-8">{children}</main>
+        <main className="flex-1 overflow-auto">{children}</main>
       </div>
     </div>
   );

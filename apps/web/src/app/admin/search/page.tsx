@@ -45,7 +45,7 @@ export default function SearchAnalyticsPage() {
   }, []);
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 sm:p-8 max-w-7xl space-y-6">
       <AdminPageHeader
         title="Search Analytics"
         subtitle="Monitor what customers are searching for and identify gaps in product coverage."
