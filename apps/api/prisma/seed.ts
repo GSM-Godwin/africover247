@@ -430,80 +430,13 @@ async function main() {
       isActive: true,
       keywords: ['travel', 'holiday', 'visa', 'schengen', 'abroad', 'trip', 'vacation', 'international', 'dubai', 'uk', 'usa'],
     },
-    {
-      name: 'Goods in Transit Insurance',
-      category: 'Marine',
-      description: 'Insurance covering goods and cargo while being transported by road within Nigeria.',
-      pricingType: 'quote_based' as const,
-      coverageHighlights: 'Loss or damage in transit\nTheft\nAccident damage',
-      exclusions: 'Inherent vice\nDelay\nWar',
-      requiredDocuments: 'Consignment note\nInvoice',
-      assetFields: [],
-      durationMonths: 1,
-      isActive: false,
-      keywords: ['goods', 'transit', 'cargo', 'transport'],
-    },
-    {
-      name: 'Agric Insurance',
-      category: 'Agriculture',
-      description: 'Insurance covering agricultural assets including crops, livestock, and farm equipment.',
-      pricingType: 'quote_based' as const,
-      coverageHighlights: 'Crop failure\nLivestock loss\nFarm equipment damage',
-      exclusions: 'Poor farming practices\nWar',
-      requiredDocuments: 'Farm details\nProof of ownership',
-      assetFields: [],
-      durationMonths: 12,
-      isActive: false,
-      keywords: ['agriculture', 'farm', 'crop', 'livestock'],
-    },
-    {
-      name: 'Bond Insurance',
-      category: 'Financial',
-      description: 'General bond insurance — see specific bond products.',
-      pricingType: 'quote_based' as const,
-      coverageHighlights: 'Bond guarantee',
-      exclusions: 'Fraud',
-      requiredDocuments: 'Bond documents',
-      assetFields: [],
-      durationMonths: 12,
-      isActive: false,
-      keywords: ['bond'],
-    },
-    {
-      name: 'Credit Life / Keyman Insurance',
-      category: 'Life',
-      description: 'Credit life and keyman insurance products.',
-      pricingType: 'quote_based' as const,
-      coverageHighlights: 'Credit protection\nKeyman cover',
-      exclusions: 'Suicide\nFraud',
-      requiredDocuments: 'Loan documents\nMedical report',
-      assetFields: [],
-      durationMonths: 12,
-      isActive: false,
-      keywords: ['credit life', 'keyman'],
-    },
-    {
-      name: 'Marine Hull Insurance',
-      category: 'Marine',
-      description: 'Insurance for the physical vessel/ship.',
-      pricingType: 'quote_based' as const,
-      coverageHighlights: 'Hull damage\nSinking\nCollision',
-      exclusions: 'War\nWear and tear',
-      requiredDocuments: 'Vessel survey report',
-      assetFields: [],
-      durationMonths: 12,
-      isActive: false,
-      keywords: ['marine hull', 'vessel', 'ship'],
-    },
   ];
 
   let created = 0;
   let updated = 0;
-  const seededNames: string[] = [];
 
   for (const product of products) {
     const item = product as Record<string, unknown>;
-    seededNames.push(item.name as string);
     const keywords = (item.keywords as string[] | undefined) ?? CATEGORY_KEYWORDS[item.category as string] ?? [];
     const status = item.isActive === false ? 'inactive' : 'active';
     const data = {
@@ -541,8 +474,12 @@ async function main() {
     }
   }
 
+  const seededNames = products.map((p) => p.name);
   const deactivated = await prisma.product.updateMany({
-    where: { name: { notIn: seededNames } },
+    where: {
+      name: { notIn: seededNames },
+      status: 'active',
+    },
     data: { status: 'inactive' },
   });
 
