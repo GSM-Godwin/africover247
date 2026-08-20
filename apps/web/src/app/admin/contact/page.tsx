@@ -263,7 +263,7 @@ export default function AdminContactPage() {
                     rows={5}
                     value={replyMessage}
                     onChange={(e) => setReplyMessage(e.target.value)}
-                    placeholder={`Dear ${selected.name},\n\nThank you for reaching out...`}
+                    placeholder="Type your reply here..."
                     className="w-full border border-slate/20 rounded-lg px-3 py-2.5 font-body text-sm text-midnight focus:outline-none focus:border-daybreak resize-none"
                   />
                   <div className="flex gap-3">
