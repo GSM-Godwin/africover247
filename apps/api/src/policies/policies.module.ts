@@ -10,6 +10,7 @@ import { SmsModule } from '../sms/sms.module';
 import { StorageModule } from '../storage/storage.module';
 import { ApplicationsModule } from '../applications/applications.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AdminModule } from '../admin/admin.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     StorageModule,
     ApplicationsModule,
     NotificationsModule,
+    AdminModule,
   ],
   providers: [PoliciesService, PolicySchedulerService],
   controllers: [PoliciesController, AdminPoliciesController],

@@ -12,6 +12,7 @@ import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { AdminService } from '../admin/admin.service';
 
 @Injectable()
 export class PoliciesService {
@@ -19,6 +20,7 @@ export class PoliciesService {
 
   constructor(
     private prisma: PrismaService,
+    private readonly adminService: AdminService,
     private emailService: EmailService,
     private smsService: SmsService,
     private storageService: StorageService,
@@ -277,6 +279,18 @@ export class PoliciesService {
     this.logger.log(
       `Policy ${policyNumber} issued for application ${applicationId}`,
     );
+
+    await this.adminService.createAuditLog({
+      actorId: application.userId,
+      action: 'POLICY_ISSUED',
+      entityType: 'Policy',
+      entityId: policy.id,
+      details: {
+        policyNumber: policy.policyNumber,
+        productName: application.product.name,
+        premiumPaid: Number(premiumAmount),
+      },
+    });
   }
 
   // --- List customer policies ---

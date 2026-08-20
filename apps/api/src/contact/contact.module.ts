@@ -3,9 +3,10 @@ import { ContactController } from './contact.controller'
 import { ContactService } from './contact.service'
 import { PrismaModule } from '../prisma/prisma.module'
 import { EmailModule } from '../email/email.module'
+import { AdminModule } from '../admin/admin.module'
 
 @Module({
-  imports: [PrismaModule, EmailModule],
+  imports: [PrismaModule, EmailModule, AdminModule],
   controllers: [ContactController],
   providers: [ContactService],
 })

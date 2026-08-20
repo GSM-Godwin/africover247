@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { AdminService } from '../admin/admin.service';
 import { TicketCategory, TicketStatus } from '@prisma/client';
 
 @Injectable()
@@ -8,6 +9,7 @@ export class SupportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly emailService: EmailService,
+    private readonly adminService: AdminService,
   ) {}
 
   async createTicket(dto: {
@@ -152,8 +154,8 @@ export class SupportService {
     return response;
   }
 
-  async updateTicketStatus(id: string, status: string, adminNote?: string) {
-    return this.prisma.supportTicket.update({
+  async updateTicketStatus(id: string, status: string, adminNote?: string, adminId?: string) {
+    const updated = await this.prisma.supportTicket.update({
       where: { id },
       data: {
         status: status as TicketStatus,
@@ -162,6 +164,18 @@ export class SupportService {
           status === 'resolved' || status === 'closed' ? new Date() : undefined,
       },
     });
+
+    if (adminId) {
+      await this.adminService.createAuditLog({
+        actorId: adminId,
+        action: 'TICKET_STATUS_UPDATED',
+        entityType: 'SupportTicket',
+        entityId: id,
+        details: { status, adminNote },
+      });
+    }
+
+    return updated;
   }
 
   async getAllTickets(status?: string) {

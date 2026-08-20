@@ -114,12 +114,14 @@ export class SupportController {
   @Roles('admin')
   updateTicketStatus(
     @Param('id') id: string,
+    @CurrentUser() user: { id: string },
     @Body() body: { status: string; adminNote?: string },
   ) {
     return this.supportService.updateTicketStatus(
       id,
       body.status,
       body.adminNote,
+      user.id,
     );
   }
 

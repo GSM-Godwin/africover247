@@ -55,6 +55,6 @@ export class ContactController {
     const adminName = admin
       ? `${admin.firstName} ${admin.lastName}`
       : 'AfriGlobal Support'
-    return this.contactService.replyToMessage(id, body.message, adminName)
+    return this.contactService.replyToMessage(id, body.message, adminName, user.id)
   }
 }

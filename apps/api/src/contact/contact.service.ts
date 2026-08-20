@@ -1,6 +1,7 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { PrismaService } from '../prisma/prisma.service'
 import { EmailService } from '../email/email.service'
+import { AdminService } from '../admin/admin.service'
 import { CreateContactDto } from './dto/create-contact.dto'
 
 @Injectable()
@@ -10,6 +11,7 @@ export class ContactService {
   constructor(
     private prisma: PrismaService,
     private emailService: EmailService,
+    private readonly adminService: AdminService,
   ) {}
 
   // --- Submit contact message ---
@@ -76,7 +78,7 @@ export class ContactService {
     })
   }
 
-  async replyToMessage(id: string, replyMessage: string, adminName: string) {
+  async replyToMessage(id: string, replyMessage: string, adminName: string, adminId: string) {
     const message = await this.prisma.contactMessage.findUnique({
       where: { id },
       include: { replies: { orderBy: { sentAt: 'asc' } } },
@@ -129,6 +131,14 @@ export class ContactService {
     await this.prisma.contactMessage.update({
       where: { id },
       data: { read: true, replied: true, repliedAt: new Date() },
+    })
+
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'CONTACT_REPLY_SENT',
+      entityType: 'ContactMessage',
+      entityId: id,
+      details: { to: message.email, adminName },
     })
 
     return { success: true }

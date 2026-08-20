@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminService } from '../admin/admin.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
@@ -34,6 +35,7 @@ export class QuotesService {
 
   constructor(
     private prisma: PrismaService,
+    private readonly adminService: AdminService,
     private emailService: EmailService,
     private smsService: SmsService,
   ) {}
@@ -308,6 +310,14 @@ export class QuotesService {
     this.logger.log(
       `Admin responded to quote ${quoteId} with amount ₦${dto.quoteAmount}`,
     );
+
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'QUOTE_RESPONDED',
+      entityType: 'Quote',
+      entityId: quoteId,
+      details: { amount: dto.quoteAmount, note: dto.note },
+    });
 
     return updated;
   }
@@ -664,6 +674,14 @@ export class QuotesService {
       `Admin countered quote ${quoteId} — amount: ₦${dto.counterAmount}`,
     );
 
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'QUOTE_COUNTERED',
+      entityType: 'Quote',
+      entityId: quoteId,
+      details: { counterAmount: dto.counterAmount },
+    });
+
     return updated;
   }
 
@@ -770,6 +788,13 @@ export class QuotesService {
       `Admin accepted counter for quote ${quoteId} — application ${application.id} created`,
     );
 
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'QUOTE_COUNTER_ACCEPTED',
+      entityType: 'Quote',
+      entityId: quoteId,
+    });
+
     return {
       message: 'Counter-offer accepted',
       applicationId: application.id,
@@ -840,6 +865,14 @@ export class QuotesService {
     } catch {}
 
     this.logger.log(`Admin rejected quote ${quoteId}`);
+
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'QUOTE_REJECTED',
+      entityType: 'Quote',
+      entityId: quoteId,
+      details: { reason },
+    });
 
     return { message: 'Quote rejected' };
   }

@@ -82,6 +82,7 @@ export class UsersController {
   @Roles('admin')
   adminUpdateUser(
     @Param('id') id: string,
+    @CurrentUser() user: { id: string },
     @Body()
     dto: {
       firstName?: string;
@@ -91,7 +92,7 @@ export class UsersController {
       emailVerified?: boolean;
     },
   ) {
-    return this.usersService.adminUpdateUser(id, dto);
+    return this.usersService.adminUpdateUser(id, dto, user.id);
   }
 
   @Patch('admin/:id/suspend')
@@ -108,8 +109,11 @@ export class UsersController {
   @Patch('admin/:id/unsuspend')
   @UseGuards(RolesGuard)
   @Roles('admin')
-  unsuspendUser(@Param('id') id: string) {
-    return this.usersService.unsuspendUser(id);
+  unsuspendUser(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.usersService.unsuspendUser(id, user.id);
   }
 
   @Delete('admin/:id')

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { AdminService } from '../admin/admin.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -15,7 +16,10 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 export class UsersService {
   private readonly logger = new Logger(UsersService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly adminService: AdminService,
+  ) {}
 
   // --- Get user by id ---
 
@@ -110,7 +114,7 @@ export class UsersService {
     if (!user) throw new NotFoundException('User not found');
     if (user.role === 'admin') throw new BadRequestException('Cannot suspend an admin account');
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         suspended: true,
@@ -118,13 +122,23 @@ export class UsersService {
         suspendedAt: new Date(),
       },
     });
+
+    await this.adminService.createAuditLog({
+      actorId: requestingUserId,
+      action: 'SUSPEND_USER',
+      entityType: 'User',
+      entityId: id,
+      details: { reason },
+    });
+
+    return updated;
   }
 
-  async unsuspendUser(id: string) {
+  async unsuspendUser(id: string, adminId: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         suspended: false,
@@ -132,6 +146,15 @@ export class UsersService {
         suspendedAt: null,
       },
     });
+
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'UNSUSPEND_USER',
+      entityType: 'User',
+      entityId: id,
+    });
+
+    return updated;
   }
 
   async getUserById(id: string) {
@@ -167,6 +190,7 @@ export class UsersService {
       role?: string;
       emailVerified?: boolean;
     },
+    adminId: string,
   ) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
@@ -182,7 +206,7 @@ export class UsersService {
 
     const { role, ...rest } = dto;
 
-    return this.prisma.user.update({
+    const updated = await this.prisma.user.update({
       where: { id },
       data: {
         ...rest,
@@ -198,6 +222,16 @@ export class UsersService {
         emailVerified: true,
       },
     });
+
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'UPDATE_USER',
+      entityType: 'User',
+      entityId: id,
+      details: { fields: Object.keys(dto) },
+    });
+
+    return updated;
   }
 
   async adminDeleteUser(id: string, requestingUserId: string) {
