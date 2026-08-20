@@ -4,6 +4,7 @@ import { CreateContactDto } from './dto/create-contact.dto'
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard'
 import { RolesGuard } from '../common/guards/roles.guard'
 import { Roles } from '../common/decorators/roles.decorator'
+import { CurrentUser } from '../common/decorators/current-user.decorator'
 
 @Controller('contact')
 export class ContactController {
@@ -29,5 +30,16 @@ export class ContactController {
   @Roles('admin')
   markRead(@Param('id') id: string) {
     return this.contactService.markRead(id)
+  }
+
+  @Post(':id/reply')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  replyToMessage(
+    @Param('id') id: string,
+    @Body() body: { message: string; adminName: string },
+    @CurrentUser() _user: { id: string },
+  ) {
+    return this.contactService.replyToMessage(id, body.message, body.adminName)
   }
 }
