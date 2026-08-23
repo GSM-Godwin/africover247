@@ -350,6 +350,9 @@ export function HelpScreen({ navigation }: any) {
                     <View style={styles.ticketInfo}>
                       <Text style={styles.ticketSubject} numberOfLines={1}>{ticket.subject}</Text>
                       <Text style={styles.ticketRef}>#{ticket.id.slice(0, 8).toUpperCase()}</Text>
+                      {(ticket.status === 'resolved' || ticket.status === 'closed') && ticket.completionTime && (
+                        <Text style={styles.completionTime}>✓ Completed in {ticket.completionTime}</Text>
+                      )}
                     </View>
                     <View style={[styles.ticketStatus, {
                       backgroundColor: ticket.status === 'resolved' ? Colors.successLight :
@@ -554,6 +557,7 @@ const styles = StyleSheet.create({
   ticketInfo: { flex: 1 },
   ticketSubject: { fontSize: 13, fontWeight: '600', color: Colors.textDark },
   ticketRef: { fontSize: 11, color: Colors.textSecondary, fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace', marginTop: 2 },
+  completionTime: { fontSize: 11, color: Colors.success, fontWeight: '600', marginTop: 2 },
   ticketStatus: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
   ticketStatusText: { fontSize: 11, fontWeight: '600', textTransform: 'capitalize' },
   faqItem: {

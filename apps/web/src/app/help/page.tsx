@@ -29,6 +29,7 @@ interface Ticket {
   category: string;
   status: string;
   createdAt: string;
+  completionTime: string | null;
   responses: { message: string; isAdmin: boolean; createdAt: string }[];
 }
 
@@ -319,6 +320,10 @@ export default function HelpPage() {
                       const statusConf =
                         STATUS_CONFIG[ticket.status] || STATUS_CONFIG.open;
                       const StatusIcon = statusConf.icon;
+                      const isCompleted =
+                        ticket.status === "resolved" ||
+                        ticket.status === "closed";
+
                       return (
                         <Link
                           key={ticket.id}
@@ -337,6 +342,11 @@ export default function HelpPage() {
                                   "en-NG",
                                 )}
                               </p>
+                              {isCompleted && ticket.completionTime && (
+                                <p className="font-body text-xs text-cover-green mt-1 font-semibold">
+                                  ✓ Completed in {ticket.completionTime}
+                                </p>
+                              )}
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
                               <span

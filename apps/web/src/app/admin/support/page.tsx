@@ -29,7 +29,77 @@ interface SupportTicket {
   status: string;
   adminNote?: string;
   createdAt: string;
+  slaDeadline: string | null;
+  completionTime: string | null;
   responses?: TicketResponse[];
+}
+
+function SlaTimer({
+  deadline,
+  status,
+  completionTime,
+}: {
+  deadline: string | null;
+  status: string;
+  completionTime: string | null;
+  createdAt: string;
+}) {
+  const [timeLeft, setTimeLeft] = useState("");
+
+  useEffect(() => {
+    if (!deadline || status === "resolved" || status === "closed") return;
+
+    function update() {
+      const ms = new Date(deadline!).getTime() - Date.now();
+      if (ms < 0) {
+        setTimeLeft("Breached");
+        return;
+      }
+      const hours = Math.floor(ms / (1000 * 60 * 60));
+      const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+      setTimeLeft(hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`);
+    }
+
+    update();
+    const interval = setInterval(update, 60000);
+    return () => clearInterval(interval);
+  }, [deadline, status]);
+
+  if (status === "resolved" || status === "closed") {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-cover-green/10 text-cover-green text-xs font-semibold">
+        ✓ Completed in {completionTime}
+      </span>
+    );
+  }
+
+  if (!deadline) return null;
+
+  const slaStatus =
+    timeLeft === "Breached"
+      ? "breached"
+      : (() => {
+          const ms = new Date(deadline).getTime() - Date.now();
+          return ms < 2 * 60 * 60 * 1000 ? "at_risk" : "on_track";
+        })();
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${
+        slaStatus === "breached"
+          ? "bg-alert-coral/10 text-alert-coral"
+          : slaStatus === "at_risk"
+            ? "bg-daybreak/10 text-daybreak"
+            : "bg-cover-green/10 text-cover-green"
+      }`}
+    >
+      {slaStatus === "breached"
+        ? "⚠ SLA Breached"
+        : slaStatus === "at_risk"
+          ? `⚡ At risk — ${timeLeft}`
+          : `⏱ ${timeLeft} left`}
+    </span>
+  );
 }
 
 interface TicketStats {
@@ -185,6 +255,9 @@ export default function AdminSupportPage() {
                   Status
                 </th>
                 <th className="text-left font-body font-semibold text-slate px-4 py-3">
+                  SLA
+                </th>
+                <th className="text-left font-body font-semibold text-slate px-4 py-3">
                   Date
                 </th>
                 <th className="px-4 py-3" />
@@ -219,6 +292,14 @@ export default function AdminSupportPage() {
                     >
                       {ticket.status.replace(/_/g, " ")}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <SlaTimer
+                      deadline={ticket.slaDeadline}
+                      status={ticket.status}
+                      completionTime={ticket.completionTime}
+                      createdAt={ticket.createdAt}
+                    />
                   </td>
                   <td className="px-4 py-3 font-body text-slate text-xs">
                     {new Date(ticket.createdAt).toLocaleDateString("en-NG")}

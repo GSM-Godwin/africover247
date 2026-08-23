@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { AdminService } from '../admin/admin.service';
 import { TicketCategory, TicketStatus } from '@prisma/client';
+import { getSlaDeadline, getSlaStatus, getCompletionTime } from './sla.config';
 
 @Injectable()
 export class SupportService {
@@ -23,6 +24,8 @@ export class SupportService {
     referenceId?: string;
     referenceType?: string;
   }) {
+    const slaDeadline = getSlaDeadline(dto.category, new Date());
+
     const ticket = await this.prisma.supportTicket.create({
       data: {
         userId: dto.userId || null,
@@ -34,6 +37,7 @@ export class SupportService {
         message: dto.message,
         referenceId: dto.referenceId,
         referenceType: dto.referenceType,
+        slaDeadline,
       },
     });
 
@@ -88,11 +92,18 @@ export class SupportService {
   }
 
   async getMyTickets(userId: string) {
-    return this.prisma.supportTicket.findMany({
+    const tickets = await this.prisma.supportTicket.findMany({
       where: { userId },
       include: { responses: { orderBy: { createdAt: 'asc' } } },
       orderBy: { createdAt: 'desc' },
     });
+    return tickets.map((ticket) => ({
+      ...ticket,
+      slaStatus: getSlaStatus(ticket.slaDeadline, ticket.status),
+      completionTime: ticket.resolvedAt
+        ? getCompletionTime(ticket.createdAt, ticket.resolvedAt)
+        : null,
+    }));
   }
 
   async getTicketById(id: string, userId?: string) {
@@ -104,7 +115,13 @@ export class SupportService {
     if (userId && ticket.userId && ticket.userId !== userId) {
       throw new ForbiddenException('Access denied');
     }
-    return ticket;
+    return {
+      ...ticket,
+      slaStatus: getSlaStatus(ticket.slaDeadline, ticket.status),
+      completionTime: ticket.resolvedAt
+        ? getCompletionTime(ticket.createdAt, ticket.resolvedAt)
+        : null,
+    };
   }
 
   async addResponse(
@@ -124,6 +141,13 @@ export class SupportService {
     const response = await this.prisma.ticketResponse.create({
       data: { ticketId, message, isAdmin },
     });
+
+    if (isAdmin && !ticket.firstResponseAt) {
+      await this.prisma.supportTicket.update({
+        where: { id: ticketId },
+        data: { firstResponseAt: new Date() },
+      });
+    }
 
     if (isAdmin && ticket.email) {
       try {
@@ -155,13 +179,22 @@ export class SupportService {
   }
 
   async updateTicketStatus(id: string, status: string, adminNote?: string, adminId?: string) {
+    const ticket = await this.prisma.supportTicket.findUnique({ where: { id } });
+    if (!ticket) throw new NotFoundException('Ticket not found');
+
+    const isResolved = status === 'resolved' || status === 'closed';
+    const resolvedAt = isResolved ? new Date() : undefined;
+    const slaBreached = ticket.slaDeadline
+      ? new Date() > ticket.slaDeadline && !isResolved
+      : false;
+
     const updated = await this.prisma.supportTicket.update({
       where: { id },
       data: {
         status: status as TicketStatus,
         adminNote,
-        resolvedAt:
-          status === 'resolved' || status === 'closed' ? new Date() : undefined,
+        resolvedAt,
+        slaBreached: isResolved ? ticket.slaBreached : slaBreached,
       },
     });
 
@@ -179,7 +212,7 @@ export class SupportService {
   }
 
   async getAllTickets(status?: string) {
-    return this.prisma.supportTicket.findMany({
+    const tickets = await this.prisma.supportTicket.findMany({
       where: status ? { status: status as TicketStatus } : undefined,
       include: {
         responses: { orderBy: { createdAt: 'asc' } },
@@ -187,6 +220,14 @@ export class SupportService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    return tickets.map((ticket) => ({
+      ...ticket,
+      slaStatus: getSlaStatus(ticket.slaDeadline, ticket.status),
+      completionTime: ticket.resolvedAt
+        ? getCompletionTime(ticket.createdAt, ticket.resolvedAt)
+        : null,
+    }));
   }
 
   async getTicketStats() {
