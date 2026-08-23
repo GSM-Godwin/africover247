@@ -16,6 +16,7 @@ import {
   MessageCircle,
   Car,
   Mail,
+  Phone,
   Search,
   RefreshCw,
 } from "lucide-react";
@@ -29,6 +30,7 @@ const NAV_ITEMS = [
   { href: "/admin/renewals", label: "Renewals", icon: RefreshCw },
   { href: "/admin/claims", label: "Claims", icon: ClipboardList },
   { href: "/admin/support", label: "Support Tickets", icon: MessageCircle },
+  { href: "/admin/calls", label: "Call Logs", icon: Phone },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/search", label: "Search Analytics", icon: Search },
   { href: "/admin/customers", label: "Customers", icon: Users },

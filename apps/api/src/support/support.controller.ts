@@ -3,12 +3,14 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
   UseGuards,
 } from '@nestjs/common';
 import { SupportService } from './support.service';
+import { CallLogService } from './call-log.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../common/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -17,7 +19,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('support')
 export class SupportController {
-  constructor(private readonly supportService: SupportService) {}
+  constructor(
+    private readonly supportService: SupportService,
+    private readonly callLogService: CallLogService,
+  ) {}
 
   // --- Customer: create ticket ---
   @Post('tickets')
@@ -158,5 +163,44 @@ export class SupportController {
       body.confirmedDate ? new Date(body.confirmedDate) : undefined,
       body.adminNote,
     );
+  }
+
+  @Post('calls')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  createCallLog(
+    @CurrentUser() user: { id: string },
+    @Body() body: Record<string, unknown>,
+  ) {
+    return this.callLogService.createLog(
+      user.id,
+      body as Parameters<CallLogService['createLog']>[1],
+    );
+  }
+
+  @Get('calls/stats')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  getCallStats() {
+    return this.callLogService.getStats();
+  }
+
+  @Get('calls')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  getCallLogs(
+    @Query('adminId') adminId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.callLogService.getLogs({ adminId, from, to, search });
+  }
+
+  @Delete('calls/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('admin')
+  deleteCallLog(@Param('id') id: string) {
+    return this.callLogService.deleteLog(id);
   }
 }

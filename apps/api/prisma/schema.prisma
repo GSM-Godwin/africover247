@@ -122,6 +122,7 @@ model User {
   passwordResets     PasswordReset[]
   supportTickets     SupportTicket[]
   appointments       Appointment[]
+  callLogs           CallLog[]
 }
 
 model PhoneOtp {
@@ -455,4 +456,22 @@ model Appointment {
   @@index([userId])
   @@index([status])
   @@index([preferredDate])
+}
+
+model CallLog {
+  id            String   @id @default(uuid())
+  adminId       String
+  customerName  String
+  customerPhone String
+  direction     String   @default("outbound")
+  duration      Int?
+  topic         String
+  notes         String?
+  outcome       String
+  calledAt      DateTime @default(now())
+  createdAt     DateTime @default(now())
+  admin         User     @relation(fields: [adminId], references: [id])
+
+  @@index([adminId])
+  @@index([calledAt])
 }
