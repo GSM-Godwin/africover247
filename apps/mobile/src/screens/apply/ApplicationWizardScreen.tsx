@@ -403,7 +403,10 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     if (!product?.requiredDocuments) return []
     if (Array.isArray(product.requiredDocuments)) return product.requiredDocuments as string[]
     if (typeof product.requiredDocuments === 'string') {
-      try { return JSON.parse(product.requiredDocuments) } catch { return [] }
+      return product.requiredDocuments
+        .split('\n')
+        .map((s: string) => s.trim())
+        .filter(Boolean)
     }
     return []
   })()
@@ -955,7 +958,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 { label: 'Job Title', value: formData.jobTitle },
                 { label: 'Monthly Income', value: formData.monthlyIncomeRange },
               ]},
-              { title: 'Documents', stepIndex: 2, rows: [
+              { title: 'KYC & Documents', stepIndex: 2, rows: [
                 { label: 'Uploaded', value: kycDocuments.length > 0 ? `${kycDocuments.length} file(s)` : 'None' },
               ]},
             ].map(({ title, stepIndex, rows }) => (
