@@ -17,9 +17,10 @@ import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ScreenCapture from 'expo-screen-capture'
-import { Button, NumberInput } from '../../components/ui'
+import { Button } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { getUser } from '../../services/auth'
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -32,6 +33,12 @@ const NIGERIAN_STATES = [
 const GENDERS = ['Male', 'Female', 'Prefer not to say']
 const MARITAL = ['Single', 'Married', 'Divorced', 'Widowed']
 const EMPLOYMENT = ['Employed', 'Self-employed', 'Business owner', 'Retired', 'Student', 'Unemployed']
+const INCOME_RANGES = [
+  'Below ₦50,000',
+  '₦50,000–₦150,000',
+  '₦150,000–₦500,000',
+  'Above ₦500,000',
+]
 
 const STEPS = ['Personal Details', 'Address & Employment', 'Documents', 'Review & Submit']
 
@@ -338,6 +345,10 @@ const reviewStyles = StyleSheet.create({
 })
 
 interface FormData {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
   dateOfBirth: string
   gender: string
   nationality: string
@@ -345,11 +356,12 @@ interface FormData {
   address: string
   city: string
   state: string
+  lga: string
   alternativePhone: string
   employmentStatus: string
   employer: string
-  occupation: string
-  annualIncome: string
+  jobTitle: string
+  monthlyIncomeRange: string
 }
 
 export function ApplicationWizardScreen({ route, navigation }: any) {
@@ -361,6 +373,10 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     { name: string; uri: string; type: string; docType: string }[]
   >([])
   const [formData, setFormData] = useState<FormData>({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
     dateOfBirth: '',
     gender: '',
     nationality: 'Nigerian',
@@ -368,11 +384,12 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     address: '',
     city: '',
     state: '',
+    lga: '',
     alternativePhone: '',
     employmentStatus: '',
     employer: '',
-    occupation: '',
-    annualIncome: '',
+    jobTitle: '',
+    monthlyIncomeRange: '',
   })
   const [idType, setIdType] = useState<'bvn' | 'nin' | 'drivers_licence' | 'passport'>('bvn')
   const [idValue, setIdValue] = useState('')
@@ -400,19 +417,25 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
         const app = res.data
         if (app.formData && typeof app.formData === 'object') {
           const fd = app.formData as any
+          const user = await getUser()
           setFormData({
+            firstName: fd.firstName || '',
+            lastName: fd.lastName || '',
+            email: fd.email || user?.email || '',
+            phone: fd.phone || user?.phone || '',
             dateOfBirth: fd.dateOfBirth || '',
             gender: fd.gender || '',
             nationality: fd.nationality || 'Nigerian',
             maritalStatus: fd.maritalStatus || '',
-            address: fd.address || '',
+            address: fd.address || fd.streetAddress || '',
             city: fd.city || '',
             state: fd.state || '',
+            lga: fd.lga || '',
             alternativePhone: fd.alternativePhone || '',
             employmentStatus: fd.employmentStatus || '',
-            employer: fd.employer || '',
-            occupation: fd.occupation || '',
-            annualIncome: fd.annualIncome || '',
+            employer: fd.employer || fd.employerName || '',
+            jobTitle: fd.jobTitle || fd.occupation || '',
+            monthlyIncomeRange: fd.monthlyIncomeRange || '',
           })
         }
         if (app.stepCompleted && app.stepCompleted > 0) {
@@ -471,49 +494,22 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
 
   async function validateStep(): Promise<boolean> {
     if (step === 0) {
-      if (!formData.dateOfBirth) {
-        Alert.alert('Missing', 'Please enter your date of birth.')
-        return false
-      }
-      if (!formData.gender) {
-        Alert.alert('Missing', 'Please select your gender.')
-        return false
-      }
-      if (!formData.maritalStatus) {
-        Alert.alert('Missing', 'Please select your marital status.')
-        return false
-      }
+      if (!formData.firstName.trim()) { Alert.alert('Required', 'Please enter your first name.'); return false }
+      if (!formData.lastName.trim()) { Alert.alert('Required', 'Please enter your last name.'); return false }
+      if (!formData.email.trim()) { Alert.alert('Required', 'Please enter your email address.'); return false }
+      if (!formData.phone.trim()) { Alert.alert('Required', 'Please enter your phone number.'); return false }
+      if (!formData.dateOfBirth) { Alert.alert('Required', 'Please enter your date of birth.'); return false }
+      if (!formData.gender) { Alert.alert('Required', 'Please select your gender.'); return false }
+      if (!formData.maritalStatus) { Alert.alert('Required', 'Please select your marital status.'); return false }
       return true
     }
 
     if (step === 1) {
-      if (!formData.address || formData.address.trim().length < 5) {
-        Alert.alert('Missing', 'Please enter your street address (at least 5 characters).')
-        return false
-      }
-      if (!formData.city || formData.city.trim() === '') {
-        Alert.alert('Missing', 'Please enter your city.')
-        return false
-      }
-      if (!formData.state || formData.state.trim() === '') {
-        Alert.alert('Missing', 'Please select your state.')
-        return false
-      }
-      if (!formData.employmentStatus) {
-        Alert.alert('Missing', 'Please select your employment status.')
-        return false
-      }
-      if (!formData.occupation || formData.occupation.trim() === '') {
-        Alert.alert('Missing', 'Please enter your occupation.')
-        return false
-      }
-      if (
-        ['Employed', 'Self-employed', 'Business owner'].includes(formData.employmentStatus) &&
-        (!formData.employer || formData.employer.trim() === '')
-      ) {
-        Alert.alert('Missing', 'Please enter your employer or business name.')
-        return false
-      }
+      if (!formData.address.trim() || formData.address.trim().length < 5) { Alert.alert('Required', 'Please enter your street address.'); return false }
+      if (!formData.city.trim()) { Alert.alert('Required', 'Please enter your city.'); return false }
+      if (!formData.state.trim()) { Alert.alert('Required', 'Please select your state.'); return false }
+      if (!formData.employmentStatus) { Alert.alert('Required', 'Please select your employment status.'); return false }
+      if (!formData.jobTitle.trim()) { Alert.alert('Required', 'Please enter your job title or occupation.'); return false }
       return true
     }
 
@@ -565,7 +561,12 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           }
         }
         await api.put(`/applications/${applicationId}`, {
-          formData: { ...formData, stepCompleted: step + 1 },
+          formData: {
+            ...formData,
+            streetAddress: formData.address,
+            employerName: formData.employer,
+            stepCompleted: step + 1,
+          },
           stepCompleted: step + 1,
         })
       } catch {}
@@ -581,7 +582,12 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     setSaving(true)
     try {
       await api.put(`/applications/${applicationId}`, {
-        formData: { ...formData, stepCompleted: 4 },
+        formData: {
+          ...formData,
+          streetAddress: formData.address,
+          employerName: formData.employer,
+          stepCompleted: 4,
+        },
         stepCompleted: 4,
       })
       setSaving(false)
@@ -624,6 +630,42 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
       case 0:
         return (
           <View>
+            <View style={styles.fieldRow}>
+              <View style={styles.fieldHalf}>
+                <Field label="First Name" required>
+                  <TInput
+                    value={formData.firstName}
+                    onChangeText={(v) => update('firstName', v)}
+                    placeholder="First name"
+                  />
+                </Field>
+              </View>
+              <View style={styles.fieldHalf}>
+                <Field label="Last Name" required>
+                  <TInput
+                    value={formData.lastName}
+                    onChangeText={(v) => update('lastName', v)}
+                    placeholder="Last name"
+                  />
+                </Field>
+              </View>
+            </View>
+            <Field label="Email Address" required>
+              <TInput
+                value={formData.email}
+                onChangeText={(v) => update('email', v)}
+                placeholder="your@email.com"
+                keyboardType="default"
+              />
+            </Field>
+            <Field label="Phone Number" required>
+              <TInput
+                value={formData.phone}
+                onChangeText={(v) => update('phone', v)}
+                placeholder="08012345678"
+                keyboardType="phone-pad"
+              />
+            </Field>
             <Field label="Date of Birth" required>
               <DOBPicker value={formData.dateOfBirth} onChange={(v) => update('dateOfBirth', v)} />
             </Field>
@@ -631,7 +673,11 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
               <ChipSelector options={GENDERS} value={formData.gender} onChange={(v) => update('gender', v)} />
             </Field>
             <Field label="Nationality">
-              <TInput value={formData.nationality} onChangeText={(v) => update('nationality', v)} />
+              <TInput
+                value={formData.nationality}
+                onChangeText={(v) => update('nationality', v)}
+                placeholder="e.g. Nigerian"
+              />
             </Field>
             <Field label="Marital Status" required>
               <ChipSelector options={MARITAL} value={formData.maritalStatus} onChange={(v) => update('maritalStatus', v)} />
@@ -642,7 +688,7 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
       case 1:
         return (
           <View>
-            <Field label="Home Address" required>
+            <Field label="Street Address" required>
               <TInput
                 value={formData.address}
                 onChangeText={(v) => update('address', v)}
@@ -659,6 +705,13 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
             <Field label="State" required>
               <StatePicker value={formData.state} onChange={(v) => update('state', v)} />
             </Field>
+            <Field label="LGA">
+              <TInput
+                value={formData.lga}
+                onChangeText={(v) => update('lga', v)}
+                placeholder="Local Government Area"
+              />
+            </Field>
             <Field label="Alternative Phone">
               <TInput
                 value={formData.alternativePhone}
@@ -674,7 +727,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 onChange={(v) => update('employmentStatus', v)}
               />
             </Field>
-
             {showEmployerFields && (
               <Field label="Employer / Company Name">
                 <TInput
@@ -684,21 +736,18 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 />
               </Field>
             )}
-
-            <Field label="Occupation / Role" required>
+            <Field label="Job Title / Occupation" required>
               <TInput
-                value={formData.occupation}
-                onChangeText={(v) => update('occupation', v)}
+                value={formData.jobTitle}
+                onChangeText={(v) => update('jobTitle', v)}
                 placeholder="e.g. Software Engineer, Teacher"
               />
             </Field>
-
-            <Field label="Annual Income (₦)">
-              <NumberInput
-                value={formData.annualIncome}
-                onChangeText={(v) => update('annualIncome', v)}
-                placeholder="e.g. 2,400,000"
-                prefix="₦"
+            <Field label="Monthly Income Range">
+              <ChipSelector
+                options={INCOME_RANGES}
+                value={formData.monthlyIncomeRange}
+                onChange={(v) => update('monthlyIncomeRange', v)}
               />
             </Field>
           </View>
@@ -887,7 +936,10 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
             </Text>
 
             {[
-              { title: 'Personal Details', stepIndex: 0, rows: [
+              { title: 'Personal Information', stepIndex: 0, rows: [
+                { label: 'Name', value: `${formData.firstName} ${formData.lastName}` },
+                { label: 'Email', value: formData.email },
+                { label: 'Phone', value: formData.phone },
                 { label: 'Date of Birth', value: formData.dateOfBirth },
                 { label: 'Gender', value: formData.gender },
                 { label: 'Nationality', value: formData.nationality },
@@ -897,10 +949,11 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
                 { label: 'Address', value: formData.address },
                 { label: 'City', value: formData.city },
                 { label: 'State', value: formData.state },
-                { label: 'Status', value: formData.employmentStatus },
-                { label: 'Occupation', value: formData.occupation },
+                { label: 'LGA', value: formData.lga },
+                { label: 'Employment', value: formData.employmentStatus },
                 { label: 'Employer', value: formData.employer },
-                { label: 'Annual Income', value: formData.annualIncome ? `₦${parseFloat(formData.annualIncome).toLocaleString()}` : '' },
+                { label: 'Job Title', value: formData.jobTitle },
+                { label: 'Monthly Income', value: formData.monthlyIncomeRange },
               ]},
               { title: 'Documents', stepIndex: 2, rows: [
                 { label: 'Uploaded', value: kycDocuments.length > 0 ? `${kycDocuments.length} file(s)` : 'None' },
@@ -1010,6 +1063,13 @@ const styles = StyleSheet.create({
   },
   productBannerText: { fontSize: 13, color: Colors.primary, fontWeight: '600', flex: 1 },
   scroll: { padding: 20 },
+  fieldRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  fieldHalf: {
+    flex: 1,
+  },
   footer: {
     paddingHorizontal: 20, paddingBottom: 28, paddingTop: 12,
     borderTopWidth: 1, borderTopColor: '#F0F4F8',
