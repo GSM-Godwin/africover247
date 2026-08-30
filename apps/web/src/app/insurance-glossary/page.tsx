@@ -1,93 +1,30 @@
 import Link from "next/link";
 import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
-import { GLOSSARY_TERMS } from "@/lib/insurance-terms";
+import {
+  GLOSSARY_CATEGORY_ORDER,
+  GLOSSARY_TERMS,
+} from "@/lib/insurance-terms";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Insurance Glossary — AfriCover247",
   description:
-    "Plain English definitions of insurance terms for Nigerian customers. Understand what you are buying before you buy it.",
+    "Official AfriGlobal definitions and plain English explanations of insurance terms for Nigerian customers.",
 };
-
-const PRIORITY_TERMS = [
-  "Insurance",
-  "Policy",
-  "Premium",
-  "Cover",
-  "Claim",
-  "Excess",
-  "Exclusion",
-  "Sum Insured",
-  "Beneficiary",
-  "Nominee",
-  "Third Party",
-  "Liability",
-  "Indemnity",
-  "Compensation",
-  "Underwriting",
-  "Risk",
-  "Renewal",
-  "Expiry Date",
-  "Effective Date",
-  "Cancellation",
-  "Lapse",
-  "Reinstatement",
-  "Material Fact",
-  "Non-disclosure",
-  "Fraud",
-  "Deductible",
-  "Subrogation",
-  "Insurable Interest",
-];
-
-const CATEGORIES = {
-  "Understanding Insurance": [
-    "Insurance",
-    "Policy",
-    "Premium",
-    "Cover",
-    "Sum Insured",
-    "Risk",
-    "Beneficiary",
-    "Nominee",
-  ],
-  "Buying Insurance": [
-    "Underwriting",
-    "Insurable Interest",
-    "Effective Date",
-    "Renewal",
-    "Cancellation",
-  ],
-  "Making a Claim": [
-    "Claim",
-    "Excess",
-    "Deductible",
-    "Indemnity",
-    "Compensation",
-    "Subrogation",
-  ],
-  "Policy Terms": [
-    "Exclusion",
-    "Third Party",
-    "Liability",
-    "Material Fact",
-    "Non-disclosure",
-    "Fraud",
-    "Lapse",
-    "Reinstatement",
-    "Expiry Date",
-  ],
-};
-
-function termToSlug(term: string): string {
-  return term
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export default function GlossaryIndexPage() {
+  const grouped = GLOSSARY_CATEGORY_ORDER.map((category) => ({
+    category,
+    terms: GLOSSARY_TERMS.filter((t) => t.category === category).sort((a, b) =>
+      a.label.localeCompare(b.label),
+    ),
+  })).filter((group) => group.terms.length > 0);
+
+  const allTerms = [...GLOSSARY_TERMS].sort((a, b) =>
+    a.label.localeCompare(b.label),
+  );
+
   return (
     <>
       <Navbar />
@@ -101,8 +38,9 @@ export default function GlossaryIndexPage() {
               Insurance, in Plain English
             </h1>
             <p className="font-body text-white/70 text-base max-w-xl mx-auto">
+              Official AfriGlobal definitions, explained in everyday language.
               You shouldn&apos;t have to learn insurance before you can buy
-              insurance. Here&apos;s what every term actually means.
+              insurance.
             </p>
           </div>
         </section>
@@ -114,42 +52,43 @@ export default function GlossaryIndexPage() {
                 Quick navigation
               </p>
               <div className="flex flex-wrap gap-2">
-                {PRIORITY_TERMS.sort().map((term) => (
+                {allTerms.map((entry) => (
                   <Link
-                    key={term}
-                    href={`/insurance-glossary/${termToSlug(term)}`}
+                    key={entry.slug}
+                    href={`/insurance-glossary/${entry.slug}`}
                     className="font-body text-sm text-midnight hover:text-daybreak font-medium transition-colors px-3 py-1.5 rounded-lg hover:bg-daybreak/5"
                   >
-                    {term}
+                    {entry.label}
                   </Link>
                 ))}
               </div>
             </div>
 
-            {Object.entries(CATEGORIES).map(([category, terms]) => (
+            {grouped.map(({ category, terms }) => (
               <div key={category} className="mb-12">
                 <h2 className="font-display font-bold text-midnight text-2xl mb-6">
                   {category}
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {terms.map((term) => {
-                    const entry = GLOSSARY_TERMS[term];
-                    if (!entry) return null;
-                    return (
-                      <Link
-                        key={term}
-                        href={`/insurance-glossary/${termToSlug(term)}`}
-                        className="block bg-white rounded-xl border border-slate/10 p-5 hover:border-daybreak/30 hover:shadow-md transition-all group"
-                      >
-                        <h3 className="font-body font-bold text-midnight text-base mb-2 group-hover:text-daybreak transition-colors">
-                          {term}
-                        </h3>
-                        <p className="font-body text-slate text-sm leading-relaxed line-clamp-2">
-                          {entry.definition}
+                  {terms.map((entry) => (
+                    <Link
+                      key={entry.slug}
+                      href={`/insurance-glossary/${entry.slug}`}
+                      className="block bg-white rounded-xl border border-slate/10 p-5 hover:border-daybreak/30 hover:shadow-md transition-all group"
+                    >
+                      <h3 className="font-body font-bold text-midnight text-base mb-2 group-hover:text-daybreak transition-colors">
+                        {entry.label}
+                      </h3>
+                      <p className="font-body text-slate text-sm leading-relaxed line-clamp-2">
+                        {entry.definition}
+                      </p>
+                      {entry.plainEnglish && (
+                        <p className="font-body text-slate/80 text-xs leading-relaxed mt-2 line-clamp-2">
+                          {entry.plainEnglish}
                         </p>
-                      </Link>
-                    );
-                  })}
+                      )}
+                    </Link>
+                  ))}
                 </div>
               </div>
             ))}
