@@ -452,12 +452,12 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     loadDraft()
   }, [applicationId])
 
-  useEffect(() => {
-    ScreenCapture.preventScreenCaptureAsync()
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync()
-    }
-  }, [])
+  // useEffect(() => {
+  //   ScreenCapture.preventScreenCaptureAsync()
+  //   return () => {
+  //     ScreenCapture.allowScreenCaptureAsync()
+  //   }
+  // }, [])
 
   function update(key: keyof FormData, value: string) {
     setFormData((prev) => ({ ...prev, [key]: value }))

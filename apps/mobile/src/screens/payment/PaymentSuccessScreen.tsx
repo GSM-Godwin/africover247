@@ -20,12 +20,12 @@ export function PaymentSuccessScreen({ route, navigation }: any) {
   const [policy, setPolicy] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    ScreenCapture.preventScreenCaptureAsync()
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync()
-    }
-  }, [])
+  // useEffect(() => {
+  //   ScreenCapture.preventScreenCaptureAsync()
+  //   return () => {
+  //     ScreenCapture.allowScreenCaptureAsync()
+  //   }
+  // }, [])
 
   useEffect(() => {
     if (!applicationId) {

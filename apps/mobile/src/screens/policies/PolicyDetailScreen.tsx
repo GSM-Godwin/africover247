@@ -61,12 +61,12 @@ export function PolicyDetailScreen({ route, navigation }: any) {
       .finally(() => setLoading(false))
   }, [policyId])
 
-  useEffect(() => {
-    ScreenCapture.preventScreenCaptureAsync()
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync()
-    }
-  }, [])
+  // useEffect(() => {
+  //   ScreenCapture.preventScreenCaptureAsync()
+  //   return () => {
+  //     ScreenCapture.allowScreenCaptureAsync()
+  //   }
+  // }, [])
 
   if (loading) {
     return (

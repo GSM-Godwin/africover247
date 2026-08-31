@@ -54,12 +54,12 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
     return () => clearInterval(pollRef.current)
   }, [])
 
-  useEffect(() => {
-    ScreenCapture.preventScreenCaptureAsync()
-    return () => {
-      ScreenCapture.allowScreenCaptureAsync()
-    }
-  }, [])
+  // useEffect(() => {
+  //   ScreenCapture.preventScreenCaptureAsync()
+  //   return () => {
+  //     ScreenCapture.allowScreenCaptureAsync()
+  //   }
+  // }, [])
 
   if (!applicationId) {
     return (
