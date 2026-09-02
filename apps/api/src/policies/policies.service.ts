@@ -76,75 +76,209 @@ export class PoliciesService {
   // --- Generate policy PDF buffer ---
 
   private generatePdfBuffer(data: {
-    policyNumber: string;
-    issueDate: Date;
-    startDate: Date;
-    expiryDate: Date;
-    premiumPaid: number;
-    customerName: string;
-    customerEmail: string;
-    customerPhone: string;
-    productName: string;
-    productCategory: string;
-    coverageHighlights: string;
+    policyNumber: string
+    issueDate: Date
+    startDate: Date
+    expiryDate: Date
+    premiumPaid: number
+    customerName: string
+    customerEmail: string
+    customerPhone: string
+    productName: string
+    productCategory: string
+    coverageHighlights: string
+    exclusions: string
+    paymentRef: string
+    underwriter: string
   }): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const doc = new PDFDocument({ margin: 50 });
-      const chunks: Buffer[] = [];
-
-      doc.on('data', (chunk) => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      doc.fontSize(20).font('Helvetica-Bold').text('AfriCover247', { align: 'center' });
-      doc.fontSize(12).font('Helvetica').text('Digital Insurance Portal', { align: 'center' });
-      doc.fontSize(10).text('Powered by AfriGlobal Insurance Brokers Limited', { align: 'center' });
-      doc.moveDown();
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown();
-
-      doc.fontSize(16).font('Helvetica-Bold').text('INSURANCE POLICY CERTIFICATE');
-      doc.moveDown(0.5);
-      doc.fontSize(11).font('Helvetica');
-      doc.text(`Policy Number: ${data.policyNumber}`);
-      doc.text(`Issue Date: ${data.issueDate.toLocaleDateString('en-NG')}`);
-      doc.text(`Start Date: ${data.startDate.toLocaleDateString('en-NG')}`);
-      doc.text(`Expiry Date: ${data.expiryDate.toLocaleDateString('en-NG')}`);
-      doc.text(`Premium Paid: ₦${Number(data.premiumPaid).toLocaleString()}`);
-      doc.moveDown();
-
-      doc.fontSize(13).font('Helvetica-Bold').text('Policyholder Details');
-      doc.fontSize(11).font('Helvetica');
-      doc.text(`Name: ${data.customerName}`);
-      doc.text(`Email: ${data.customerEmail}`);
-      doc.text(`Phone: ${data.customerPhone}`);
-      doc.moveDown();
-
-      doc.fontSize(13).font('Helvetica-Bold').text('Product Details');
-      doc.fontSize(11).font('Helvetica');
-      doc.text(`Product: ${data.productName}`);
-      doc.text(`Category: ${data.productCategory}`);
-      doc.moveDown();
-
-      doc.fontSize(13).font('Helvetica-Bold').text('Coverage Highlights');
-      doc.fontSize(11).font('Helvetica');
-      const highlights = data.coverageHighlights.split('\n');
-      highlights.forEach((item) => {
-        if (item.trim()) doc.text(`• ${item.trim()}`);
-      });
-      doc.moveDown();
-
-      doc.moveTo(50, doc.y).lineTo(550, doc.y).stroke();
-      doc.moveDown(0.5);
-      doc.fontSize(9).font('Helvetica');
+      const doc = new PDFDocument({ margin: 0, size: 'A4' })
+      const chunks: Buffer[] = []
+      doc.on('data', (chunk) => chunks.push(chunk))
+      doc.on('end', () => resolve(Buffer.concat(chunks)))
+      doc.on('error', reject)
+  
+      const W = doc.page.width
+      const H = doc.page.height
+      const MIDNIGHT = '#0d1b2e'
+      const PRIMARY = '#15679b'
+      const DAYBREAK = '#F68B1E'
+      const SLATE = '#5C6478'
+      const PAPER = '#F7F8FA'
+      const BORDER = '#E2E8F0'
+      const SUCCESS = '#2E7D32'
+      const LIGHT_BLU = '#EBF4FA'
+  
+      // --- Header bar ---
+      doc.rect(0, 0, W, 120).fill(MIDNIGHT)
+      doc.fontSize(22).font('Helvetica-Bold').fillColor('white')
+      doc.text('AfriCover247', 40, 24)
+      doc.fontSize(9).font('Helvetica').fillColor('#A8C4D8')
+      doc.text('by AfriGlobal Insurance Brokers Limited', 40, 50)
+      doc.roundedRect(W - 180, 28, 140, 22, 4).fill(PRIMARY)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('white')
+      doc.text('NAICOM Licensed Broker', W - 175, 35, { width: 130, align: 'center' })
+      doc.fontSize(13).font('Helvetica-Bold').fillColor(DAYBREAK)
+      doc.text('CERTIFICATE OF INSURANCE', 40, 72)
+      doc.fontSize(9).font('Helvetica-Bold').fillColor('#A8C4D8')
+      doc.text(`Policy No: ${data.policyNumber}`, W - 230, 72, { width: 190, align: 'right' })
+      doc.roundedRect(40, 90, 55, 18, 3).fill(SUCCESS)
+      doc.fontSize(7).font('Helvetica-Bold').fillColor('white')
+      doc.text('ACTIVE', 40, 96, { width: 55, align: 'center' })
+      doc.fontSize(8).font('Helvetica').fillColor('#A8C4D8')
+      doc.text(`Issued: ${data.issueDate.toLocaleDateString('en-NG')}`, 102, 96)
+  
+      // --- Product banner ---
+      doc.rect(0, 120, W, 36).fill(LIGHT_BLU)
+      doc.fontSize(12).font('Helvetica-Bold').fillColor(PRIMARY)
+      doc.text(data.productName, 0, 131, { width: W, align: 'center' })
+  
+      // --- Insured details ---
+      let y = 174
+      doc.roundedRect(30, y - 10, W - 60, 110, 4).fillAndStroke(PAPER, BORDER)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(PRIMARY)
+      doc.text('INSURED DETAILS', 40, y)
+      doc.moveTo(30, y + 14).lineTo(W - 30, y + 14).stroke(BORDER)
+      y += 22
+  
+      const leftX = 40
+      const rightX = W / 2 + 10
+      const rowH = 20
+  
+      const insuredLeft = [
+        ['Full Name', data.customerName],
+        ['Email Address', data.customerEmail],
+        ['Phone Number', data.customerPhone || '—'],
+      ]
+      const insuredRight = [
+        ['Category', data.productCategory],
+        ['Nationality', 'Nigerian'],
+        ['Policy Type', 'Individual'],
+      ]
+  
+      insuredLeft.forEach(([label, value], i) => {
+        const ry = y + i * rowH
+        doc.fontSize(7).font('Helvetica').fillColor(SLATE).text(label, leftX, ry)
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(MIDNIGHT).text(value, leftX, ry + 8)
+      })
+      insuredRight.forEach(([label, value], i) => {
+        const ry = y + i * rowH
+        doc.fontSize(7).font('Helvetica').fillColor(SLATE).text(label, rightX, ry)
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(MIDNIGHT).text(value, rightX, ry + 8)
+      })
+  
+      // --- Policy details ---
+      y = 300
+      doc.roundedRect(30, y - 10, W - 60, 140, 4).fillAndStroke(PAPER, BORDER)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(PRIMARY)
+      doc.text('POLICY DETAILS', 40, y)
+      doc.moveTo(30, y + 14).lineTo(W - 30, y + 14).stroke(BORDER)
+      y += 22
+  
+      const policyFields: [string, string, string, string][] = [
+        ['Effective Date', data.startDate.toLocaleDateString('en-NG'), 'Expiry Date', data.expiryDate.toLocaleDateString('en-NG')],
+        ['Cover Type', data.productCategory, 'Policy Period', '12 months'],
+        ['Premium Paid', `NGN ${Number(data.premiumPaid).toLocaleString('en-NG')}`, 'Payment Ref', data.paymentRef || '—'],
+        ['Underwriter', data.underwriter, 'Issue Date', data.issueDate.toLocaleDateString('en-NG')],
+      ]
+  
+      policyFields.forEach(([l1, v1, l2, v2]) => {
+        doc.fontSize(7).font('Helvetica').fillColor(SLATE)
+        doc.text(l1, leftX, y)
+        doc.text(l2, rightX, y)
+        doc.fontSize(8).font('Helvetica-Bold').fillColor(MIDNIGHT)
+        doc.text(v1, leftX, y + 8)
+        doc.text(v2, rightX, y + 8)
+        y += 22
+      })
+  
+      // --- Coverage & Exclusions ---
+      y = 460
+      const colW = (W - 70) / 2
+  
+      doc.roundedRect(30, y - 10, colW, 110, 4).fillAndStroke(PAPER, BORDER)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(PRIMARY)
+      doc.text('COVERAGE HIGHLIGHTS', 40, y)
+      doc.moveTo(30, y + 14).lineTo(30 + colW, y + 14).stroke(BORDER)
+      y += 22
+      const coverItems = data.coverageHighlights.split('\n').filter(Boolean).slice(0, 5)
+      coverItems.forEach((item) => {
+        doc.circle(40, y + 4, 3).fill(SUCCESS)
+        doc.fontSize(7.5).font('Helvetica').fillColor(MIDNIGHT)
+        doc.text(item.trim(), 48, y, { width: colW - 25 })
+        y += 16
+      })
+  
+      y = 460
+      const exX = 40 + colW + 10
+      doc.roundedRect(exX - 10, y - 10, colW, 110, 4).fillAndStroke(PAPER, BORDER)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor(PRIMARY)
+      doc.text('EXCLUSIONS', exX, y)
+      doc.moveTo(exX - 10, y + 14).lineTo(exX - 10 + colW, y + 14).stroke(BORDER)
+      y += 22
+      const exItems = data.exclusions.split('\n').filter(Boolean).slice(0, 5)
+      exItems.forEach((item) => {
+        doc.circle(exX, y + 4, 3).fill('#C62828')
+        doc.fontSize(7.5).font('Helvetica').fillColor(MIDNIGHT)
+        doc.text(item.trim(), exX + 8, y, { width: colW - 25 })
+        y += 16
+      })
+  
+      // --- Declaration ---
+      y = 582
+      doc.roundedRect(30, y - 8, W - 60, 48, 4).fillAndStroke(LIGHT_BLU, PRIMARY)
+      doc.fontSize(7).font('Helvetica').fillColor(MIDNIGHT)
       doc.text(
-        'This policy is issued subject to the terms and conditions of AfriGlobal Insurance Brokers Limited. ' +
-          'RC 104345. Plot 141C, Oshodi/Gbagada Expressway, Anthony, Lagos.',
-        { align: 'center' },
-      );
-
-      doc.end();
-    });
+        'This certificate confirms that the insured named above holds a valid insurance policy issued by AfriGlobal Insurance Brokers ' +
+        'Limited, a NAICOM-licensed insurance broker. This document serves as evidence of cover for the period stated. ' +
+        'Claims must be reported within 30 days of occurrence. Subject to full policy terms and conditions.',
+        40, y,
+        { width: W - 80, align: 'justify' }
+      )
+  
+      // --- Signatures ---
+      y = 646
+      const sigW = (W - 80) / 3
+      const sigNames: [string, string][] = [
+        ['Casmir C. Azubuike', 'Managing Director / CEO'],
+        ['Solomon Egbeleye', 'Executive Director'],
+        ['Authorised Signatory', 'Underwriter Representative'],
+      ]
+      sigNames.forEach(([name, title], i) => {
+        const sx = 30 + i * (sigW + 10)
+        doc.moveTo(sx, y).lineTo(sx + sigW - 10, y).stroke(MIDNIGHT)
+        doc.fontSize(7.5).font('Helvetica-Bold').fillColor(MIDNIGHT)
+        doc.text(name, sx, y + 4)
+        doc.fontSize(7).font('Helvetica').fillColor(SLATE)
+        doc.text(title, sx, y + 14)
+      })
+  
+      doc.circle(W - 50, y + 10, 24).fillAndStroke(PAPER, MIDNIGHT)
+      doc.fontSize(6).font('Helvetica-Bold').fillColor(MIDNIGHT)
+      doc.text('COMPANY', W - 74, y + 3, { width: 48, align: 'center' })
+      doc.text('SEAL', W - 74, y + 11, { width: 48, align: 'center' })
+  
+      // --- Footer ---
+      doc.rect(0, H - 50, W, 50).fill(MIDNIGHT)
+      doc.fontSize(8).font('Helvetica-Bold').fillColor('white')
+      doc.text('AfriGlobal Insurance Brokers Limited', 30, H - 40)
+      doc.fontSize(7).font('Helvetica').fillColor('#A8C4D8')
+      doc.text('141c Oshodi/Gbagada Expressway, Anthony, Lagos, Nigeria', 30, H - 28)
+      doc.text('Tel: 08101315330 / 09063675032  |  info@afriglobal.com.ng  |  www.africover247.com.ng', 30, H - 18)
+      doc.fontSize(7).font('Helvetica').fillColor('#8BA8BC')
+      doc.text(`Cert: ${data.policyNumber}`, W - 180, H - 28, { width: 150, align: 'right' })
+      doc.text('NAICOM Licensed Broker', W - 180, H - 18, { width: 150, align: 'right' })
+  
+      // --- Watermark ---
+      doc.save()
+      doc.translate(W / 2, H / 2)
+      doc.rotate(45)
+      doc.fontSize(64).font('Helvetica-Bold').fillColor(PRIMARY).fillOpacity(0.04)
+      doc.text('AFRICOVER247', -150, -30)
+      doc.restore()
+  
+      doc.end()
+    })
   }
 
   // --- Generate and issue policy ---
@@ -155,8 +289,14 @@ export class PoliciesService {
       include: {
         user: true,
         product: true,
+        payments: {
+          where: { status: 'successful' },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
-    });
+    })
+    const payment = application?.payments?.[0] ?? null
 
     if (!application) {
       this.logger.error(
@@ -212,7 +352,10 @@ export class PoliciesService {
       productName: application.product.name,
       productCategory: application.product.category,
       coverageHighlights: application.product.coverageHighlights,
-    });
+      exclusions: application.product.exclusions || '',
+      paymentRef: payment?.gatewayReference || '',
+      underwriter: 'AfriGlobal Insurance Brokers Limited',
+    })
 
     let policyPdfUrl = '';
     try {
