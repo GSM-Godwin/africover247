@@ -36,11 +36,35 @@ export class AuthService {
     return Math.floor(100000 + Math.random() * 900000).toString();
   }
 
-  private signToken(userId: string, email: string, role: string): string {
+  private signToken(
+    userId: string,
+    email: string,
+    role: string,
+    tokenVersion: number,
+  ): string {
     return this.jwtService.sign(
-      { sub: userId, email, role },
+      { sub: userId, email, role, tokenVersion },
       { expiresIn: '12h' },
     );
+  }
+
+  generateToken(user: { id: string; email: string; role: string; tokenVersion: number }) {
+    return this.signToken(user.id, user.email, user.role, user.tokenVersion);
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
+    return { message: 'Logged out successfully' };
+  }
+
+  async incrementTokenVersion(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { tokenVersion: { increment: 1 } },
+    });
   }
 
   private sanitizeUser(user: {
@@ -167,6 +191,7 @@ export class AuthService {
       updatedUser.id,
       updatedUser.email,
       updatedUser.role,
+      updatedUser.tokenVersion,
     );
     return { accessToken, user: this.sanitizeUser(updatedUser) };
   }
@@ -220,7 +245,12 @@ export class AuthService {
       );
     }
 
-    const accessToken = this.signToken(user.id, user.email, user.role);
+    const accessToken = this.signToken(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
     return { accessToken, user: this.sanitizeUser(user) };
   }
 
@@ -275,6 +305,7 @@ export class AuthService {
       where: { id: user.id },
       data: { passwordHash },
     });
+    await this.incrementTokenVersion(user.id);
     await this.prisma.passwordReset.update({
       where: { id: reset.id },
       data: { usedAt: new Date() },
@@ -368,7 +399,12 @@ export class AuthService {
     });
     if (!user) throw new NotFoundException('User not found');
 
-    const accessToken = this.signToken(user.id, user.email, user.role);
+    const accessToken = this.signToken(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
     return { accessToken, user: this.sanitizeUser(user) };
   }
 
@@ -412,7 +448,12 @@ export class AuthService {
       );
     }
 
-    const accessToken = this.signToken(user.id, user.email, user.role);
+    const accessToken = this.signToken(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
     return { accessToken, user: this.sanitizeUser(user) };
   }
 
@@ -456,7 +497,12 @@ export class AuthService {
       );
     }
 
-    const accessToken = this.signToken(user.id, user.email, user.role);
+    const accessToken = this.signToken(
+      user.id,
+      user.email,
+      user.role,
+      user.tokenVersion,
+    );
     return { accessToken, user: this.sanitizeUser(user) };
   }
 }

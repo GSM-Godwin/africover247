@@ -29,6 +29,15 @@ const QUOTE_PRODUCT_SELECT = {
   assetFields: true,
 } as const;
 
+const QUOTE_CUSTOMER_SELECT = {
+  id: true,
+  firstName: true,
+  lastName: true,
+  email: true,
+  phone: true,
+  role: true,
+} as const;
+
 @Injectable()
 export class QuotesService {
   private readonly logger = new Logger(QuotesService.name);
@@ -117,7 +126,10 @@ export class QuotesService {
           customerDetails: dto.customerDetails as Prisma.InputJsonValue,
           negotiationHistory: [],
         },
-        include: { product: true, customer: true },
+        include: {
+          product: true,
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+        },
       });
 
       await tx.notification.create({
@@ -183,15 +195,7 @@ export class QuotesService {
       where: { id: quoteId },
       include: {
         product: { select: QUOTE_PRODUCT_SELECT },
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          },
-        },
+        customer: { select: QUOTE_CUSTOMER_SELECT },
       },
     });
 
@@ -225,7 +229,10 @@ export class QuotesService {
   ) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -327,7 +334,10 @@ export class QuotesService {
   async acceptQuote(quoteId: string, userId: string) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -503,7 +513,10 @@ export class QuotesService {
   ) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -587,7 +600,10 @@ export class QuotesService {
   ) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -690,7 +706,10 @@ export class QuotesService {
   async adminAcceptCounter(quoteId: string, adminId: string) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -808,7 +827,10 @@ export class QuotesService {
   async adminRejectQuote(quoteId: string, adminId: string, reason?: string) {
     const quote = await this.prisma.quote.findUnique({
       where: { id: quoteId },
-      include: { customer: true, product: true },
+      include: {
+        customer: { select: QUOTE_CUSTOMER_SELECT },
+        product: true,
+      },
     });
 
     if (!quote) throw new NotFoundException('Quote not found');
@@ -884,15 +906,7 @@ export class QuotesService {
       where: filters.status ? { status: filters.status as any } : {},
       include: {
         product: { select: { id: true, name: true, category: true } },
-        customer: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            phone: true,
-          },
-        },
+        customer: { select: QUOTE_CUSTOMER_SELECT },
       },
       orderBy: { createdAt: 'desc' },
     });

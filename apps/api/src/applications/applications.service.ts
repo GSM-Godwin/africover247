@@ -11,7 +11,10 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { CreateApplicationDto } from './dto/create-application.dto';
-import { UpdateApplicationDto } from './dto/update-application.dto';
+import {
+  UpdateApplicationDto,
+  sanitizeFormData,
+} from './dto/update-application.dto';
 import { StorageService } from '../storage/storage.service';
 import { KycService, type KycResult } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
@@ -123,28 +126,26 @@ export class ApplicationsService {
   async update(id: string, userId: string, dto: UpdateApplicationDto) {
     const application = await this.findOne(id, userId);
 
-    const mergedFormData = {
-      ...((application.formData as Record<string, unknown>) || {}),
-      ...(dto.formData || {}),
-    };
-
-    const stepCompleted =
-      dto.stepCompleted !== undefined &&
-      dto.stepCompleted > application.stepCompleted
-        ? dto.stepCompleted
-        : application.stepCompleted;
+    const cleanFormData = dto.formData
+      ? {
+          ...(application.formData as Record<string, unknown>),
+          ...sanitizeFormData(dto.formData),
+        }
+      : undefined;
 
     const updated = await this.prisma.application.update({
       where: { id },
       data: {
-        formData: mergedFormData as Prisma.InputJsonValue,
-        stepCompleted,
-        updatedAt: new Date(),
+        ...(cleanFormData
+          ? { formData: cleanFormData as Prisma.InputJsonValue }
+          : {}),
       },
       include: { product: true },
     });
 
-    await this.redisService.saveDraft(id, mergedFormData);
+    if (cleanFormData) {
+      await this.redisService.saveDraft(id, cleanFormData);
+    }
 
     return updated;
   }

@@ -1,13 +1,46 @@
-import { IsObject, IsOptional, IsInt, Min, Max } from 'class-validator';
+import { IsObject, IsOptional } from 'class-validator';
+
+const ALLOWED_FORM_DATA_KEYS = [
+  'firstName',
+  'lastName',
+  'email',
+  'phone',
+  'dateOfBirth',
+  'gender',
+  'nationality',
+  'maritalStatus',
+  'streetAddress',
+  'address',
+  'city',
+  'state',
+  'lga',
+  'alternativePhone',
+  'employmentStatus',
+  'employer',
+  'employerName',
+  'jobTitle',
+  'occupation',
+  'monthlyIncomeRange',
+  'annualIncome',
+  'assetDetails',
+  'calculatedPremium',
+  'quotedPremium',
+  'quoteId',
+  'fromQuote',
+];
 
 export class UpdateApplicationDto {
   @IsObject()
   @IsOptional()
   formData?: Record<string, unknown>;
+}
 
-  @IsInt()
-  @Min(0)
-  @Max(4)
-  @IsOptional()
-  stepCompleted?: number;
+export function sanitizeFormData(
+  formData: Record<string, unknown>,
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(formData).filter(([key]) =>
+      ALLOWED_FORM_DATA_KEYS.includes(key),
+    ),
+  );
 }

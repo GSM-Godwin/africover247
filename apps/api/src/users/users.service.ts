@@ -8,6 +8,7 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
+import { AuthService } from '../auth/auth.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -19,6 +20,7 @@ export class UsersService {
   constructor(
     private prisma: PrismaService,
     private readonly adminService: AdminService,
+    private readonly authService: AuthService,
   ) {}
 
   // --- Get user by id ---
@@ -72,15 +74,18 @@ export class UsersService {
 
     const passwordHash = await bcrypt.hash(dto.newPassword, 12);
     await this.prisma.user.update({ where: { id }, data: { passwordHash } });
+    await this.authService.incrementTokenVersion(id);
 
     return { message: 'Password changed successfully' };
   }
 
   async savePushToken(userId: string, token: string, platform: string) {
-    return this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id: userId },
       data: { pushToken: token, pushPlatform: platform },
     });
+    const { passwordHash, ...safeUser } = user;
+    return safeUser;
   }
 
   async getAllUsers(role?: string) {

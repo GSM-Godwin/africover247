@@ -117,8 +117,8 @@ export class AuthController {
   @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  logout() {
-    return { message: 'Logged out successfully' };
+  logout(@CurrentUser() user: { id: string }) {
+    return this.authService.logout(user.id);
   }
 
   @SkipThrottle()
