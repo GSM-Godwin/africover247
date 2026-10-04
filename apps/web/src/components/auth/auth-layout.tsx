@@ -43,7 +43,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </div>
 
-      <div className="flex-1 bg-[#F5F5F7] flex flex-col justify-center px-6 py-12 sm:px-10 lg:px-16 xl:px-24">
+      <div className="flex-1 bg-[#F5F5F7] flex flex-col justify-center items-center px-6 py-12 sm:px-10 lg:px-16 xl:px-24">
         <div className="flex justify-center mb-8 lg:hidden">
           <div className="bg-white rounded-2xl px-6 py-4 shadow-sm">
             <Image
