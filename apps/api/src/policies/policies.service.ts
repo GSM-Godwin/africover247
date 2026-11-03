@@ -6,6 +6,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { randomInt } from 'crypto';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -67,10 +68,20 @@ export class PoliciesService {
 
   // --- Generate policy number ---
 
-  private generatePolicyNumber(): string {
+  private async generatePolicyNumber(): Promise<string> {
     const year = new Date().getFullYear();
-    const random = Math.floor(10000 + Math.random() * 90000);
-    return `AFC-${year}-${random}`;
+    const max = 10;
+    for (let attempt = 0; attempt < max; attempt++) {
+      const random = randomInt(100000, 999999);
+      const candidate = `AFC-${year}-${random}`;
+      const existing = await this.prisma.policy.findUnique({
+        where: { policyNumber: candidate },
+        select: { id: true },
+      });
+      if (!existing) return candidate;
+    }
+    const ts = Date.now().toString(36).toUpperCase();
+    return `AFC-${year}-${ts}`;
   }
 
   // --- Generate policy PDF buffer ---
@@ -316,7 +327,7 @@ export class PoliciesService {
       return;
     }
 
-    const policyNumber = this.generatePolicyNumber();
+    const policyNumber = await this.generatePolicyNumber();
     const issueDate = new Date();
     const startDate = new Date();
     const expiryDate = new Date();

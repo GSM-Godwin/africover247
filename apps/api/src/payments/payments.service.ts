@@ -175,12 +175,10 @@ export class PaymentsService {
   private async handleSuccessfulCharge(data: Record<string, unknown>) {
     const monnifyReference = (data.paymentReference || data.reference) as string;
 
-    const paymentId = monnifyReference.includes('-')
-      ? monnifyReference.split('-').slice(0, 5).join('-')
-      : monnifyReference;
+    const paymentId = this.extractPaymentIdFromMonnifyReference(monnifyReference);
 
     this.logger.log(
-      `Processing successful payment — monnifyReference: ${monnifyReference}, paymentId: ${paymentId}`,
+      `Processing successful payment webhook — paymentId: ${paymentId}`,
     );
 
     const payment = await this.prisma.payment.findUnique({
@@ -188,7 +186,7 @@ export class PaymentsService {
     });
 
     if (!payment) {
-      this.logger.warn(`Payment not found for reference: ${monnifyReference}`);
+      this.logger.warn(`Payment not found for webhook paymentId: ${paymentId}`);
       return;
     }
 
@@ -197,12 +195,35 @@ export class PaymentsService {
       return;
     }
 
+    let gatewayResponse: Prisma.InputJsonValue = data as Prisma.InputJsonValue;
+
+    if (!this.monnifyService.isStubMode()) {
+      const verification = await this.monnifyService.verifyTransaction(
+        payment.gatewayReference || monnifyReference,
+      );
+
+      const expectedAmount = Number(payment.amount);
+      const verifiedAmount = Number(verification.amount);
+
+      if (
+        verification.status !== 'PAID' ||
+        Math.abs(verifiedAmount - expectedAmount) > 0.01
+      ) {
+        this.logger.warn(
+          `Payment ${paymentId} failed Monnify verification — refusing to issue policy`,
+        );
+        return;
+      }
+
+      gatewayResponse = verification.gatewayResponse as Prisma.InputJsonValue;
+    }
+
     await this.prisma.payment.update({
       where: { id: paymentId },
       data: {
         status: 'successful',
         webhookReceivedAt: new Date(),
-        gatewayResponse: data as Prisma.InputJsonValue,
+        gatewayResponse,
       },
     });
 

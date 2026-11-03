@@ -140,7 +140,7 @@ export class AuthService {
     });
 
     const otp = this.generateOtp();
-    this.logger.log(`[AUTH] OTP generated for ${user.email}: ${otp}`);
+    this.logger.log(`[AUTH] OTP generated for ${user.email}`);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.prisma.emailVerification.create({
       data: { userId: user.id, otpCode: otp, expiresAt },
@@ -218,7 +218,7 @@ export class AuthService {
 
     this.dispatchVerificationOtp(user.email, otp, user.firstName, user.phone);
 
-    this.logger.log(`[AUTH] Resent OTP for ${email}: ${otp}`);
+    this.logger.log(`[AUTH] Resent OTP for ${email}`);
 
     return { message: 'A new verification code has been sent.' };
   }
@@ -358,7 +358,7 @@ export class AuthService {
       data: { phone: normalized, otpCode: otp, expiresAt },
     });
 
-    this.logger.log(`[AUTH] Phone OTP for ${normalized}: ${otp}`);
+    this.logger.log(`[AUTH] Phone OTP for ${normalized}`);
     await this.smsService.sendOtpSms(normalized, otp);
 
     return { message: 'OTP sent to your phone number' };

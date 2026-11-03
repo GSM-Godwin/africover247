@@ -10,6 +10,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import type { RawBodyRequest } from '@nestjs/common';
 import { SkipThrottle } from '@nestjs/throttler';
 import type { Request } from 'express';
 import { PaymentsService } from './payments.service';
@@ -56,10 +57,9 @@ export class PaymentsWebhookController {
   @HttpCode(200)
   async handleWebhook(
     @Headers('monnify-signature') signature: string,
-    @Body() body: any,
-    @Req() req: Request,
+    @Req() req: RawBodyRequest<Request>,
   ) {
-    const rawBody = JSON.stringify(body);
+    const rawBody = req.rawBody ? req.rawBody.toString('utf8') : '';
     return this.paymentsService.handleWebhook(rawBody, signature || '');
   }
 }

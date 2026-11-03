@@ -32,6 +32,11 @@ export class MonnifyService {
       this.secretKey === 'placeholder';
 
     if (this.isStub) {
+      if (this.configService.get<string>('NODE_ENV') === 'production') {
+        throw new Error(
+          'Monnify API credentials are missing or placeholder in production — refusing to start in stub mode',
+        );
+      }
       this.logger.log('[STUB] Monnify not configured — using stub mode');
     }
   }
@@ -109,28 +114,35 @@ export class MonnifyService {
       return true;
     }
 
-    if (this.configService.get<string>('MONNIFY_ENV') !== 'production') {
-      this.logger.log(
-        '[SANDBOX] Monnify webhook signature verification bypassed',
-      );
-      return true;
-    }
-
     if (!signature) {
       this.logger.warn('Monnify webhook: no signature header received');
       return false;
     }
 
     try {
-      const hash = crypto
+      const expected = crypto
         .createHmac('sha512', this.secretKey)
         .update(body)
         .digest('hex');
-      return hash === signature;
+
+      const expectedBuffer = Buffer.from(expected, 'hex');
+      const signatureBuffer = Buffer.from(signature, 'hex');
+
+      if (expectedBuffer.length !== signatureBuffer.length) {
+        return false;
+      }
+
+      return crypto.timingSafeEqual(expectedBuffer, signatureBuffer);
     } catch (error) {
       this.logger.error('Webhook signature verification error', error);
       return false;
     }
+  }
+
+  // --- Stub mode flag (no real Monnify credentials configured) ---
+
+  isStubMode(): boolean {
+    return this.isStub;
   }
 
   // --- Verify transaction ---
