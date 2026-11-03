@@ -53,7 +53,7 @@ export class SmsService {
   async sendOtpSms(phone: string, otp: string): Promise<void> {
     this.logger.log(`[SMS] sendOtpSms called for ${phone} — stub: ${this.isStub}`);
     if (this.isStub) {
-      this.logger.log(`[STUB] SMS OTP to ${phone}: ${otp}`);
+      this.logger.log(`[STUB] SMS OTP suppressed for ${phone}`);
       return;
     }
 

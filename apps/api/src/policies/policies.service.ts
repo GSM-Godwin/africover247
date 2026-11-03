@@ -294,20 +294,31 @@ export class PoliciesService {
 
   // --- Generate and issue policy ---
 
-  async generatePolicy(applicationId: string): Promise<void> {
+  private isPolicyNumberConflict(error: unknown): boolean {
+    if (
+      !(error instanceof Prisma.PrismaClientKnownRequestError) ||
+      error.code !== 'P2002'
+    ) {
+      return false;
+    }
+    const target = error.meta?.target;
+    if (Array.isArray(target)) return target.includes('policyNumber');
+    if (typeof target === 'string') return target.includes('policyNumber');
+    return false;
+  }
+
+  async generatePolicy(
+    applicationId: string,
+    paymentId: string,
+    gatewayResponse: Prisma.InputJsonValue,
+  ): Promise<void> {
     const application = await this.prisma.application.findUnique({
       where: { id: applicationId },
       include: {
         user: true,
         product: true,
-        payments: {
-          where: { status: 'successful' },
-          orderBy: { createdAt: 'desc' },
-          take: 1,
-        },
       },
     })
-    const payment = application?.payments?.[0] ?? null
 
     if (!application) {
       this.logger.error(
@@ -326,6 +337,10 @@ export class PoliciesService {
       );
       return;
     }
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { id: paymentId },
+    });
 
     const policyNumber = await this.generatePolicyNumber();
     const issueDate = new Date();
@@ -376,32 +391,75 @@ export class PoliciesService {
       this.logger.error(`Failed to upload policy PDF`, error);
     }
 
-    const policy = await this.prisma.policy.create({
-      data: {
-        applicationId,
-        userId: application.userId,
-        productId: application.productId,
-        policyNumber,
-        issueDate,
-        startDate,
-        expiryDate,
-        premiumPaid: premiumAmount,
-        policyPdfUrl,
-        status: 'active',
-      },
-    });
+    const MAX_POLICY_NUMBER_RETRIES = 5;
 
-    await this.prisma.application.update({
-      where: { id: applicationId },
-      data: { status: 'issued' },
-    });
+    let policy;
+    try {
+      policy = await this.prisma.$transaction(async (tx) => {
+        await tx.payment.update({
+          where: { id: paymentId },
+          data: {
+            status: 'successful',
+            webhookReceivedAt: new Date(),
+            gatewayResponse,
+          },
+        });
+
+        let currentPolicyNumber = policyNumber;
+        let createdPolicy: Awaited<ReturnType<typeof tx.policy.create>> | undefined;
+
+        for (let attempt = 0; attempt <= MAX_POLICY_NUMBER_RETRIES; attempt++) {
+          try {
+            createdPolicy = await tx.policy.create({
+              data: {
+                applicationId,
+                userId: application.userId,
+                productId: application.productId,
+                policyNumber: currentPolicyNumber,
+                issueDate,
+                startDate,
+                expiryDate,
+                premiumPaid: premiumAmount,
+                policyPdfUrl,
+                status: 'active',
+              },
+            });
+            break;
+          } catch (error) {
+            if (
+              !this.isPolicyNumberConflict(error) ||
+              attempt === MAX_POLICY_NUMBER_RETRIES
+            ) {
+              throw error;
+            }
+            currentPolicyNumber = await this.generatePolicyNumber();
+          }
+        }
+
+        if (!createdPolicy) {
+          throw new Error('Failed to create policy after retries');
+        }
+
+        await tx.application.update({
+          where: { id: applicationId },
+          data: { status: 'issued' },
+        });
+
+        return createdPolicy;
+      });
+    } catch (error) {
+      this.logger.error(
+        `Policy issuance transaction rolled back for payment ${paymentId} — payment not marked successful`,
+      );
+      throw error;
+    }
 
     await this.applicationsService.clearDraft(applicationId);
 
     await this.prisma.notification.create({
       data: {
         userId: application.userId,
-        message: `Your policy ${policyNumber} has been issued. Check your email for the policy document.`,
+        message: `Your policy ${policy.policyNumber} has been issued. Check your email for the policy document.`,
         type: 'policy_issued',
         referenceType: 'policy',
         referenceId: policy.id,
@@ -411,7 +469,7 @@ export class PoliciesService {
     await this.emailService.sendPolicyIssuedEmail(
       application.user.email,
       application.user.firstName,
-      policyNumber,
+      policy.policyNumber,
       application.product.name,
       policyPdfUrl || null,
     );
@@ -426,12 +484,12 @@ export class PoliciesService {
     if (application.user.phone) {
       await this.smsService.sendPolicyIssuedSms(
         application.user.phone,
-        policyNumber,
+        policy.policyNumber,
       );
     }
 
     this.logger.log(
-      `Policy ${policyNumber} issued for application ${applicationId}`,
+      `Policy ${policy.policyNumber} issued for application ${applicationId}`,
     );
 
     await this.adminService.createAuditLog({

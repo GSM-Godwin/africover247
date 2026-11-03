@@ -3,6 +3,7 @@ import {
   NotFoundException,
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -364,46 +365,62 @@ export class QuotesService {
 
     if (!finalAmount) throw new BadRequestException('No quote amount to accept');
 
-    await this.prisma.quote.update({
-      where: { id: quoteId },
-      data: {
-        status: 'accepted',
-        finalAmount,
-        negotiationHistory: [
-          ...((quote.negotiationHistory as object[]) || []),
-          {
-            actor: 'customer',
-            actorId: userId,
-            action: 'accepted',
-            amount: finalAmount,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      },
-    });
-
-    const application = await this.prisma.application.create({
-      data: {
-        userId,
-        productId: quote.productId,
-        status: 'pending_payment',
-        stepCompleted: 4,
-        formData: {
-          ...(quote.customerDetails as object),
-          calculatedPremium: Number(finalAmount),
-          fromQuoteId: quote.id,
+    const application = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.quote.updateMany({
+        where: { id: quoteId, status: quote.status },
+        data: {
+          status: 'accepted',
+          finalAmount,
+          negotiationHistory: [
+            ...((quote.negotiationHistory as object[]) || []),
+            {
+              actor: 'customer',
+              actorId: userId,
+              action: 'accepted',
+              amount: finalAmount,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         },
-        assetDetails: quote.customerDetails as Prisma.InputJsonValue,
-      },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException('Quote already accepted');
+      }
+
+      const createdApplication = await tx.application.create({
+        data: {
+          userId,
+          productId: quote.productId,
+          status: 'pending_payment',
+          stepCompleted: 4,
+          formData: {
+            ...(quote.customerDetails as object),
+            calculatedPremium: Number(finalAmount),
+            fromQuoteId: quote.id,
+          },
+          assetDetails: quote.customerDetails as Prisma.InputJsonValue,
+        },
+      });
+
+      await tx.payment.create({
+        data: {
+          applicationId: createdApplication.id,
+          amount: finalAmount,
+          currency: 'NGN',
+          status: 'pending',
+        },
+      });
+
+      return createdApplication;
     });
 
-    await this.prisma.payment.create({
-      data: {
-        applicationId: application.id,
-        amount: finalAmount,
-        currency: 'NGN',
-        status: 'pending',
-      },
+    await this.adminService.createAuditLog({
+      actorId: userId,
+      action: 'QUOTE_ACCEPTED',
+      entityType: 'Quote',
+      entityId: quoteId,
+      details: { amount: Number(finalAmount) },
     });
 
     await this.prisma.notification.create({
@@ -724,47 +741,63 @@ export class QuotesService {
 
     const finalAmount = quote.customerCounterAmount;
 
-    await this.prisma.quote.update({
-      where: { id: quoteId },
-      data: {
-        status: 'accepted',
-        finalAmount,
-        adminQuoteAmount: finalAmount,
-        negotiationHistory: [
-          ...((quote.negotiationHistory as object[]) || []),
-          {
-            actor: 'admin',
-            actorId: adminId,
-            action: 'accepted_counter',
-            amount: finalAmount,
-            timestamp: new Date().toISOString(),
-          },
-        ],
-      },
-    });
-
-    const application = await this.prisma.application.create({
-      data: {
-        userId: quote.customerId,
-        productId: quote.productId,
-        status: 'pending_payment',
-        stepCompleted: 4,
-        formData: {
-          ...(quote.customerDetails as object),
-          calculatedPremium: Number(finalAmount),
-          fromQuoteId: quote.id,
+    const application = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.quote.updateMany({
+        where: { id: quoteId, status: quote.status },
+        data: {
+          status: 'accepted',
+          finalAmount,
+          adminQuoteAmount: finalAmount,
+          negotiationHistory: [
+            ...((quote.negotiationHistory as object[]) || []),
+            {
+              actor: 'admin',
+              actorId: adminId,
+              action: 'accepted_counter',
+              amount: finalAmount,
+              timestamp: new Date().toISOString(),
+            },
+          ],
         },
-        assetDetails: quote.customerDetails as Prisma.InputJsonValue,
-      },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException('Quote already accepted');
+      }
+
+      const createdApplication = await tx.application.create({
+        data: {
+          userId: quote.customerId,
+          productId: quote.productId,
+          status: 'pending_payment',
+          stepCompleted: 4,
+          formData: {
+            ...(quote.customerDetails as object),
+            calculatedPremium: Number(finalAmount),
+            fromQuoteId: quote.id,
+          },
+          assetDetails: quote.customerDetails as Prisma.InputJsonValue,
+        },
+      });
+
+      await tx.payment.create({
+        data: {
+          applicationId: createdApplication.id,
+          amount: finalAmount,
+          currency: 'NGN',
+          status: 'pending',
+        },
+      });
+
+      return createdApplication;
     });
 
-    await this.prisma.payment.create({
-      data: {
-        applicationId: application.id,
-        amount: finalAmount,
-        currency: 'NGN',
-        status: 'pending',
-      },
+    await this.adminService.createAuditLog({
+      actorId: adminId,
+      action: 'QUOTE_COUNTER_ACCEPTED',
+      entityType: 'Quote',
+      entityId: quoteId,
+      details: { amount: Number(finalAmount) },
     });
 
     await this.prisma.notification.create({
@@ -806,13 +839,6 @@ export class QuotesService {
     this.logger.log(
       `Admin accepted counter for quote ${quoteId} — application ${application.id} created`,
     );
-
-    await this.adminService.createAuditLog({
-      actorId: adminId,
-      action: 'QUOTE_COUNTER_ACCEPTED',
-      entityType: 'Quote',
-      entityId: quoteId,
-    });
 
     return {
       message: 'Counter-offer accepted',

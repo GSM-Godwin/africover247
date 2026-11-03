@@ -16,3 +16,4 @@ coverage/
 docs/
 apps/mobile/google-services.json
 apps/api/firebase-service-account.json
+CLAUDE.md

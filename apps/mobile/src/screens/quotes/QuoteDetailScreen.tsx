@@ -93,12 +93,22 @@ export function QuoteDetailScreen({ route, navigation }: any) {
       })
     } catch (err: any) {
       setSubmitting(false)
-      setConfirmModal({
-        visible: true,
-        title: 'Error',
-        message: err.response?.data?.message || 'Could not accept quote.',
-        onConfirm: () => {},
-      })
+      if (err.response?.status === 409) {
+        setConfirmModal({
+          visible: true,
+          title: 'Already Accepted',
+          message: 'This quote has already been accepted.',
+          onConfirm: () => {},
+        })
+        await fetchQuote()
+      } else {
+        setConfirmModal({
+          visible: true,
+          title: 'Error',
+          message: err.response?.data?.message || 'Could not accept quote.',
+          onConfirm: () => {},
+        })
+      }
     }
   }
 

@@ -109,9 +109,16 @@ export default function AdminQuoteDetailPage() {
       toast.success("Counter-offer accepted. Application created.");
       router.push("/admin/quotes");
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { message?: string } } })
-        .response?.data?.message;
-      toast.error(message || "Could not accept counter.");
+      const response = (
+        err as { response?: { status?: number; data?: { message?: string } } }
+      ).response;
+      if (response?.status === 409) {
+        toast.error("This quote has already been accepted.");
+        const res = await api.get<QuoteRecord>(`/admin/quotes/${id}`);
+        setQuote(res.data);
+      } else {
+        toast.error(response?.data?.message || "Could not accept counter.");
+      }
       setSubmitting(false);
     }
   }
@@ -494,7 +501,7 @@ export default function AdminQuoteDetailPage() {
                 disabled={submitting}
                 className="flex-1 bg-cover-green text-white font-body font-bold text-sm py-3 rounded-lg hover:bg-cover-green/90 disabled:opacity-60 transition-colors"
               >
-                Accept Counter
+                {submitting ? "Accepting..." : "Accept Counter"}
               </button>
               {roundsRemaining > 0 && (
                 <button

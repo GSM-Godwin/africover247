@@ -218,26 +218,14 @@ export class PaymentsService {
       gatewayResponse = verification.gatewayResponse as Prisma.InputJsonValue;
     }
 
-    await this.prisma.payment.update({
-      where: { id: paymentId },
-      data: {
-        status: 'successful',
-        webhookReceivedAt: new Date(),
-        gatewayResponse,
-      },
-    });
-
-    await this.prisma.application.update({
-      where: { id: payment.applicationId },
-      data: { status: 'paid' },
-    });
-
-    await this.applicationsService.clearDraft(payment.applicationId);
-
     this.logger.log(
-      `Payment ${paymentId} processed — triggering policy generation`,
+      `Payment ${paymentId} verified — issuing policy`,
     );
-    await this.policiesService.generatePolicy(payment.applicationId);
+    await this.policiesService.generatePolicy(
+      payment.applicationId,
+      paymentId,
+      gatewayResponse,
+    );
   }
 
   // --- Handle failed charge ---

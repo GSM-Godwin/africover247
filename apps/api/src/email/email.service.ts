@@ -57,7 +57,7 @@ export class EmailService {
   // --- Send OTP email ---
   async sendOtpEmail(email: string, otp: string, firstName: string): Promise<void> {
     if (this.isStub) {
-      this.logger.log(`[STUB] OTP for ${email}: ${otp}`)
+      this.logger.log(`[STUB] OTP email suppressed for ${email}`)
       return
     }
 
