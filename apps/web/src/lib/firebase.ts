@@ -33,10 +33,16 @@ export async function signInWithGoogle() {
   const authInstance = getFirebaseAuth();
   const googleProvider = new GoogleAuthProvider();
   const result = await signInWithPopup(authInstance, googleProvider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  const idToken = credential?.idToken;
+
+  if (!idToken) {
+    throw new Error("Google sign-in did not return an ID token.");
+  }
+
   const user = result.user;
   return {
-    googleId: user.uid,
-    email: user.email || "",
+    idToken,
     firstName: user.displayName?.split(" ")[0] || "",
     lastName: user.displayName?.split(" ").slice(1).join(" ") || "",
   };

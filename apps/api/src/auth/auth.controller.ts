@@ -14,6 +14,8 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { GoogleAuthDto } from './dto/google-auth.dto';
+import { AppleAuthDto } from './dto/apple-auth.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 
@@ -72,38 +74,20 @@ export class AuthController {
   }
 
   @Post('google')
-  googleAuth(
-    @Body()
-    body: {
-      googleId: string;
-      email: string;
-      firstName: string;
-      lastName: string;
-    },
-  ) {
+  googleAuth(@Body() dto: GoogleAuthDto) {
     return this.authService.googleAuth(
-      body.googleId,
-      body.email,
-      body.firstName,
-      body.lastName,
+      dto.idToken,
+      dto.firstName || '',
+      dto.lastName || '',
     );
   }
 
   @Post('apple')
-  appleAuth(
-    @Body()
-    body: {
-      appleId: string;
-      email: string | null;
-      firstName: string;
-      lastName: string;
-    },
-  ) {
+  appleAuth(@Body() dto: AppleAuthDto) {
     return this.authService.appleAuth(
-      body.appleId,
-      body.email,
-      body.firstName,
-      body.lastName,
+      dto.identityToken,
+      dto.firstName || '',
+      dto.lastName || '',
     );
   }
 

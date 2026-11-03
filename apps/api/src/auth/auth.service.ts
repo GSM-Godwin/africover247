@@ -9,6 +9,8 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import { OAuth2Client } from 'google-auth-library';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
@@ -18,9 +20,15 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 
+const APPLE_ISSUER = 'https://appleid.apple.com';
+const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
+const DEFAULT_APPLE_AUDIENCE = 'com.africover247.app';
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
+  private readonly googleClient = new OAuth2Client();
+  private readonly appleJwks = createRemoteJWKSet(new URL(APPLE_JWKS_URL));
 
   constructor(
     private prisma: PrismaService,
@@ -29,6 +37,21 @@ export class AuthService {
     private emailService: EmailService,
     private smsService: SmsService,
   ) {}
+
+  private getGoogleAudience(): string[] {
+    return [
+      this.configService.get<string>('GOOGLE_WEB_CLIENT_ID'),
+      this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID'),
+      this.configService.get<string>('GOOGLE_IOS_CLIENT_ID'),
+    ].filter((id): id is string => Boolean(id));
+  }
+
+  private getAppleAudience(): string[] {
+    return (this.configService.get<string>('APPLE_CLIENT_ID') || DEFAULT_APPLE_AUDIENCE)
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+  }
 
   // --- Helpers ---
 
@@ -416,11 +439,30 @@ export class AuthService {
   }
 
   async googleAuth(
-    googleId: string,
-    email: string,
+    idToken: string,
     firstName: string,
     lastName: string,
   ) {
+    const audience = this.getGoogleAudience();
+    if (!audience.length) {
+      throw new UnauthorizedException('Google sign-in is not configured');
+    }
+
+    let payload;
+    try {
+      const ticket = await this.googleClient.verifyIdToken({ idToken, audience });
+      payload = ticket.getPayload();
+    } catch {
+      throw new UnauthorizedException('Invalid Google sign-in token');
+    }
+
+    if (!payload?.sub || !payload.email || !payload.email_verified) {
+      throw new UnauthorizedException('Invalid Google sign-in token');
+    }
+
+    const googleId = payload.sub;
+    const email = payload.email;
+
     let user = await this.prisma.user.findUnique({ where: { email } });
 
     if (!user) {
@@ -458,11 +500,34 @@ export class AuthService {
   }
 
   async appleAuth(
-    appleId: string,
-    email: string | null,
+    identityToken: string,
     firstName: string,
     lastName: string,
   ) {
+    let verifiedPayload;
+    try {
+      const { payload } = await jwtVerify(identityToken, this.appleJwks, {
+        issuer: APPLE_ISSUER,
+        audience: this.getAppleAudience(),
+      });
+      verifiedPayload = payload;
+    } catch {
+      throw new UnauthorizedException('Invalid Apple sign-in token');
+    }
+
+    const appleId = verifiedPayload.sub;
+    if (!appleId) {
+      throw new UnauthorizedException('Invalid Apple sign-in token');
+    }
+
+    const emailVerified =
+      verifiedPayload.email_verified === true ||
+      verifiedPayload.email_verified === 'true';
+    const email =
+      emailVerified && typeof verifiedPayload.email === 'string'
+        ? verifiedPayload.email
+        : null;
+
     let user = email
       ? await this.prisma.user.findUnique({ where: { email } })
       : null;

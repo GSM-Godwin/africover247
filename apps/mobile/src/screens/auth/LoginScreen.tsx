@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { setToken, setUser } from '../../services/auth'
+import { decodeJwtPayload } from '../../utils/jwt'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -39,11 +40,10 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const googleClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder'
-
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
+  const [googleRequest, googleResponse, googlePromptAsync] = Google.useIdTokenAuthRequest({
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder',
-    androidClientId: googleClientId,
+    androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'placeholder',
+    iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'placeholder',
   })
 
   const hasGoogleClientId = Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
@@ -54,23 +54,20 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
 
   useEffect(() => {
     if (googleResponse?.type === 'success') {
-      handleGoogleResponse(googleResponse.authentication?.accessToken || '')
+      handleGoogleResponse(googleResponse.params.id_token || '')
     }
   }, [googleResponse])
 
-  async function handleGoogleResponse(accessToken: string) {
-    if (!accessToken) return
+  async function handleGoogleResponse(idToken: string) {
+    if (!idToken) return
     setLoading(true)
     try {
-      const userInfoRes = await fetch('https://www.googleapis.com/userinfo/v2/me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      })
-      const userInfo = await userInfoRes.json()
+      const claims = decodeJwtPayload(idToken)
+      const name = typeof claims.name === 'string' ? claims.name : ''
       const res = await api.post('/auth/google', {
-        googleId: userInfo.id,
-        email: userInfo.email,
-        firstName: userInfo.given_name || userInfo.name?.split(' ')[0] || '',
-        lastName: userInfo.family_name || userInfo.name?.split(' ').slice(1).join(' ') || '',
+        idToken,
+        firstName: (claims.given_name as string) || name.split(' ')[0] || '',
+        lastName: (claims.family_name as string) || name.split(' ').slice(1).join(' ') || '',
       })
       await setToken(res.data.accessToken)
       await setUser(res.data.user)
@@ -94,9 +91,13 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
         ],
       })
 
+      if (!credential.identityToken) {
+        setError('Apple Sign-In failed. Please try again.')
+        return
+      }
+
       const res = await api.post('/auth/apple', {
-        appleId: credential.user,
-        email: credential.email || null,
+        identityToken: credential.identityToken,
         firstName: credential.fullName?.givenName || '',
         lastName: credential.fullName?.familyName || '',
       })
