@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ConflictException,
+  UnauthorizedException,
   Logger,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
@@ -12,6 +13,9 @@ import { AuthService } from '../auth/auth.service';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
+
+const FRESH_LOGIN_WINDOW_SECONDS = 5 * 60;
 
 @Injectable()
 export class UsersService {
@@ -77,6 +81,87 @@ export class UsersService {
     await this.authService.incrementTokenVersion(id);
 
     return { message: 'Password changed successfully' };
+  }
+
+  // --- Delete account (self-service, anonymise rather than hard-delete) ---
+
+  async deleteAccount(
+    authUser: { id: string; iat?: number },
+    dto: DeleteAccountDto,
+  ) {
+    const userId = authUser.id;
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new NotFoundException('User not found');
+    if (user.deletedAt) {
+      throw new BadRequestException('This account has already been deleted');
+    }
+
+    if (dto.password) {
+      const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
+      if (!passwordMatch) throw new BadRequestException('Incorrect password');
+    } else {
+      const issuedAt = authUser.iat;
+      const freshEnough =
+        typeof issuedAt === 'number' &&
+        Date.now() / 1000 - issuedAt <= FRESH_LOGIN_WINDOW_SECONDS;
+      if (!freshEnough) {
+        throw new UnauthorizedException(
+          'For your security, please log out, log back in, and try deleting your account again.',
+        );
+      }
+    }
+
+    const [activePolicy, openClaim] = await Promise.all([
+      this.prisma.policy.findFirst({ where: { userId, status: 'active' } }),
+      this.prisma.claim.findFirst({
+        where: { userId, status: { in: ['submitted', 'in_review'] } },
+      }),
+    ]);
+
+    if (activePolicy) {
+      throw new BadRequestException(
+        'You have an active policy. Please contact support to cancel it before deleting your account.',
+      );
+    }
+    if (openClaim) {
+      throw new BadRequestException(
+        'You have an open claim. Please contact support before deleting your account.',
+      );
+    }
+
+    const placeholderEmail = `deleted-${userId}@deleted.invalid`;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        firstName: 'Deleted',
+        lastName: 'User',
+        email: placeholderEmail,
+        phone: null,
+        alternativePhone: null,
+        googleId: null,
+        appleId: null,
+        pushToken: null,
+        pushPlatform: null,
+        kycData: Prisma.DbNull,
+        kycVerified: false,
+        kycVerifiedAt: null,
+        kycVerificationType: null,
+        deletedAt: new Date(),
+        tokenVersion: { increment: 1 },
+      },
+    });
+
+    await this.adminService.createAuditLog({
+      actorId: userId,
+      action: 'USER_ACCOUNT_DELETED',
+      entityType: 'User',
+      entityId: userId,
+    });
+
+    this.logger.log(`Account ${userId} deleted (self-service, anonymised)`);
+
+    return { message: 'Your account has been deleted.' };
   }
 
   async savePushToken(userId: string, token: string, platform: string) {

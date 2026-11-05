@@ -6,6 +6,8 @@ export interface User {
   phone: string
   role: string
   emailVerified: boolean
+  googleId?: string | null
+  appleId?: string | null
 }
 
 export interface AssetField {

@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { Loader2, Lock } from "lucide-react";
+import { Loader2, Lock, AlertTriangle } from "lucide-react";
 import { AuthInput } from "@/components/auth/auth-input";
 import { PasswordStrengthIndicator } from "@/components/shared/password-strength-indicator";
 import { ReauthModal } from "@/components/shared/reauth-modal";
 import { useReauth } from "@/hooks/use-reauth";
 import api from "@/lib/api";
-import { getUser, setUser } from "@/lib/auth";
+import { getUser, setUser, logout } from "@/lib/auth";
 import type { UserProfile } from "@/types/user";
 
 const nigerianPhoneRegex = /^(\+234|0)[789][01]\d{8}$/;
@@ -60,6 +61,7 @@ function normalizeApiMessage(message: string | string[] | undefined): string {
 }
 
 export function AccountContent() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [profileLoading, setProfileLoading] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
@@ -68,6 +70,11 @@ export function AccountContent() {
     renewalReminderPref: "standard",
   });
   const [savingPrefs, setSavingPrefs] = useState(false);
+  const [isOAuthAccount, setIsOAuthAccount] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const profileForm = useForm<ProfileFormData>({
@@ -117,6 +124,7 @@ export function AccountContent() {
           preferredChannel: res.data.preferredChannel || "email",
           renewalReminderPref: res.data.renewalReminderPref || "standard",
         });
+        setIsOAuthAccount(Boolean(res.data.googleId || res.data.appleId));
       })
       .catch(() => {});
   }, []);
@@ -180,6 +188,27 @@ export function AccountContent() {
       toast.error("Could not save preferences.");
     } finally {
       setSavingPrefs(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!isOAuthAccount && !deletePassword.trim()) {
+      setDeleteError("Please enter your password.");
+      return;
+    }
+    setDeleteLoading(true);
+    setDeleteError("");
+    try {
+      await api.delete("/users/me", {
+        data: isOAuthAccount ? {} : { password: deletePassword },
+      });
+      setDeleteModalOpen(false);
+      logout();
+      router.push("/login");
+    } catch (error) {
+      setDeleteError(normalizeApiMessage(getApiErrorMessage(error)));
+    } finally {
+      setDeleteLoading(false);
     }
   }
 
@@ -367,12 +396,93 @@ export function AccountContent() {
         </div>
       </div>
 
+      <div className="bg-white rounded-2xl border border-alert-coral/30 p-6 sm:p-8">
+        <h2 className="font-body font-semibold text-alert-coral text-base mb-2">
+          Danger Zone
+        </h2>
+        <p className="font-body text-slate text-sm mb-5">
+          Permanently delete your account and personal data.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            setDeletePassword("");
+            setDeleteError("");
+            setDeleteModalOpen(true);
+          }}
+          className="font-body font-bold text-sm border border-alert-coral text-alert-coral px-5 py-2.5 rounded-xl hover:bg-alert-coral/5 transition-colors"
+        >
+          Delete Account
+        </button>
+      </div>
+
       <ReauthModal
         open={showModal}
         onSuccess={onSuccess}
         onCancel={onCancel}
         reason="Please confirm your password before changing your password."
       />
+
+      {deleteModalOpen && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-midnight/60 backdrop-blur-sm" />
+          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full p-8">
+            <div className="w-14 h-14 bg-alert-coral/10 rounded-full flex items-center justify-center mx-auto mb-5">
+              <AlertTriangle size={24} className="text-alert-coral" />
+            </div>
+            <h2 className="font-display font-bold text-midnight text-xl text-center mb-4">
+              Delete Account
+            </h2>
+            <p className="font-body text-slate text-sm text-center mb-3">
+              This permanently removes your name, email, phone number, KYC
+              details, and any linked Google/Apple sign-in from your account.
+            </p>
+            <p className="font-body text-slate text-sm text-center mb-5">
+              By NAICOM record-keeping rules, your policies, claims, payments
+              and audit history must be retained and cannot be deleted — they
+              will no longer be linked to your personal details.
+            </p>
+
+            {!isOAuthAccount && (
+              <div className="mb-4">
+                <AuthInput
+                  label="Password"
+                  type="password"
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  placeholder="Enter your password to confirm"
+                  onKeyDown={(e) => e.key === "Enter" && handleDeleteAccount()}
+                />
+              </div>
+            )}
+
+            {deleteError && (
+              <div className="bg-alert-coral/10 border border-alert-coral/20 rounded-xl px-4 py-3 mb-4">
+                <p className="font-body text-sm text-alert-coral">{deleteError}</p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setDeleteModalOpen(false)}
+                disabled={deleteLoading}
+                className="flex-1 border border-slate/20 text-slate font-body font-medium text-sm py-3 rounded-xl hover:bg-slate/5 disabled:opacity-60 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteAccount}
+                disabled={deleteLoading}
+                className="flex-1 bg-alert-coral text-white font-body font-bold text-sm py-3 rounded-xl hover:bg-alert-coral/90 disabled:opacity-60 transition-colors"
+              >
+                {deleteLoading ? "Deleting..." : "Delete My Account"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

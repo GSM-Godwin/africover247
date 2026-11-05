@@ -15,6 +15,7 @@ import {
 import { UsersService } from './users.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { DeleteAccountDto } from './dto/delete-account.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -45,6 +46,15 @@ export class UsersController {
     @Body() dto: ChangePasswordDto,
   ) {
     return this.usersService.changePassword(user.id, dto);
+  }
+
+  @Delete('me')
+  @HttpCode(HttpStatus.OK)
+  deleteAccount(
+    @CurrentUser() user: { id: string; iat?: number },
+    @Body() dto: DeleteAccountDto,
+  ) {
+    return this.usersService.deleteAccount(user, dto);
   }
 
   @Post('me/push-token')

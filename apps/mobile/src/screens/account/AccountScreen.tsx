@@ -5,9 +5,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  TextInput,
   ActivityIndicator,
   Switch,
   Alert,
+  Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -45,6 +49,12 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   const [biometricEnabled, setBiometricEnabledState] = useState(false)
   const [preferredChannel, setPreferredChannel] = useState('email')
   const [reminderPref, setReminderPref] = useState('standard')
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleteError, setDeleteError] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  const isOAuthAccount = Boolean(user?.googleId || user?.appleId)
 
   useEffect(() => {
     getUser().then((u) => {
@@ -87,6 +97,35 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
   async function confirmLogout() {
     await logout()
     onLogout()
+  }
+
+  function openDeleteModal() {
+    setDeletePassword('')
+    setDeleteError('')
+    setDeleteModalVisible(true)
+  }
+
+  async function handleDeleteAccount() {
+    if (!isOAuthAccount && !deletePassword.trim()) {
+      setDeleteError('Please enter your password.')
+      return
+    }
+    setDeleting(true)
+    setDeleteError('')
+    try {
+      await api.delete('/users/me', {
+        data: isOAuthAccount ? {} : { password: deletePassword },
+      })
+      setDeleteModalVisible(false)
+      await logout()
+      onLogout()
+    } catch (err: any) {
+      setDeleteError(
+        err.response?.data?.message || 'Could not delete your account.',
+      )
+    } finally {
+      setDeleting(false)
+    }
   }
 
   async function handleBiometricToggle(value: boolean) {
@@ -319,6 +358,32 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
           ))}
         </Card>
 
+        {/* --- Danger zone --- */}
+        <View style={styles.prefsSection}>
+          <Text style={[styles.sectionTitle, { color: Colors.error }]}>
+            Danger Zone
+          </Text>
+          <Card style={styles.dangerCard} padding={0}>
+            <TouchableOpacity
+              style={styles.menuItem}
+              onPress={openDeleteModal}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIcon, { backgroundColor: Colors.errorLight }]}>
+                <Ionicons name="trash-outline" size={18} color={Colors.error} />
+              </View>
+              <View style={styles.menuContent}>
+                <Text style={[styles.menuLabel, { color: Colors.error }]}>
+                  Delete Account
+                </Text>
+                <Text style={styles.menuSublabel}>
+                  Permanently remove your personal data
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </Card>
+        </View>
+
         {/* --- Version --- */}
         <Text style={styles.version}>AfriCover247 v1.0.0</Text>
         <Text style={styles.versionSub}>AfriGlobal Insurance Brokers Limited</Text>
@@ -344,6 +409,68 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
           },
         ]}
       />
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.deleteOverlay}
+        >
+          <View style={styles.deleteContainer}>
+            <Text style={styles.deleteTitle}>Delete Account</Text>
+            <Text style={styles.deleteMessage}>
+              This permanently removes your name, email, phone number, KYC
+              details, and any linked Google/Apple sign-in from your account.
+            </Text>
+            <Text style={styles.deleteMessage}>
+              By NAICOM record-keeping rules, your policies, claims, payments
+              and audit history must be retained and cannot be deleted — they
+              will no longer be linked to your personal details.
+            </Text>
+
+            {!isOAuthAccount && (
+              <TextInput
+                style={styles.deleteInput}
+                value={deletePassword}
+                onChangeText={setDeletePassword}
+                placeholder="Enter your password to confirm"
+                placeholderTextColor={Colors.textSecondary + '80'}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+            )}
+
+            {deleteError && (
+              <Text style={styles.deleteErrorText}>{deleteError}</Text>
+            )}
+
+            <View style={styles.deleteActions}>
+              <TouchableOpacity
+                style={styles.deleteCancelBtn}
+                onPress={() => setDeleteModalVisible(false)}
+                disabled={deleting}
+              >
+                <Text style={styles.deleteCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteConfirmBtn, deleting && styles.btnDisabledOpacity]}
+                onPress={handleDeleteAccount}
+                disabled={deleting}
+              >
+                {deleting ? (
+                  <ActivityIndicator color={Colors.white} size="small" />
+                ) : (
+                  <Text style={styles.deleteConfirmText}>Delete My Account</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   )
 }
@@ -451,4 +578,72 @@ const styles = StyleSheet.create({
   menuSublabel: { fontSize: 12, color: Colors.textSecondary, marginTop: 1 },
   version: { fontSize: 12, color: Colors.textSecondary, textAlign: 'center', marginTop: 8 },
   versionSub: { fontSize: 11, color: Colors.textSecondary + '80', textAlign: 'center', marginTop: 2 },
+  dangerCard: { borderWidth: 1, borderColor: Colors.error + '30' },
+  btnDisabledOpacity: { opacity: 0.6 },
+  deleteOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  deleteContainer: {
+    backgroundColor: Colors.white,
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 360,
+  },
+  deleteTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: Colors.error,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  deleteMessage: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
+    marginBottom: 12,
+  },
+  deleteInput: {
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: Colors.text,
+    marginTop: 4,
+    marginBottom: 8,
+  },
+  deleteErrorText: {
+    fontSize: 12,
+    color: Colors.error,
+    marginBottom: 8,
+  },
+  deleteActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 8,
+  },
+  deleteCancelBtn: {
+    flex: 1,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  deleteCancelText: { fontSize: 14, fontWeight: '600', color: Colors.textDark },
+  deleteConfirmBtn: {
+    flex: 1,
+    backgroundColor: Colors.error,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteConfirmText: { fontSize: 14, fontWeight: '700', color: Colors.white },
 })

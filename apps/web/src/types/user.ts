@@ -7,6 +7,8 @@ export interface UserProfile {
   alternativePhone: string | null;
   role: string;
   emailVerified: boolean;
+  googleId?: string | null;
+  appleId?: string | null;
   preferredChannel?: string;
   renewalReminderPref?: string;
   createdAt: string;

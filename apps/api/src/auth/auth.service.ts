@@ -253,6 +253,7 @@ export class AuthService {
       where: { email: dto.email },
     });
     if (!user) throw new UnauthorizedException('Invalid credentials');
+    if (user.deletedAt) throw new UnauthorizedException('Invalid credentials');
 
     const passwordMatch = await bcrypt.compare(dto.password, user.passwordHash);
     if (!passwordMatch) throw new UnauthorizedException('Invalid credentials');
@@ -367,6 +368,7 @@ export class AuthService {
       },
     });
     if (!user) throw new NotFoundException('No account found with this phone number. Please register first.');
+    if (user.deletedAt) throw new NotFoundException('No account found with this phone number. Please register first.');
     if (user.suspended) {
       throw new UnauthorizedException(
         `Your account has been suspended. ${user.suspendedReason ? `Reason: ${user.suspendedReason}` : 'Please contact support.'}`,
@@ -421,6 +423,7 @@ export class AuthService {
       },
     });
     if (!user) throw new NotFoundException('User not found');
+    if (user.deletedAt) throw new NotFoundException('User not found');
 
     const accessToken = this.signToken(
       user.id,
@@ -482,6 +485,10 @@ export class AuthService {
         where: { id: user.id },
         data: { googleId },
       });
+    }
+
+    if (user.deletedAt) {
+      throw new UnauthorizedException('This account has been deleted.');
     }
 
     if (user.suspended) {
@@ -554,6 +561,10 @@ export class AuthService {
         where: { id: user.id },
         data: { appleId },
       });
+    }
+
+    if (user.deletedAt) {
+      throw new UnauthorizedException('This account has been deleted.');
     }
 
     if (user.suspended) {

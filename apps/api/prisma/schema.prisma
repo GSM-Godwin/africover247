@@ -109,6 +109,7 @@ model User {
   kycVerificationType String?
   kycData            Json?
   tokenVersion       Int            @default(0)
+  deletedAt          DateTime?
   createdAt          DateTime       @default(now())
   updatedAt          DateTime       @updatedAt
   applications       Application[]
