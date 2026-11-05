@@ -8,6 +8,7 @@ dist/
 build/
 .expo/
 *.log
+*.p8
 .DS_Store
 coverage/
 .turbo/

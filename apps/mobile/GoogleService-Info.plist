@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>29225598668-cagoba35oqrr528sq1t6puq6c2gh0ibj.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.29225598668-cagoba35oqrr528sq1t6puq6c2gh0ibj</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>29225598668-rsqss9isfm90l1b3a41tmtnm3b5gfptk.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyDMBcRcizL43lhDMhdGH-4DpdMttFvDZNQ</string>
+	<key>GCM_SENDER_ID</key>
+	<string>29225598668</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.afriglobal.Africover247</string>
+	<key>PROJECT_ID</key>
+	<string>africover247-f8c21</string>
+	<key>STORAGE_BUCKET</key>
+	<string>africover247-f8c21.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:29225598668:ios:3cbb42cacb487282ea0c69</string>
+</dict>
+</plist>

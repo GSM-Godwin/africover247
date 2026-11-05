@@ -22,7 +22,7 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 
 const APPLE_ISSUER = 'https://appleid.apple.com';
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
-const DEFAULT_APPLE_AUDIENCE = 'com.africover247.app';
+const DEFAULT_APPLE_AUDIENCE = 'com.afriglobal.Africover247';
 
 @Injectable()
 export class AuthService {

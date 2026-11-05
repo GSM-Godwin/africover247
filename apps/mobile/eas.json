@@ -3,6 +3,7 @@
     "version": ">= 5.0.0",
     "appVersionSource": "local"
   },
+  
   "build": {
     "development": {
       "developmentClient": true,
@@ -23,6 +24,10 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "1571031567"
+      }
+    }
   }
 }

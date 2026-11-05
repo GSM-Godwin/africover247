@@ -3,7 +3,7 @@ export default {
     name: "AfriCover247",
     slug: "africover247",
     scheme: "africover247",
-    version: "1.0.0",
+    version: "1.2.0",
     sdkVersion: "54.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -19,10 +19,12 @@ export default {
     },
     ios: {
       supportsTablet: false,
-      bundleIdentifier: "com.africover247.app",
+      bundleIdentifier: "com.afriglobal.Africover247",
+      googleServicesFile: "./GoogleService-Info.plist",
       infoPlist: {
         NSFaceIDUsageDescription: "AfriCover247 uses Face ID to keep your account secure.",
         UIStatusBarStyle: "UIStatusBarStyleLightContent",
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
@@ -50,6 +52,7 @@ export default {
       "expo-notifications",
       "@react-native-firebase/app",
       "@react-native-firebase/messaging",
+      "./plugins/withRNFirebaseDisableSPM",
     ],
     extra: {
       apiUrl: "https://africover247.onrender.com",
