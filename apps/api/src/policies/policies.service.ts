@@ -5,7 +5,7 @@ import {
   BadRequestException,
   Logger,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, PolicyStatus } from '@prisma/client';
 import { randomInt } from 'crypto';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../prisma/prisma.service';
@@ -307,6 +307,108 @@ export class PoliciesService {
     return false;
   }
 
+  private resolvePremiumAmount(application: {
+    product: { premiumAmount: Prisma.Decimal | null };
+    formData: Prisma.JsonValue;
+  }): number | null {
+    const formData = application.formData as Record<string, any> | null;
+    const calculatedPremium = formData?.calculatedPremium
+      ? Number(formData.calculatedPremium)
+      : formData?.quotedPremium
+      ? Number(formData.quotedPremium)
+      : null;
+
+    return application.product.premiumAmount != null
+      ? Number(application.product.premiumAmount)
+      : calculatedPremium;
+  }
+
+  private buildPolicyExpiryDate(durationMonths: number): Date {
+    const expiryDate = new Date();
+    expiryDate.setMonth(expiryDate.getMonth() + durationMonths);
+    return expiryDate;
+  }
+
+  private async buildAndUploadPolicyPdf(params: {
+    policyNumber: string;
+    issueDate: Date;
+    startDate: Date;
+    expiryDate: Date;
+    premiumAmount: number;
+    paymentRef: string;
+    application: {
+      user: { firstName: string; lastName: string; email: string; phone: string | null };
+      product: {
+        name: string;
+        category: string;
+        coverageHighlights: string;
+        exclusions: string | null;
+      };
+    };
+  }): Promise<string> {
+    const pdfBuffer = await this.generatePdfBuffer({
+      policyNumber: params.policyNumber,
+      issueDate: params.issueDate,
+      startDate: params.startDate,
+      expiryDate: params.expiryDate,
+      premiumPaid: Number(params.premiumAmount),
+      customerName: `${params.application.user.firstName} ${params.application.user.lastName}`,
+      customerEmail: params.application.user.email,
+      customerPhone: params.application.user.phone || '',
+      productName: params.application.product.name,
+      productCategory: params.application.product.category,
+      coverageHighlights: params.application.product.coverageHighlights,
+      exclusions: params.application.product.exclusions || '',
+      paymentRef: params.paymentRef,
+      underwriter: 'AfriGlobal Insurance Brokers Limited',
+    });
+
+    try {
+      const safeFilename = `${params.policyNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+      return await this.storageService.uploadPdf(pdfBuffer, safeFilename);
+    } catch (error) {
+      this.logger.error(`Failed to upload policy PDF`, error);
+      return '';
+    }
+  }
+
+  private async createPolicyWithRetry(
+    tx: Prisma.TransactionClient,
+    policyData: {
+      applicationId: string;
+      userId: string;
+      productId: string;
+      issueDate: Date;
+      startDate: Date;
+      expiryDate: Date;
+      premiumPaid: number;
+      policyPdfUrl: string;
+      status: PolicyStatus;
+    },
+    initialPolicyNumber: string,
+  ) {
+    const MAX_POLICY_NUMBER_RETRIES = 5;
+    let currentPolicyNumber = initialPolicyNumber;
+
+    for (let attempt = 0; attempt <= MAX_POLICY_NUMBER_RETRIES; attempt++) {
+      try {
+        return await tx.policy.create({
+          data: { ...policyData, policyNumber: currentPolicyNumber },
+        });
+      } catch (error) {
+        if (
+          !this.isPolicyNumberConflict(error) ||
+          attempt === MAX_POLICY_NUMBER_RETRIES
+        ) {
+          throw error;
+        }
+        currentPolicyNumber = await this.generatePolicyNumber();
+      }
+    }
+
+    throw new Error('Failed to create policy after retries');
+  }
+
   async generatePolicy(
     applicationId: string,
     paymentId: string,
@@ -345,19 +447,9 @@ export class PoliciesService {
     const policyNumber = await this.generatePolicyNumber();
     const issueDate = new Date();
     const startDate = new Date();
-    const expiryDate = new Date();
-    expiryDate.setMonth(expiryDate.getMonth() + application.product.durationMonths);
+    const expiryDate = this.buildPolicyExpiryDate(application.product.durationMonths);
 
-    const formData = application.formData as Record<string, any> | null;
-    const calculatedPremium = formData?.calculatedPremium
-      ? Number(formData.calculatedPremium)
-      : formData?.quotedPremium
-      ? Number(formData.quotedPremium)
-      : null;
-
-    const premiumAmount = application.product.premiumAmount != null
-      ? Number(application.product.premiumAmount)
-      : calculatedPremium;
+    const premiumAmount = this.resolvePremiumAmount(application);
 
     if (!premiumAmount) {
       this.logger.error(
@@ -366,32 +458,15 @@ export class PoliciesService {
       return;
     }
 
-    const pdfBuffer = await this.generatePdfBuffer({
+    const policyPdfUrl = await this.buildAndUploadPolicyPdf({
       policyNumber,
       issueDate,
       startDate,
       expiryDate,
-      premiumPaid: Number(premiumAmount),
-      customerName: `${application.user.firstName} ${application.user.lastName}`,
-      customerEmail: application.user.email,
-      customerPhone: application.user.phone || '',
-      productName: application.product.name,
-      productCategory: application.product.category,
-      coverageHighlights: application.product.coverageHighlights,
-      exclusions: application.product.exclusions || '',
+      premiumAmount,
       paymentRef: payment?.gatewayReference || '',
-      underwriter: 'AfriGlobal Insurance Brokers Limited',
-    })
-
-    let policyPdfUrl = '';
-    try {
-      const safeFilename = `${policyNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-      policyPdfUrl = await this.storageService.uploadPdf(pdfBuffer, safeFilename);
-    } catch (error) {
-      this.logger.error(`Failed to upload policy PDF`, error);
-    }
-
-    const MAX_POLICY_NUMBER_RETRIES = 5;
+      application,
+    });
 
     let policy;
     try {
@@ -405,40 +480,21 @@ export class PoliciesService {
           },
         });
 
-        let currentPolicyNumber = policyNumber;
-        let createdPolicy: Awaited<ReturnType<typeof tx.policy.create>> | undefined;
-
-        for (let attempt = 0; attempt <= MAX_POLICY_NUMBER_RETRIES; attempt++) {
-          try {
-            createdPolicy = await tx.policy.create({
-              data: {
-                applicationId,
-                userId: application.userId,
-                productId: application.productId,
-                policyNumber: currentPolicyNumber,
-                issueDate,
-                startDate,
-                expiryDate,
-                premiumPaid: premiumAmount,
-                policyPdfUrl,
-                status: 'active',
-              },
-            });
-            break;
-          } catch (error) {
-            if (
-              !this.isPolicyNumberConflict(error) ||
-              attempt === MAX_POLICY_NUMBER_RETRIES
-            ) {
-              throw error;
-            }
-            currentPolicyNumber = await this.generatePolicyNumber();
-          }
-        }
-
-        if (!createdPolicy) {
-          throw new Error('Failed to create policy after retries');
-        }
+        const createdPolicy = await this.createPolicyWithRetry(
+          tx,
+          {
+            applicationId,
+            userId: application.userId,
+            productId: application.productId,
+            issueDate,
+            startDate,
+            expiryDate,
+            premiumPaid: premiumAmount,
+            policyPdfUrl,
+            status: 'active',
+          },
+          policyNumber,
+        );
 
         await tx.application.update({
           where: { id: applicationId },

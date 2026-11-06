@@ -6,7 +6,7 @@ import {
   ConflictException,
   Logger,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, QuoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
 import { EmailService } from '../email/email.service';
@@ -17,6 +17,9 @@ import { CounterQuoteDto } from './dto/counter-quote.dto';
 
 const MAX_ROUNDS = 3;
 const QUOTE_EXPIRY_DAYS = 7;
+
+const CUSTOMER_ACTIONABLE_STATUSES: QuoteStatus[] = ['quote_sent', 'countered_by_admin'];
+const ADMIN_RESPONDABLE_STATUSES: QuoteStatus[] = ['pending_review', 'countered_by_customer'];
 
 const QUOTE_PRODUCT_SELECT = {
   id: true,
@@ -39,6 +42,27 @@ const QUOTE_CUSTOMER_SELECT = {
   role: true,
 } as const;
 
+type NegotiationActor = 'customer' | 'admin';
+
+interface NegotiationEntryInput {
+  actor: NegotiationActor;
+  actorId: string;
+  action: string;
+  amount: number | Prisma.Decimal;
+  note?: string | null;
+}
+
+interface AcceptQuoteAtomicallyInput {
+  quoteId: string;
+  expectedStatus: QuoteStatus;
+  negotiationHistory: unknown[];
+  finalAmount: number | Prisma.Decimal;
+  customerId: string;
+  productId: string;
+  customerDetails: Prisma.JsonValue;
+  setAdminQuoteAmount: boolean;
+}
+
 @Injectable()
 export class QuotesService {
   private readonly logger = new Logger(QuotesService.name);
@@ -49,6 +73,124 @@ export class QuotesService {
     private emailService: EmailService,
     private smsService: SmsService,
   ) {}
+
+  private ensureQuoteExists<T>(quote: T | null): T {
+    if (!quote) throw new NotFoundException('Quote not found');
+    return quote;
+  }
+
+  private ensureQuoteOwnedByCustomer(
+    quote: { customerId: string },
+    userId: string,
+  ): void {
+    if (quote.customerId !== userId) {
+      throw new UnauthorizedException('Access denied');
+    }
+  }
+
+  private ensureQuoteStatusIn(
+    status: QuoteStatus,
+    allowed: QuoteStatus[],
+    message: string,
+  ): void {
+    if (!allowed.includes(status)) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  private ensureRoundsRemaining(roundsUsed: number, message: string): void {
+    if (roundsUsed >= MAX_ROUNDS) {
+      throw new BadRequestException(message);
+    }
+  }
+
+  private async expireIfPastDeadline(
+    quoteId: string,
+    expiresAt: Date | null,
+    message: string,
+  ): Promise<void> {
+    if (expiresAt && new Date() > expiresAt) {
+      await this.prisma.quote.update({
+        where: { id: quoteId },
+        data: { status: 'expired' },
+      });
+      throw new BadRequestException(message);
+    }
+  }
+
+  private resolveAcceptedAmount(quote: {
+    adminQuoteAmount: number | Prisma.Decimal | null;
+    customerCounterAmount: number | Prisma.Decimal | null;
+  }): number | Prisma.Decimal | null {
+    return quote.adminQuoteAmount || quote.customerCounterAmount;
+  }
+
+  private buildNegotiationEntry(input: NegotiationEntryInput): Record<string, unknown> {
+    const entry: Record<string, unknown> = {
+      actor: input.actor,
+      actorId: input.actorId,
+      action: input.action,
+      amount: input.amount,
+    };
+    if (input.note !== undefined) {
+      entry.note = input.note;
+    }
+    entry.timestamp = new Date().toISOString();
+    return entry;
+  }
+
+  private appendNegotiationEntry(
+    quote: { negotiationHistory: Prisma.JsonValue },
+    entry: Record<string, unknown>,
+  ): unknown[] {
+    return [...((quote.negotiationHistory as object[]) || []), entry];
+  }
+
+  private async acceptQuoteAtomically(input: AcceptQuoteAtomicallyInput) {
+    return this.prisma.$transaction(async (tx) => {
+      const result = await tx.quote.updateMany({
+        where: { id: input.quoteId, status: input.expectedStatus },
+        data: {
+          status: 'accepted',
+          finalAmount: input.finalAmount,
+          negotiationHistory: input.negotiationHistory as Prisma.InputJsonValue,
+          ...(input.setAdminQuoteAmount
+            ? { adminQuoteAmount: input.finalAmount }
+            : {}),
+        },
+      });
+
+      if (result.count === 0) {
+        throw new ConflictException('Quote already accepted');
+      }
+
+      const createdApplication = await tx.application.create({
+        data: {
+          userId: input.customerId,
+          productId: input.productId,
+          status: 'pending_payment',
+          stepCompleted: 4,
+          formData: {
+            ...(input.customerDetails as object),
+            calculatedPremium: Number(input.finalAmount),
+            fromQuoteId: input.quoteId,
+          },
+          assetDetails: input.customerDetails as Prisma.InputJsonValue,
+        },
+      });
+
+      await tx.payment.create({
+        data: {
+          applicationId: createdApplication.id,
+          amount: input.finalAmount,
+          currency: 'NGN',
+          status: 'pending',
+        },
+      });
+
+      return createdApplication;
+    });
+  }
 
   private async sendPushNotification(
     userId: string,
@@ -228,38 +370,32 @@ export class QuotesService {
     dto: RespondQuoteDto,
     adminId: string,
   ) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: {
-        customer: { select: QUOTE_CUSTOMER_SELECT },
-        product: true,
-      },
-    });
+    const quote = this.ensureQuoteExists(
+      await this.prisma.quote.findUnique({
+        where: { id: quoteId },
+        include: {
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+          product: true,
+        },
+      }),
+    );
 
-    if (!quote) throw new NotFoundException('Quote not found');
-
-    if (!['pending_review', 'countered_by_customer'].includes(quote.status)) {
-      throw new BadRequestException(
-        'This quote cannot be responded to in its current state',
-      );
-    }
+    this.ensureQuoteStatusIn(
+      quote.status,
+      ADMIN_RESPONDABLE_STATUSES,
+      'This quote cannot be responded to in its current state',
+    );
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + QUOTE_EXPIRY_DAYS);
 
-    const historyEntry = {
+    const historyEntry = this.buildNegotiationEntry({
       actor: 'admin',
       actorId: adminId,
       action: 'quote_sent',
       amount: dto.quoteAmount,
       note: dto.note || null,
-      timestamp: new Date().toISOString(),
-    };
-
-    const updatedHistory = [
-      ...((quote.negotiationHistory as object[]) || []),
-      historyEntry,
-    ];
+    });
 
     const updated = await this.prisma.quote.update({
       where: { id: quoteId },
@@ -267,7 +403,10 @@ export class QuotesService {
         status: 'quote_sent',
         adminQuoteAmount: dto.quoteAmount,
         adminNote: dto.note || null,
-        negotiationHistory: updatedHistory,
+        negotiationHistory: this.appendNegotiationEntry(
+          quote,
+          historyEntry,
+        ) as Prisma.InputJsonValue,
         expiresAt,
       },
     });
@@ -333,86 +472,47 @@ export class QuotesService {
   // --- Customer: accept quote ---
 
   async acceptQuote(quoteId: string, userId: string) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: {
-        customer: { select: QUOTE_CUSTOMER_SELECT },
-        product: true,
-      },
-    });
-
-    if (!quote) throw new NotFoundException('Quote not found');
-    if (quote.customerId !== userId)
-      throw new UnauthorizedException('Access denied');
-
-    if (!['quote_sent', 'countered_by_admin'].includes(quote.status)) {
-      throw new BadRequestException(
-        'This quote cannot be accepted in its current state',
-      );
-    }
-
-    if (quote.expiresAt && new Date() > quote.expiresAt) {
-      await this.prisma.quote.update({
+    const quote = this.ensureQuoteExists(
+      await this.prisma.quote.findUnique({
         where: { id: quoteId },
-        data: { status: 'expired' },
-      });
-      throw new BadRequestException(
-        'This quote has expired. Please request a new one.',
-      );
-    }
+        include: {
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+          product: true,
+        },
+      }),
+    );
 
-    const finalAmount = quote.adminQuoteAmount || quote.customerCounterAmount;
+    this.ensureQuoteOwnedByCustomer(quote, userId);
+    this.ensureQuoteStatusIn(
+      quote.status,
+      CUSTOMER_ACTIONABLE_STATUSES,
+      'This quote cannot be accepted in its current state',
+    );
+    await this.expireIfPastDeadline(
+      quoteId,
+      quote.expiresAt,
+      'This quote has expired. Please request a new one.',
+    );
 
+    const finalAmount = this.resolveAcceptedAmount(quote);
     if (!finalAmount) throw new BadRequestException('No quote amount to accept');
 
-    const application = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.quote.updateMany({
-        where: { id: quoteId, status: quote.status },
-        data: {
-          status: 'accepted',
-          finalAmount,
-          negotiationHistory: [
-            ...((quote.negotiationHistory as object[]) || []),
-            {
-              actor: 'customer',
-              actorId: userId,
-              action: 'accepted',
-              amount: finalAmount,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        },
-      });
+    const historyEntry = this.buildNegotiationEntry({
+      actor: 'customer',
+      actorId: userId,
+      action: 'accepted',
+      amount: finalAmount,
+    });
 
-      if (result.count === 0) {
-        throw new ConflictException('Quote already accepted');
-      }
-
-      const createdApplication = await tx.application.create({
-        data: {
-          userId,
-          productId: quote.productId,
-          status: 'pending_payment',
-          stepCompleted: 4,
-          formData: {
-            ...(quote.customerDetails as object),
-            calculatedPremium: Number(finalAmount),
-            fromQuoteId: quote.id,
-          },
-          assetDetails: quote.customerDetails as Prisma.InputJsonValue,
-        },
-      });
-
-      await tx.payment.create({
-        data: {
-          applicationId: createdApplication.id,
-          amount: finalAmount,
-          currency: 'NGN',
-          status: 'pending',
-        },
-      });
-
-      return createdApplication;
+    const application = await this.acceptQuoteAtomically({
+      quoteId,
+      expectedStatus: quote.status,
+      negotiationHistory: this.appendNegotiationEntry(quote, historyEntry),
+      finalAmount,
+      customerId: userId,
+      productId: quote.productId,
+      customerDetails: quote.customerDetails,
+      setAdminQuoteAmount: false,
     });
 
     await this.adminService.createAuditLog({
@@ -528,49 +628,39 @@ export class QuotesService {
     userId: string,
     dto: CounterQuoteDto,
   ) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: {
-        customer: { select: QUOTE_CUSTOMER_SELECT },
-        product: true,
-      },
-    });
-
-    if (!quote) throw new NotFoundException('Quote not found');
-    if (quote.customerId !== userId)
-      throw new UnauthorizedException('Access denied');
-
-    if (!['quote_sent', 'countered_by_admin'].includes(quote.status)) {
-      throw new BadRequestException(
-        'This quote cannot be countered in its current state',
-      );
-    }
-
-    if (quote.roundsUsed >= MAX_ROUNDS) {
-      throw new BadRequestException(
-        'Maximum negotiation rounds reached. You must Accept or Reject this quote.',
-      );
-    }
-
-    if (quote.expiresAt && new Date() > quote.expiresAt) {
-      await this.prisma.quote.update({
+    const quote = this.ensureQuoteExists(
+      await this.prisma.quote.findUnique({
         where: { id: quoteId },
-        data: { status: 'expired' },
-      });
-      throw new BadRequestException('This quote has expired.');
-    }
+        include: {
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+          product: true,
+        },
+      }),
+    );
 
-    const updatedHistory = [
-      ...((quote.negotiationHistory as object[]) || []),
-      {
-        actor: 'customer',
-        actorId: userId,
-        action: 'countered',
-        amount: dto.counterAmount,
-        note: dto.note || null,
-        timestamp: new Date().toISOString(),
-      },
-    ];
+    this.ensureQuoteOwnedByCustomer(quote, userId);
+    this.ensureQuoteStatusIn(
+      quote.status,
+      CUSTOMER_ACTIONABLE_STATUSES,
+      'This quote cannot be countered in its current state',
+    );
+    this.ensureRoundsRemaining(
+      quote.roundsUsed,
+      'Maximum negotiation rounds reached. You must Accept or Reject this quote.',
+    );
+    await this.expireIfPastDeadline(
+      quoteId,
+      quote.expiresAt,
+      'This quote has expired.',
+    );
+
+    const historyEntry = this.buildNegotiationEntry({
+      actor: 'customer',
+      actorId: userId,
+      action: 'countered',
+      amount: dto.counterAmount,
+      note: dto.note || null,
+    });
 
     const updated = await this.prisma.quote.update({
       where: { id: quoteId },
@@ -578,7 +668,10 @@ export class QuotesService {
         status: 'countered_by_customer',
         customerCounterAmount: dto.counterAmount,
         customerNote: dto.note || null,
-        negotiationHistory: updatedHistory,
+        negotiationHistory: this.appendNegotiationEntry(
+          quote,
+          historyEntry,
+        ) as Prisma.InputJsonValue,
         roundsUsed: { increment: 1 },
       },
     });
@@ -615,38 +708,36 @@ export class QuotesService {
     adminId: string,
     dto: CounterQuoteDto,
   ) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: {
-        customer: { select: QUOTE_CUSTOMER_SELECT },
-        product: true,
-      },
-    });
+    const quote = this.ensureQuoteExists(
+      await this.prisma.quote.findUnique({
+        where: { id: quoteId },
+        include: {
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+          product: true,
+        },
+      }),
+    );
 
-    if (!quote) throw new NotFoundException('Quote not found');
-
-    if (quote.status !== 'countered_by_customer') {
-      throw new BadRequestException('No customer counter to respond to');
-    }
-
-    if (quote.roundsUsed >= MAX_ROUNDS) {
-      throw new BadRequestException('Maximum negotiation rounds reached.');
-    }
+    this.ensureQuoteStatusIn(
+      quote.status,
+      ['countered_by_customer'],
+      'No customer counter to respond to',
+    );
+    this.ensureRoundsRemaining(
+      quote.roundsUsed,
+      'Maximum negotiation rounds reached.',
+    );
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + QUOTE_EXPIRY_DAYS);
 
-    const updatedHistory = [
-      ...((quote.negotiationHistory as object[]) || []),
-      {
-        actor: 'admin',
-        actorId: adminId,
-        action: 'countered',
-        amount: dto.counterAmount,
-        note: dto.note || null,
-        timestamp: new Date().toISOString(),
-      },
-    ];
+    const historyEntry = this.buildNegotiationEntry({
+      actor: 'admin',
+      actorId: adminId,
+      action: 'countered',
+      amount: dto.counterAmount,
+      note: dto.note || null,
+    });
 
     const updated = await this.prisma.quote.update({
       where: { id: quoteId },
@@ -654,7 +745,10 @@ export class QuotesService {
         status: 'countered_by_admin',
         adminQuoteAmount: dto.counterAmount,
         adminNote: dto.note || null,
-        negotiationHistory: updatedHistory,
+        negotiationHistory: this.appendNegotiationEntry(
+          quote,
+          historyEntry,
+        ) as Prisma.InputJsonValue,
         roundsUsed: { increment: 1 },
         expiresAt,
       },
@@ -721,19 +815,21 @@ export class QuotesService {
   // --- Admin: accept customer counter ---
 
   async adminAcceptCounter(quoteId: string, adminId: string) {
-    const quote = await this.prisma.quote.findUnique({
-      where: { id: quoteId },
-      include: {
-        customer: { select: QUOTE_CUSTOMER_SELECT },
-        product: true,
-      },
-    });
+    const quote = this.ensureQuoteExists(
+      await this.prisma.quote.findUnique({
+        where: { id: quoteId },
+        include: {
+          customer: { select: QUOTE_CUSTOMER_SELECT },
+          product: true,
+        },
+      }),
+    );
 
-    if (!quote) throw new NotFoundException('Quote not found');
-
-    if (quote.status !== 'countered_by_customer') {
-      throw new BadRequestException('No customer counter to accept');
-    }
+    this.ensureQuoteStatusIn(
+      quote.status,
+      ['countered_by_customer'],
+      'No customer counter to accept',
+    );
 
     if (!quote.customerCounterAmount) {
       throw new BadRequestException('No counter amount found');
@@ -741,55 +837,22 @@ export class QuotesService {
 
     const finalAmount = quote.customerCounterAmount;
 
-    const application = await this.prisma.$transaction(async (tx) => {
-      const result = await tx.quote.updateMany({
-        where: { id: quoteId, status: quote.status },
-        data: {
-          status: 'accepted',
-          finalAmount,
-          adminQuoteAmount: finalAmount,
-          negotiationHistory: [
-            ...((quote.negotiationHistory as object[]) || []),
-            {
-              actor: 'admin',
-              actorId: adminId,
-              action: 'accepted_counter',
-              amount: finalAmount,
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        },
-      });
+    const historyEntry = this.buildNegotiationEntry({
+      actor: 'admin',
+      actorId: adminId,
+      action: 'accepted_counter',
+      amount: finalAmount,
+    });
 
-      if (result.count === 0) {
-        throw new ConflictException('Quote already accepted');
-      }
-
-      const createdApplication = await tx.application.create({
-        data: {
-          userId: quote.customerId,
-          productId: quote.productId,
-          status: 'pending_payment',
-          stepCompleted: 4,
-          formData: {
-            ...(quote.customerDetails as object),
-            calculatedPremium: Number(finalAmount),
-            fromQuoteId: quote.id,
-          },
-          assetDetails: quote.customerDetails as Prisma.InputJsonValue,
-        },
-      });
-
-      await tx.payment.create({
-        data: {
-          applicationId: createdApplication.id,
-          amount: finalAmount,
-          currency: 'NGN',
-          status: 'pending',
-        },
-      });
-
-      return createdApplication;
+    const application = await this.acceptQuoteAtomically({
+      quoteId,
+      expectedStatus: quote.status,
+      negotiationHistory: this.appendNegotiationEntry(quote, historyEntry),
+      finalAmount,
+      customerId: quote.customerId,
+      productId: quote.productId,
+      customerDetails: quote.customerDetails,
+      setAdminQuoteAmount: true,
     });
 
     await this.adminService.createAuditLog({

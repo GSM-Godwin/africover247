@@ -196,5 +196,51 @@ describe('PoliciesService', () => {
 
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
+
+    it('does nothing when no premium amount can be resolved', async () => {
+      prisma.application.findUnique.mockResolvedValue(
+        buildApplication({
+          formData: {},
+          product: {
+            id: 'product-1',
+            name: 'Motor Comprehensive',
+            category: 'Motor',
+            durationMonths: 12,
+            premiumAmount: null,
+            coverageHighlights: 'Accident cover',
+            exclusions: 'Racing',
+          },
+        }),
+      );
+
+      await service.generatePolicy(APPLICATION_ID, PAYMENT_ID, { stub: true });
+
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(storageService.uploadPdf).not.toHaveBeenCalled();
+    });
+
+    it('uses the product premium amount over the calculated premium when both are present', async () => {
+      prisma.application.findUnique.mockResolvedValue(
+        buildApplication({
+          formData: { calculatedPremium: '999999' },
+          product: {
+            id: 'product-1',
+            name: 'Motor Comprehensive',
+            category: 'Motor',
+            durationMonths: 12,
+            premiumAmount: 60000,
+            coverageHighlights: 'Accident cover',
+            exclusions: 'Racing',
+          },
+        }),
+      );
+      tx.policy.create.mockResolvedValue({ id: 'policy-1', policyNumber: 'AFC-2026-100001' });
+
+      await service.generatePolicy(APPLICATION_ID, PAYMENT_ID, { stub: true });
+
+      expect(tx.policy.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ premiumPaid: 60000 }) }),
+      );
+    });
   });
 });

@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { QuotesService } from './quotes.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
@@ -168,6 +173,49 @@ describe('QuotesService', () => {
       );
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
+
+    it('rejects when the quote does not exist', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+
+      await expect(service.acceptQuote(QUOTE_ID, USER_ID)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('rejects when the quote belongs to a different customer', async () => {
+      const quote = buildQuote({ customerId: 'someone-else', adminQuoteAmount: 50000 });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(service.acceptQuote(QUOTE_ID, USER_ID)).rejects.toThrow(
+        UnauthorizedException,
+      );
+    });
+
+    it('rejects when the quote is not in an acceptable state', async () => {
+      const quote = buildQuote({ status: 'accepted', adminQuoteAmount: 50000 });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(service.acceptQuote(QUOTE_ID, USER_ID)).rejects.toThrow(
+        'This quote cannot be accepted in its current state',
+      );
+    });
+
+    it('marks an expired quote as expired and rejects instead of accepting it', async () => {
+      const quote = buildQuote({
+        adminQuoteAmount: 50000,
+        expiresAt: new Date(Date.now() - 60_000),
+      });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(service.acceptQuote(QUOTE_ID, USER_ID)).rejects.toThrow(
+        'This quote has expired. Please request a new one.',
+      );
+      expect(prisma.quote.update).toHaveBeenCalledWith({
+        where: { id: QUOTE_ID },
+        data: { status: 'expired' },
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
   });
 
   describe('customerCounterQuote', () => {
@@ -209,6 +257,36 @@ describe('QuotesService', () => {
       await expect(
         service.customerCounterQuote(QUOTE_ID, USER_ID, { counterAmount: 45000 } as any),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it('rejects when the quote does not exist', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.customerCounterQuote(QUOTE_ID, USER_ID, { counterAmount: 45000 } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects when the quote belongs to a different customer', async () => {
+      const quote = buildQuote({ customerId: 'someone-else' });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(
+        service.customerCounterQuote(QUOTE_ID, USER_ID, { counterAmount: 45000 } as any),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+
+    it('marks an expired quote as expired and rejects instead of countering it', async () => {
+      const quote = buildQuote({ expiresAt: new Date(Date.now() - 60_000) });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(
+        service.customerCounterQuote(QUOTE_ID, USER_ID, { counterAmount: 45000 } as any),
+      ).rejects.toThrow('This quote has expired.');
+      expect(prisma.quote.update).toHaveBeenCalledWith({
+        where: { id: QUOTE_ID },
+        data: { status: 'expired' },
+      });
     });
   });
 
@@ -266,6 +344,23 @@ describe('QuotesService', () => {
         /no customer counter/i,
       );
     });
+
+    it('rejects when the quote does not exist', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+
+      await expect(service.adminAcceptCounter(QUOTE_ID, ADMIN_ID)).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('rejects when the countered status has no counter amount recorded', async () => {
+      const quote = buildQuote({ status: 'countered_by_customer', customerCounterAmount: null });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(service.adminAcceptCounter(QUOTE_ID, ADMIN_ID)).rejects.toThrow(
+        'No counter amount found',
+      );
+    });
   });
 
   describe('adminCounterQuote', () => {
@@ -285,6 +380,114 @@ describe('QuotesService', () => {
       await expect(
         service.adminCounterQuote(QUOTE_ID, ADMIN_ID, { counterAmount: 48000 } as any),
       ).rejects.toThrow(/no customer counter/i);
+    });
+
+    it('rejects when the quote does not exist', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.adminCounterQuote(QUOTE_ID, ADMIN_ID, { counterAmount: 48000 } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('records the admin counter-offer and extends the expiry', async () => {
+      const quote = buildQuote({ status: 'countered_by_customer', roundsUsed: 1 });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+      prisma.quote.update.mockResolvedValue({ ...quote, status: 'countered_by_admin' });
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        pushToken: null,
+      });
+
+      const result = await service.adminCounterQuote(QUOTE_ID, ADMIN_ID, {
+        counterAmount: 48000,
+        note: 'Best we can do',
+      } as any);
+
+      expect(prisma.quote.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: QUOTE_ID },
+          data: expect.objectContaining({
+            status: 'countered_by_admin',
+            adminQuoteAmount: 48000,
+            adminNote: 'Best we can do',
+            roundsUsed: { increment: 1 },
+          }),
+        }),
+      );
+      expect(prisma.notification.create).toHaveBeenCalledTimes(1);
+      expect(adminService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'QUOTE_COUNTERED', actorId: ADMIN_ID }),
+      );
+      expect(result.status).toBe('countered_by_admin');
+    });
+  });
+
+  describe('adminRespondToQuote', () => {
+    it('rejects when the quote does not exist', async () => {
+      prisma.quote.findUnique.mockResolvedValue(null);
+
+      await expect(
+        service.adminRespondToQuote(QUOTE_ID, { quoteAmount: 50000 } as any, ADMIN_ID),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('rejects when the quote is not awaiting a response', async () => {
+      const quote = buildQuote({ status: 'accepted' });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+
+      await expect(
+        service.adminRespondToQuote(QUOTE_ID, { quoteAmount: 50000 } as any, ADMIN_ID),
+      ).rejects.toThrow('This quote cannot be responded to in its current state');
+    });
+
+    it('sends a quote to the customer and records the audit log', async () => {
+      const quote = buildQuote({ status: 'pending_review' });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+      prisma.quote.update.mockResolvedValue({ ...quote, status: 'quote_sent' });
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        pushToken: null,
+      });
+
+      const result = await service.adminRespondToQuote(
+        QUOTE_ID,
+        { quoteAmount: 50000, note: 'Standard rate' } as any,
+        ADMIN_ID,
+      );
+
+      expect(prisma.quote.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: QUOTE_ID },
+          data: expect.objectContaining({
+            status: 'quote_sent',
+            adminQuoteAmount: 50000,
+            adminNote: 'Standard rate',
+          }),
+        }),
+      );
+      expect(prisma.notification.create).toHaveBeenCalledTimes(1);
+      expect(adminService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({ action: 'QUOTE_RESPONDED', actorId: ADMIN_ID }),
+      );
+      expect(result.status).toBe('quote_sent');
+    });
+
+    it('accepts a response to a countered_by_customer quote too', async () => {
+      const quote = buildQuote({ status: 'countered_by_customer' });
+      prisma.quote.findUnique.mockResolvedValue(quote);
+      prisma.quote.update.mockResolvedValue({ ...quote, status: 'quote_sent' });
+      prisma.user.findUnique.mockResolvedValue({
+        email: 'ada@example.com',
+        firstName: 'Ada',
+        pushToken: null,
+      });
+
+      await expect(
+        service.adminRespondToQuote(QUOTE_ID, { quoteAmount: 50000 } as any, ADMIN_ID),
+      ).resolves.toMatchObject({ status: 'quote_sent' });
     });
   });
 });
