@@ -2,6 +2,7 @@ import axios from 'axios'
 import Constants from 'expo-constants'
 import * as SecureStore from 'expo-secure-store'
 import { TOKEN_KEY } from '../constants'
+import { shouldExpireSession } from '../utils/authEndpoints'
 
 const BASE_URL = Constants.expoConfig?.extra?.apiUrl || 'http://localhost:3001'
 
@@ -20,7 +21,8 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    if (error.response?.status === 401) {
+    const hadAuthorizationHeader = Boolean(error.config?.headers?.Authorization)
+    if (shouldExpireSession(error.response?.status, error.config?.url, hadAuthorizationHeader)) {
       await SecureStore.deleteItemAsync(TOKEN_KEY)
     }
     return Promise.reject(error)

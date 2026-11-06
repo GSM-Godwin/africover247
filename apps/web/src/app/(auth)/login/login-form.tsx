@@ -98,7 +98,9 @@ export function LoginForm() {
       const status = response?.status;
       const message = response?.data?.message;
       if (status === 401) {
-        toast.error("Incorrect email or password.");
+        toast.error(
+          typeof message === "string" ? message : "Incorrect email or password.",
+        );
       } else if (status === 429) {
         toast.error("Too many attempts. Please wait a minute.");
       } else if (Array.isArray(message)) {

@@ -125,7 +125,8 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
       onLoginSuccess()
     } catch (err: any) {
       const status = err.response?.status
-      if (status === 401) setError('Incorrect email or password.')
+      const message = err.response?.data?.message
+      if (status === 401) setError(typeof message === 'string' ? message : 'Incorrect email or password.')
       else if (status === 429) setError('Too many attempts. Please wait.')
       else setError('Something went wrong. Please try again.')
     } finally {
