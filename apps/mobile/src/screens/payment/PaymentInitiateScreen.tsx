@@ -14,6 +14,7 @@ import * as ScreenCapture from 'expo-screen-capture'
 import { Button, Card } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { monthlyInstalment, resolveAnnualPremium } from '../../utils/premium'
 
 export function PaymentInitiateScreen({ route, navigation }: any) {
   const params = route.params || {}
@@ -33,21 +34,13 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
       .catch(() => {})
   }, [applicationId])
 
-  const calculatedPremium = appData?.formData?.calculatedPremium
-    ? Number(appData.formData.calculatedPremium)
-    : appData?.formData?.quotedPremium
-    ? Number(appData.formData.quotedPremium)
-    : null
+  const annualAmount = resolveAnnualPremium(
+    product?.premiumAmount,
+    appData?.formData,
+    presetAmount,
+  )
 
-  const annualAmount = product?.premiumAmount
-    ? parseFloat(product.premiumAmount)
-    : calculatedPremium
-    ? calculatedPremium
-    : presetAmount
-    ? parseFloat(String(presetAmount))
-    : 0
-
-  const monthlyAmount = annualAmount ? Math.ceil(annualAmount / 12) : 0
+  const monthlyAmount = monthlyInstalment(annualAmount)
   const displayAmount = paymentPlan === 'monthly' ? monthlyAmount : annualAmount
 
   useEffect(() => {

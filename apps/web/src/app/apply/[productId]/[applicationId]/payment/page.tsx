@@ -7,6 +7,7 @@ import { useApplicationWizard } from "@/contexts/application-wizard-context";
 import { initiateAndRedirect } from "@/lib/payment";
 import { PENDING_APPLICATION_ID_KEY } from "@/types/payment";
 import { formatNaira } from "@/lib/utils";
+import { monthlyInstalment, resolveAnnualPremium } from "@/lib/premium";
 import { ReauthModal } from "@/components/shared/reauth-modal";
 import { useReauth } from "@/hooks/use-reauth";
 
@@ -19,15 +20,11 @@ export default function PaymentPage() {
   const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
 
   const productName = application?.product?.name ?? "Insurance";
-  const calculatedPremium = formData?.calculatedPremium
-    ? Number(formData.calculatedPremium)
-    : formData?.quotedPremium
-    ? Number(formData.quotedPremium)
-    : null;
-  const annualAmount = application?.product?.premiumAmount
-    ? parseFloat(String(application.product.premiumAmount))
-    : calculatedPremium ?? 0;
-  const monthlyAmount = annualAmount ? Math.ceil(annualAmount / 12) : 0;
+  const annualAmount = resolveAnnualPremium(
+    application?.product?.premiumAmount,
+    formData,
+  );
+  const monthlyAmount = monthlyInstalment(annualAmount);
   const displayAmount =
     paymentPlan === "monthly" ? monthlyAmount : annualAmount;
 

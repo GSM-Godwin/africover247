@@ -9,6 +9,7 @@ import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { PremiumService } from '../premium/premium.service';
 
 const APPLICATION_ID = 'application-1';
 const PAYMENT_ID = 'payment-1';
@@ -26,7 +27,8 @@ function buildApplication(overrides: Partial<Record<string, unknown>> = {}) {
     id: APPLICATION_ID,
     userId: 'user-1',
     productId: 'product-1',
-    formData: { calculatedPremium: '50000' },
+    formData: { calculatedPremium: '1' },
+    assetDetails: { vehicleValue: '1000000' },
     user: {
       id: 'user-1',
       firstName: 'Ada',
@@ -40,6 +42,9 @@ function buildApplication(overrides: Partial<Record<string, unknown>> = {}) {
       category: 'Motor',
       durationMonths: 12,
       premiumAmount: null,
+      pricingType: 'calculable',
+      rate: '0.05',
+      assetFields: [{ key: 'vehicleValue' }],
       coverageHighlights: 'Accident cover\nTheft cover',
       exclusions: 'Racing\nWar',
     },
@@ -97,6 +102,7 @@ describe('PoliciesService', () => {
         { provide: SmsService, useValue: smsService },
         { provide: StorageService, useValue: storageService },
         { provide: ApplicationsService, useValue: applicationsService },
+        PremiumService,
       ],
     }).compile();
 
@@ -217,6 +223,17 @@ describe('PoliciesService', () => {
 
       expect(prisma.$transaction).not.toHaveBeenCalled();
       expect(storageService.uploadPdf).not.toHaveBeenCalled();
+    });
+
+    it('records the server-calculated premium, ignoring the calculatedPremium stored in formData', async () => {
+      prisma.application.findUnique.mockResolvedValue(buildApplication());
+      tx.policy.create.mockResolvedValue({ id: 'policy-1', policyNumber: 'AFC-2026-100001' });
+
+      await service.generatePolicy(APPLICATION_ID, PAYMENT_ID, { stub: true });
+
+      expect(tx.policy.create).toHaveBeenCalledWith(
+        expect.objectContaining({ data: expect.objectContaining({ premiumPaid: 50000 }) }),
+      );
     });
 
     it('uses the product premium amount over the calculated premium when both are present', async () => {

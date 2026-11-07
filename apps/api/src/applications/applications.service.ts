@@ -18,6 +18,14 @@ import {
 import { StorageService } from '../storage/storage.service';
 import { KycService, type KycResult } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
+import { PremiumService } from '../premium/premium.service';
+
+const LOCKED_APPLICATION_MESSAGES: Record<string, string> = {
+  pending_payment: 'This application is awaiting payment and can no longer be edited.',
+  paid: 'This application has already been paid and can no longer be edited.',
+  issued: 'A policy has already been issued for this application, so it can no longer be edited.',
+  rejected: 'This application has been rejected and can no longer be edited.',
+};
 
 @Injectable()
 export class ApplicationsService {
@@ -27,6 +35,7 @@ export class ApplicationsService {
     private prisma: PrismaService,
     private redisService: RedisService,
     private kycService: KycService,
+    private premiumService: PremiumService,
   ) {}
 
   // --- Create new application ---
@@ -54,6 +63,17 @@ export class ApplicationsService {
         'You already have an active application for this product. Please complete or cancel it first.',
       );
 
+    const product = await this.prisma.product.findUnique({
+      where: { id: dto.productId },
+      select: { pricingType: true, rate: true, assetFields: true },
+    });
+    if (!product) throw new NotFoundException('Product not found');
+
+    const calculatedPremium = this.premiumService.calculatePremium(
+      product,
+      dto.assetDetails,
+    );
+
     return this.prisma.application.create({
       data: {
         userId,
@@ -62,7 +82,7 @@ export class ApplicationsService {
         stepCompleted: 0,
         formData: {
           ...(dto.assetDetails ? { assetDetails: dto.assetDetails } : {}),
-          ...(dto.calculatedPremium ? { calculatedPremium: dto.calculatedPremium } : {}),
+          ...(calculatedPremium ? { calculatedPremium } : {}),
         } as Prisma.InputJsonValue,
         assetDetails: (dto.assetDetails ?? undefined) as
           | Prisma.InputJsonValue
@@ -125,6 +145,12 @@ export class ApplicationsService {
 
   async update(id: string, userId: string, dto: UpdateApplicationDto) {
     const application = await this.findOne(id, userId);
+    if (application.status !== 'draft') {
+      throw new BadRequestException(
+        LOCKED_APPLICATION_MESSAGES[application.status] ??
+          'This application can no longer be edited.',
+      );
+    }
 
     const cleanFormData = dto.formData
       ? {

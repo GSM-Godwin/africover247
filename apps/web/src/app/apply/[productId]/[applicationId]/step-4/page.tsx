@@ -6,6 +6,7 @@ import { WizardActions } from "@/components/application/wizard-actions";
 import { useApplicationWizard } from "@/contexts/application-wizard-context";
 import api from "@/lib/api";
 import { formatNaira } from "@/lib/utils";
+import { resolveAnnualPremium } from "@/lib/premium";
 import { applyStepPath } from "@/types/application";
 
 const SUMMARY_SECTIONS = [
@@ -26,12 +27,12 @@ export default function Step4Page() {
     router.push(`/apply/${productId}/${applicationId}/payment`);
   }
 
-  const isQuoteBased = application?.product?.pricingType === "quote_based";
-  const hasCalculatedPremium = !!(
-    formData?.calculatedPremium || application?.product?.premiumAmount
+  const premium = resolveAnnualPremium(
+    application?.product?.premiumAmount,
+    formData,
   );
-  const needsQuote = isQuoteBased && !hasCalculatedPremium;
-  const premium = application?.product?.premiumAmount ?? 0;
+  const needsQuote =
+    application?.product?.pricingType === "quote_based" && !premium;
 
   return (
     <div>

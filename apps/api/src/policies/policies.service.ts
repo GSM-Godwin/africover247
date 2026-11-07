@@ -13,6 +13,7 @@ import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { StorageService } from '../storage/storage.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { PremiumService } from '../premium/premium.service';
 import { AdminService } from '../admin/admin.service';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class PoliciesService {
     private smsService: SmsService,
     private storageService: StorageService,
     private applicationsService: ApplicationsService,
+    private premiumService: PremiumService,
   ) {}
 
   private async sendPushNotification(
@@ -307,22 +309,6 @@ export class PoliciesService {
     return false;
   }
 
-  private resolvePremiumAmount(application: {
-    product: { premiumAmount: Prisma.Decimal | null };
-    formData: Prisma.JsonValue;
-  }): number | null {
-    const formData = application.formData as Record<string, any> | null;
-    const calculatedPremium = formData?.calculatedPremium
-      ? Number(formData.calculatedPremium)
-      : formData?.quotedPremium
-      ? Number(formData.quotedPremium)
-      : null;
-
-    return application.product.premiumAmount != null
-      ? Number(application.product.premiumAmount)
-      : calculatedPremium;
-  }
-
   private buildPolicyExpiryDate(durationMonths: number): Date {
     const expiryDate = new Date();
     expiryDate.setMonth(expiryDate.getMonth() + durationMonths);
@@ -449,7 +435,7 @@ export class PoliciesService {
     const startDate = new Date();
     const expiryDate = this.buildPolicyExpiryDate(application.product.durationMonths);
 
-    const premiumAmount = this.resolvePremiumAmount(application);
+    const premiumAmount = await this.premiumService.resolveAnnualPremium(application);
 
     if (!premiumAmount) {
       this.logger.error(

@@ -8,9 +8,10 @@ import {
 import { MonnifyService } from './monnify.service';
 import { PoliciesModule } from '../policies/policies.module';
 import { ApplicationsModule } from '../applications/applications.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
-  imports: [PoliciesModule, ApplicationsModule],
+  imports: [PoliciesModule, ApplicationsModule, PremiumModule],
   providers: [PaymentsService, MonnifyService],
   controllers: [
     PaymentsController,

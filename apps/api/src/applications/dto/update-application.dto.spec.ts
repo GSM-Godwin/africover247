@@ -87,6 +87,19 @@ describe('UpdateApplicationDto', () => {
     expect(sanitizeFormData(wizardFormData)).toEqual(wizardFormData);
   });
 
+  it('drops premium and quote fields so only the server can set them', () => {
+    expect(
+      sanitizeFormData({
+        city: 'Lagos',
+        calculatedPremium: 1,
+        quotedPremium: 1,
+        quoteId: 'quote-1',
+        fromQuote: true,
+        fromQuoteId: 'quote-1',
+      }),
+    ).toEqual({ city: 'Lagos' });
+  });
+
   it('drops unknown formData keys such as a nested stepCompleted', () => {
     expect(sanitizeFormData({ city: 'Lagos', stepCompleted: 4, status: 'active' })).toEqual({
       city: 'Lagos',

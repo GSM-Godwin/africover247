@@ -25,10 +25,6 @@ const ALLOWED_FORM_DATA_KEYS = [
   'monthlyIncomeRange',
   'annualIncome',
   'assetDetails',
-  'calculatedPremium',
-  'quotedPremium',
-  'quoteId',
-  'fromQuote',
 ];
 
 export class UpdateApplicationDto {

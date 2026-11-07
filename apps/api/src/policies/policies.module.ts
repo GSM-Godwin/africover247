@@ -11,6 +11,7 @@ import { StorageModule } from '../storage/storage.module';
 import { ApplicationsModule } from '../applications/applications.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { AdminModule } from '../admin/admin.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { AdminModule } from '../admin/admin.module';
     ApplicationsModule,
     NotificationsModule,
     AdminModule,
+    PremiumModule,
   ],
   providers: [PoliciesService, PolicySchedulerService],
   controllers: [PoliciesController, AdminPoliciesController],

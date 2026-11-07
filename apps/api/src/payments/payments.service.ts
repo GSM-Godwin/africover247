@@ -13,6 +13,7 @@ import { MonnifyService } from './monnify.service';
 import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { PoliciesService } from '../policies/policies.service';
 import { ApplicationsService } from '../applications/applications.service';
+import { PremiumService } from '../premium/premium.service';
 
 @Injectable()
 export class PaymentsService {
@@ -24,6 +25,7 @@ export class PaymentsService {
     private configService: ConfigService,
     private policiesService: PoliciesService,
     private applicationsService: ApplicationsService,
+    private premiumService: PremiumService,
   ) {}
 
   // --- Initiate payment ---
@@ -56,16 +58,7 @@ export class PaymentsService {
       throw new BadRequestException('This application has already been paid');
     }
 
-    const formData = application.formData as Record<string, any> | null;
-    const calculatedPremium = formData?.calculatedPremium
-      ? Number(formData.calculatedPremium)
-      : formData?.quotedPremium
-      ? Number(formData.quotedPremium)
-      : null;
-
-    const annualAmount = application.product.premiumAmount
-      ? Number(application.product.premiumAmount)
-      : calculatedPremium;
+    const annualAmount = await this.premiumService.resolveAnnualPremium(application);
 
     if (!annualAmount) {
       throw new BadRequestException(
@@ -74,10 +67,7 @@ export class PaymentsService {
     }
 
     const paymentPlan = dto.paymentPlan || 'annual';
-    const amount =
-      paymentPlan === 'monthly'
-        ? Math.ceil(annualAmount / 12)
-        : annualAmount;
+    const amount = this.premiumService.amountForPlan(annualAmount, paymentPlan);
 
     let payment = await this.prisma.payment.findFirst({
       where: { applicationId: dto.applicationId, status: 'pending' },
@@ -202,11 +192,12 @@ export class PaymentsService {
         payment.gatewayReference || monnifyReference,
       );
 
-      const expectedAmount = Number(payment.amount);
+      const expectedAmount = await this.resolveExpectedAmount(payment);
       const verifiedAmount = Number(verification.amount);
 
       if (
         verification.status !== 'PAID' ||
+        !expectedAmount ||
         Math.abs(verifiedAmount - expectedAmount) > 0.01
       ) {
         this.logger.warn(
@@ -226,6 +217,22 @@ export class PaymentsService {
       paymentId,
       gatewayResponse,
     );
+  }
+
+  private async resolveExpectedAmount(payment: {
+    applicationId: string;
+    paymentPlan: 'monthly' | 'annual';
+  }): Promise<number | null> {
+    const application = await this.prisma.application.findUnique({
+      where: { id: payment.applicationId },
+      include: { product: true },
+    });
+    if (!application) return null;
+
+    const annualAmount = await this.premiumService.resolveAnnualPremium(application);
+    return annualAmount
+      ? this.premiumService.amountForPlan(annualAmount, payment.paymentPlan)
+      : null;
   }
 
   // --- Handle failed charge ---
