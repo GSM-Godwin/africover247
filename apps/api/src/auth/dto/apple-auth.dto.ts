@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
 
 export class AppleAuthDto {
   @IsString()
@@ -12,4 +12,9 @@ export class AppleAuthDto {
   @IsString()
   @IsOptional()
   lastName?: string;
+
+  @IsString()
+  @IsOptional()
+  @MaxLength(2048)
+  authorizationCode?: string;
 }

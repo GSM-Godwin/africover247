@@ -99,6 +99,7 @@ model User {
   suspendedAt        DateTime?
   googleId           String?        @unique
   appleId            String?        @unique
+  appleRefreshToken  String?
   pushToken          String?
   pushPlatform       String?
   preferredChannel   String         @default("email")

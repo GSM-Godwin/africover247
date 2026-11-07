@@ -14,12 +14,14 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import * as WebBrowser from 'expo-web-browser'
 import * as Google from 'expo-auth-session/providers/google'
+import * as AppleAuthentication from 'expo-apple-authentication'
 import { Ionicons } from '@expo/vector-icons'
 import { Button, Input } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { setToken, setUser } from '../../services/auth'
 import { decodeJwtPayload } from '../../utils/jwt'
+import { useAppleSignIn } from '../../hooks/useAppleSignIn'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -51,6 +53,12 @@ export function RegisterScreen({ navigation, onRegisterSuccess }: RegisterScreen
     webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID || 'placeholder',
     androidClientId: process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID || 'placeholder',
     iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID || 'placeholder',
+  })
+
+  const { appleAvailable, signInWithApple } = useAppleSignIn({
+    onSuccess: onRegisterSuccess,
+    onError: setError,
+    setLoading,
   })
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
@@ -133,20 +141,33 @@ export function RegisterScreen({ navigation, onRegisterSuccess }: RegisterScreen
               </View>
             ) : null}
 
-            {process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID && (
+            {(hasGoogleClientId || appleAvailable) && (
               <>
-                <TouchableOpacity
-                  style={[
-                    styles.googleBtn,
-                    (!googleRequest || !hasGoogleClientId) && styles.btnDisabledOpacity,
-                  ]}
-                  onPress={() => googlePromptAsync()}
-                  disabled={!googleRequest || !hasGoogleClientId || loading}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="logo-google" size={20} color={Colors.text} />
-                  <Text style={styles.googleBtnText}>Sign up with Google</Text>
-                </TouchableOpacity>
+                <View style={styles.socialButtons}>
+                  {hasGoogleClientId && (
+                    <TouchableOpacity
+                      style={[styles.googleBtn, !googleRequest && styles.btnDisabledOpacity]}
+                      onPress={() => googlePromptAsync()}
+                      disabled={!googleRequest || loading}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="logo-google" size={20} color={Colors.text} />
+                      <Text style={styles.googleBtnText}>Sign up with Google</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {appleAvailable && (
+                    <AppleAuthentication.AppleAuthenticationButton
+                      buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+                      buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+                      cornerRadius={14}
+                      style={[styles.appleBtn, loading && styles.btnDisabledOpacity]}
+                      onPress={() => {
+                        if (!loading) signInWithApple()
+                      }}
+                    />
+                  )}
+                </View>
 
                 <View style={styles.divider}>
                   <View style={styles.dividerLine} />
@@ -295,8 +316,9 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 14,
     backgroundColor: Colors.white,
-    marginBottom: 4,
   },
+  socialButtons: { gap: 12, marginBottom: 4 },
+  appleBtn: { width: '100%', height: 52 },
   btnDisabledOpacity: { opacity: 0.5 },
   googleBtnText: { fontSize: 15, fontWeight: '700', color: Colors.textDark },
   footer: {

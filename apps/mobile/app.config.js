@@ -20,6 +20,7 @@ export default {
     ios: {
       supportsTablet: false,
       bundleIdentifier: "com.afriglobal.Africover247",
+      usesAppleSignIn: true,
       googleServicesFile: "./GoogleService-Info.plist",
       infoPlist: {
         NSFaceIDUsageDescription: "AfriCover247 uses Face ID to keep your account secure.",

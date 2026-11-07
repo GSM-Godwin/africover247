@@ -10,6 +10,8 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
 import { AuthService } from '../auth/auth.service';
+import { AppleTokenService } from '../auth/apple-token.service';
+import { safeUser } from '../common/helpers/safe-user';
 import * as bcrypt from 'bcrypt';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -25,6 +27,7 @@ export class UsersService {
     private prisma: PrismaService,
     private readonly adminService: AdminService,
     private readonly authService: AuthService,
+    private readonly appleTokenService: AppleTokenService,
   ) {}
 
   // --- Get user by id ---
@@ -32,8 +35,7 @@ export class UsersService {
   async findById(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('User not found');
-    const { passwordHash, ...rest } = user;
-    return rest;
+    return safeUser(user);
   }
 
   // --- Update profile ---
@@ -44,8 +46,7 @@ export class UsersService {
       where: { id },
       data: dto,
     });
-    const { passwordHash, ...rest } = updated;
-    return rest;
+    return safeUser(updated);
   }
 
   // --- Change password ---
@@ -129,6 +130,10 @@ export class UsersService {
       );
     }
 
+    if (user.appleRefreshToken) {
+      await this.appleTokenService.revokeRefreshToken(user.appleRefreshToken);
+    }
+
     const placeholderEmail = `deleted-${userId}@deleted.invalid`;
 
     await this.prisma.user.update({
@@ -141,6 +146,7 @@ export class UsersService {
         alternativePhone: null,
         googleId: null,
         appleId: null,
+        appleRefreshToken: null,
         pushToken: null,
         pushPlatform: null,
         kycData: Prisma.DbNull,
@@ -169,8 +175,7 @@ export class UsersService {
       where: { id: userId },
       data: { pushToken: token, pushPlatform: platform },
     });
-    const { passwordHash, ...safeUser } = user;
-    return safeUser;
+    return safeUser(user);
   }
 
   async getAllUsers(role?: string) {
@@ -221,7 +226,7 @@ export class UsersService {
       details: { reason },
     });
 
-    return updated;
+    return safeUser(updated);
   }
 
   async unsuspendUser(id: string, adminId: string) {
@@ -244,7 +249,7 @@ export class UsersService {
       entityId: id,
     });
 
-    return updated;
+    return safeUser(updated);
   }
 
   async getUserById(id: string) {

@@ -88,6 +88,7 @@ export class AuthController {
       dto.identityToken,
       dto.firstName || '',
       dto.lastName || '',
+      dto.authorizationCode,
     );
   }
 

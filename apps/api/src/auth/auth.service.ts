@@ -10,7 +10,8 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import { OAuth2Client } from 'google-auth-library';
-import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { randomBytes } from 'crypto';
+import { createRemoteJWKSet, jwtVerify, JWTPayload } from 'jose';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
@@ -19,10 +20,10 @@ import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { APPLE_ISSUER, AppleTokenService } from './apple-token.service';
+import { safeUser } from '../common/helpers/safe-user';
 
-const APPLE_ISSUER = 'https://appleid.apple.com';
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
-const DEFAULT_APPLE_AUDIENCE = 'com.afriglobal.Africover247';
 
 @Injectable()
 export class AuthService {
@@ -36,6 +37,7 @@ export class AuthService {
     private configService: ConfigService,
     private emailService: EmailService,
     private smsService: SmsService,
+    private appleTokenService: AppleTokenService,
   ) {}
 
   private getGoogleAudience(): string[] {
@@ -44,13 +46,6 @@ export class AuthService {
       this.configService.get<string>('GOOGLE_ANDROID_CLIENT_ID'),
       this.configService.get<string>('GOOGLE_IOS_CLIENT_ID'),
     ].filter((id): id is string => Boolean(id));
-  }
-
-  private getAppleAudience(): string[] {
-    return (this.configService.get<string>('APPLE_CLIENT_ID') || DEFAULT_APPLE_AUDIENCE)
-      .split(',')
-      .map((id) => id.trim())
-      .filter(Boolean);
   }
 
   // --- Helpers ---
@@ -90,12 +85,10 @@ export class AuthService {
     });
   }
 
-  private sanitizeUser(user: {
-    passwordHash: string;
-    [key: string]: unknown;
-  }) {
-    const { passwordHash, ...rest } = user;
-    return rest;
+  private sanitizeUser<T extends { passwordHash: string; appleRefreshToken?: string | null }>(
+    user: T,
+  ) {
+    return safeUser(user);
   }
 
   private dispatchVerificationOtp(
@@ -487,15 +480,7 @@ export class AuthService {
       });
     }
 
-    if (user.deletedAt) {
-      throw new UnauthorizedException('This account has been deleted.');
-    }
-
-    if (user.suspended) {
-      throw new UnauthorizedException(
-        `Your account has been suspended. ${user.suspendedReason || 'Please contact support.'}`,
-      );
-    }
+    this.assertSocialAccountActive(user);
 
     const accessToken = this.signToken(
       user.id,
@@ -510,12 +495,13 @@ export class AuthService {
     identityToken: string,
     firstName: string,
     lastName: string,
+    authorizationCode?: string,
   ) {
-    let verifiedPayload;
+    let verifiedPayload: JWTPayload;
     try {
       const { payload } = await jwtVerify(identityToken, this.appleJwks, {
         issuer: APPLE_ISSUER,
-        audience: this.getAppleAudience(),
+        audience: this.appleTokenService.getAudience(),
       });
       verifiedPayload = payload;
     } catch {
@@ -527,50 +513,14 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Apple sign-in token');
     }
 
-    const emailVerified =
-      verifiedPayload.email_verified === true ||
-      verifiedPayload.email_verified === 'true';
-    const email =
-      emailVerified && typeof verifiedPayload.email === 'string'
-        ? verifiedPayload.email
-        : null;
+    const user =
+      (await this.prisma.user.findUnique({ where: { appleId } })) ??
+      (await this.linkOrCreateAppleUser(appleId, verifiedPayload, firstName, lastName));
 
-    let user = email
-      ? await this.prisma.user.findUnique({ where: { email } })
-      : null;
+    this.assertSocialAccountActive(user);
 
-    if (!user) {
-      user = await this.prisma.user.findFirst({ where: { appleId } });
-    }
-
-    if (!user) {
-      if (!email) throw new UnauthorizedException('Email is required for first-time Apple Sign-In');
-      user = await this.prisma.user.create({
-        data: {
-          email,
-          firstName: firstName || 'Apple',
-          lastName: lastName || 'User',
-          passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
-          emailVerified: true,
-          role: 'customer',
-          appleId,
-        },
-      });
-    } else if (!user.appleId) {
-      user = await this.prisma.user.update({
-        where: { id: user.id },
-        data: { appleId },
-      });
-    }
-
-    if (user.deletedAt) {
-      throw new UnauthorizedException('This account has been deleted.');
-    }
-
-    if (user.suspended) {
-      throw new UnauthorizedException(
-        `Your account has been suspended. ${user.suspendedReason || 'Please contact support.'}`,
-      );
+    if (authorizationCode) {
+      await this.storeAppleRefreshToken(user.id, authorizationCode);
     }
 
     const accessToken = this.signToken(
@@ -580,5 +530,84 @@ export class AuthService {
       user.tokenVersion,
     );
     return { accessToken, user: this.sanitizeUser(user) };
+  }
+
+  private async linkOrCreateAppleUser(
+    appleId: string,
+    payload: JWTPayload,
+    firstName: string,
+    lastName: string,
+  ) {
+    const email =
+      typeof payload.email === 'string' ? payload.email.trim() : '';
+    if (!email) {
+      throw new UnauthorizedException(
+        'Apple did not share an email address. Please allow email access and try again.',
+      );
+    }
+
+    const emailVerified =
+      payload.email_verified === true || payload.email_verified === 'true';
+    const existing = await this.prisma.user.findUnique({ where: { email } });
+
+    if (existing && emailVerified) {
+      this.assertSocialAccountActive(existing);
+      if (existing.appleId) {
+        throw new ConflictException(
+          'This email is already linked to a different Apple ID.',
+        );
+      }
+      return this.prisma.user.update({
+        where: { id: existing.id },
+        data: { appleId },
+      });
+    }
+
+    if (existing) {
+      throw new ConflictException(
+        'An account with this email already exists. Please log in with your password.',
+      );
+    }
+
+    return this.prisma.user.create({
+      data: {
+        email,
+        firstName: firstName.trim() || 'Apple',
+        lastName: lastName.trim() || 'User',
+        passwordHash: await bcrypt.hash(randomBytes(32).toString('hex'), 12),
+        emailVerified,
+        role: 'customer',
+        appleId,
+      },
+    });
+  }
+
+  private async storeAppleRefreshToken(userId: string, authorizationCode: string) {
+    const appleRefreshToken =
+      await this.appleTokenService.exchangeAuthorizationCode(authorizationCode);
+    if (!appleRefreshToken) return;
+    try {
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { appleRefreshToken },
+      });
+    } catch {
+      this.logger.warn('Failed to store Apple refresh token');
+    }
+  }
+
+  private assertSocialAccountActive(user: {
+    deletedAt: Date | null;
+    suspended: boolean;
+    suspendedReason: string | null;
+  }) {
+    if (user.deletedAt) {
+      throw new UnauthorizedException('This account has been deleted.');
+    }
+    if (user.suspended) {
+      throw new UnauthorizedException(
+        `Your account has been suspended. ${user.suspendedReason || 'Please contact support.'}`,
+      );
+    }
   }
 }

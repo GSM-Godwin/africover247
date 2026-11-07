@@ -1,17 +1,34 @@
 jest.mock('bcrypt');
 
-jest.mock('jose', () => ({
-  createRemoteJWKSet: jest.fn(() => ({})),
-  jwtVerify: jest.fn(),
-}));
+jest.mock('jose', () => {
+  class SignJWT {
+    setProtectedHeader() { return this; }
+    setIssuer() { return this; }
+    setSubject() { return this; }
+    setAudience() { return this; }
+    setIssuedAt() { return this; }
+    setExpirationTime() { return this; }
+    sign() { return Promise.resolve('client-secret-jwt'); }
+  }
+  return {
+    createRemoteJWKSet: jest.fn(() => ({})),
+    jwtVerify: jest.fn(),
+    importPKCS8: jest.fn().mockResolvedValue({}),
+    SignJWT,
+  };
+});
 
 import { Test, TestingModule } from '@nestjs/testing';
-import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
 import { AuthService } from '../auth/auth.service';
+import { AppleTokenService } from '../auth/apple-token.service';
+import { encryptField } from '../common/crypto/field-encryption';
 
 const USER_ID = 'user-1';
 const FAKE_PASSWORD_HASH = '$2b$12$unittestfixturehasheddoesnotmatchanyrealpassword';
@@ -27,6 +44,7 @@ function buildUser(overrides: Partial<Record<string, unknown>> = {}) {
     passwordHash: FAKE_PASSWORD_HASH,
     googleId: null,
     appleId: null,
+    appleRefreshToken: null,
     pushToken: 'push-token',
     pushPlatform: 'ios',
     kycData: { note: 'fixture only' },
@@ -47,6 +65,7 @@ describe('UsersService', () => {
   };
   let adminService: { createAuditLog: jest.Mock };
   let authService: { incrementTokenVersion: jest.Mock };
+  let configService: { get: jest.Mock };
 
   beforeEach(async () => {
     jest.clearAllMocks();
@@ -57,6 +76,7 @@ describe('UsersService', () => {
     };
     adminService = { createAuditLog: jest.fn() };
     authService = { incrementTokenVersion: jest.fn() };
+    configService = { get: jest.fn().mockReturnValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -64,6 +84,8 @@ describe('UsersService', () => {
         { provide: PrismaService, useValue: prisma },
         { provide: AdminService, useValue: adminService },
         { provide: AuthService, useValue: authService },
+        { provide: ConfigService, useValue: configService },
+        AppleTokenService,
       ],
     }).compile();
 
@@ -235,6 +257,125 @@ describe('UsersService', () => {
         action: 'USER_ACCOUNT_DELETED',
         entityType: 'User',
         entityId: USER_ID,
+      });
+    });
+
+    describe('Apple token revocation', () => {
+      const appleEnv: Record<string, string> = {
+        APPLE_TEAM_ID: 'TEAMFIXTURE',
+        APPLE_KEY_ID: 'KEYFIXTURE',
+        APPLE_PRIVATE_KEY: 'unit-test-placeholder',
+      };
+      const originalKey = process.env.FIELD_ENCRYPTION_KEY;
+      let fetchMock: jest.SpyInstance;
+      let warnSpy: jest.SpyInstance;
+
+      beforeEach(() => {
+        process.env.FIELD_ENCRYPTION_KEY = randomBytes(32).toString('base64');
+        configService.get.mockImplementation((name: string) => appleEnv[name]);
+        fetchMock = jest.spyOn(global, 'fetch');
+        warnSpy = jest.spyOn(Logger.prototype, 'warn').mockImplementation(() => undefined);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        prisma.user.update.mockResolvedValue({});
+      });
+
+      afterEach(() => {
+        fetchMock.mockRestore();
+        warnSpy.mockRestore();
+      });
+
+      afterAll(() => {
+        if (originalKey === undefined) delete process.env.FIELD_ENCRYPTION_KEY;
+        else process.env.FIELD_ENCRYPTION_KEY = originalKey;
+      });
+
+      function appleUser() {
+        return buildUser({
+          appleId: 'apple-sub-1',
+          appleRefreshToken: encryptField('apple-refresh-fixture'),
+        });
+      }
+
+      it('revokes the Apple refresh token and clears it during anonymisation', async () => {
+        prisma.user.findUnique.mockResolvedValue(appleUser());
+        fetchMock.mockResolvedValue({ ok: true, status: 200 });
+
+        const result = await service.deleteAccount(
+          { id: USER_ID },
+          { password: 'correct-password' },
+        );
+
+        expect(result).toEqual({ message: 'Your account has been deleted.' });
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(fetchMock.mock.calls[0][0]).toBe('https://appleid.apple.com/auth/revoke');
+        const form = new URLSearchParams(fetchMock.mock.calls[0][1].body);
+        expect(form.get('token')).toBe('apple-refresh-fixture');
+        expect(form.get('token_type_hint')).toBe('refresh_token');
+        expect(prisma.user.update.mock.calls[0][0].data).toMatchObject({
+          appleId: null,
+          appleRefreshToken: null,
+        });
+      });
+
+      it('still deletes the account when the revoke request throws', async () => {
+        prisma.user.findUnique.mockResolvedValue(appleUser());
+        fetchMock.mockRejectedValue(new Error('network down'));
+
+        const result = await service.deleteAccount(
+          { id: USER_ID },
+          { password: 'correct-password' },
+        );
+
+        expect(result).toEqual({ message: 'Your account has been deleted.' });
+        expect(prisma.user.update.mock.calls[0][0].data.appleRefreshToken).toBeNull();
+        expect(warnSpy.mock.calls.flat().join(' ')).not.toContain('apple-refresh-fixture');
+      });
+
+      it('still deletes the account when Apple returns an error status', async () => {
+        prisma.user.findUnique.mockResolvedValue(appleUser());
+        fetchMock.mockResolvedValue({ ok: false, status: 503 });
+
+        const result = await service.deleteAccount(
+          { id: USER_ID },
+          { password: 'correct-password' },
+        );
+
+        expect(result).toEqual({ message: 'Your account has been deleted.' });
+        expect(prisma.user.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not call Apple when the user has no stored refresh token', async () => {
+        prisma.user.findUnique.mockResolvedValue(buildUser({ appleId: 'apple-sub-1' }));
+
+        await service.deleteAccount({ id: USER_ID }, { password: 'correct-password' });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(prisma.user.update).toHaveBeenCalledTimes(1);
+      });
+
+      it('skips the revoke but still clears the token when Apple env vars are missing', async () => {
+        configService.get.mockReturnValue(undefined);
+        prisma.user.findUnique.mockResolvedValue(appleUser());
+
+        const result = await service.deleteAccount(
+          { id: USER_ID },
+          { password: 'correct-password' },
+        );
+
+        expect(result).toEqual({ message: 'Your account has been deleted.' });
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(prisma.user.update.mock.calls[0][0].data.appleRefreshToken).toBeNull();
+      });
+
+      it('skips the revoke when FIELD_ENCRYPTION_KEY is missing', async () => {
+        const user = appleUser();
+        delete process.env.FIELD_ENCRYPTION_KEY;
+        prisma.user.findUnique.mockResolvedValue(user);
+
+        await service.deleteAccount({ id: USER_ID }, { password: 'correct-password' });
+
+        expect(fetchMock).not.toHaveBeenCalled();
+        expect(prisma.user.update).toHaveBeenCalledTimes(1);
       });
     });
 

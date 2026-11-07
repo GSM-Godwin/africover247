@@ -21,6 +21,7 @@ import { Colors } from '../../constants'
 import api from '../../services/api'
 import { setToken, setUser } from '../../services/auth'
 import { decodeJwtPayload } from '../../utils/jwt'
+import { useAppleSignIn } from '../../hooks/useAppleSignIn'
 
 WebBrowser.maybeCompleteAuthSession()
 
@@ -47,6 +48,12 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
   })
 
   const hasGoogleClientId = Boolean(process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID)
+
+  const { appleAvailable, signInWithApple } = useAppleSignIn({
+    onSuccess: onLoginSuccess,
+    onError: setError,
+    setLoading,
+  })
 
   const { control, handleSubmit, formState: { errors } } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -75,41 +82,6 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
     } catch (err: any) {
       const msg = err?.response?.data?.message
       setError(Array.isArray(msg) ? msg[0] : (msg || 'Google sign-in failed.'))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleAppleSignIn() {
-    try {
-      setLoading(true)
-      setError('')
-      const credential = await AppleAuthentication.signInAsync({
-        requestedScopes: [
-          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
-          AppleAuthentication.AppleAuthenticationScope.EMAIL,
-        ],
-      })
-
-      if (!credential.identityToken) {
-        setError('Apple Sign-In failed. Please try again.')
-        return
-      }
-
-      const res = await api.post('/auth/apple', {
-        identityToken: credential.identityToken,
-        firstName: credential.fullName?.givenName || '',
-        lastName: credential.fullName?.familyName || '',
-      })
-
-      await setToken(res.data.accessToken)
-      await setUser(res.data.user)
-      onLoginSuccess()
-    } catch (err: any) {
-      if (err?.code !== 'ERR_REQUEST_CANCELED') {
-        const msg = err?.response?.data?.message
-        setError(Array.isArray(msg) ? msg[0] : (msg || 'Apple Sign-In failed. Please try again.'))
-      }
     } finally {
       setLoading(false)
     }
@@ -236,13 +208,15 @@ export function LoginScreen({ navigation, onLoginSuccess }: LoginScreenProps) {
               </TouchableOpacity>
             )}
 
-            {Platform.OS === 'ios' && (
+            {appleAvailable && (
               <AppleAuthentication.AppleAuthenticationButton
-                buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+                buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
                 buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
                 cornerRadius={14}
-                style={styles.appleBtn}
-                onPress={handleAppleSignIn}
+                style={[styles.appleBtn, loading && styles.btnDisabledOpacity]}
+                onPress={() => {
+                  if (!loading) signInWithApple()
+                }}
               />
             )}
           </View>

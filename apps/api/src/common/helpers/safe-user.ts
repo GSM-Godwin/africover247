@@ -1,4 +1,6 @@
-export function safeUser<T extends { passwordHash?: string | null }>(user: T) {
-  const { passwordHash, ...rest } = user as T & { passwordHash?: string | null };
+export function safeUser<
+  T extends { passwordHash?: string | null; appleRefreshToken?: string | null },
+>(user: T): Omit<T, 'passwordHash' | 'appleRefreshToken'> {
+  const { passwordHash, appleRefreshToken, ...rest } = user;
   return rest;
 }
