@@ -12,12 +12,12 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import * as ScreenCapture from 'expo-screen-capture'
 import * as Clipboard from 'expo-clipboard'
 import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { markRelatedNotificationsRead } from '../../services/notifications'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 interface PolicyDetail {
   id: string
@@ -45,6 +45,7 @@ interface PolicyDetail {
 }
 
 export function PolicyDetailScreen({ route, navigation }: any) {
+  useScreenProtection()
   const { policyId } = route.params
   const [policy, setPolicy] = useState<PolicyDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -60,13 +61,6 @@ export function PolicyDetailScreen({ route, navigation }: any) {
       .catch(() => navigation.goBack())
       .finally(() => setLoading(false))
   }, [policyId])
-
-  // useEffect(() => {
-  //   ScreenCapture.preventScreenCaptureAsync()
-  //   return () => {
-  //     ScreenCapture.allowScreenCaptureAsync()
-  //   }
-  // }, [])
 
   if (loading) {
     return (

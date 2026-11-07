@@ -17,6 +17,7 @@ import DateTimePicker from '@react-native-community/datetimepicker'
 import { Button, NumberInput } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 interface Policy {
   id: string
@@ -54,6 +55,7 @@ function toApiClaimType(type: string): string {
 }
 
 export function NewClaimScreen({ route, navigation }: any) {
+  useScreenProtection()
   const params = route?.params || {}
   const { preselectedPolicyId } = params as { preselectedPolicyId?: string }
   const [policies, setPolicies] = useState<Policy[]>([])

@@ -26,6 +26,7 @@ import {
   authenticateWithBiometric,
 } from '../../services/biometric'
 import type { User } from '../../types'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 interface AccountScreenProps {
   navigation: any
@@ -41,6 +42,7 @@ interface MenuItem {
 }
 
 export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
+  useScreenProtection()
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState({ policies: 0, claims: 0, quotes: 0 })
   const [loading, setLoading] = useState(true)

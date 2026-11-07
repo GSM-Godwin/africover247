@@ -21,7 +21,10 @@
     },
     "production": {
       "distribution": "store",
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "APP_SCREEN_PROTECTION": "true"
+      }
     }
   },
   "submit": {

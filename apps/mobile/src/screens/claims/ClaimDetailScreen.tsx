@@ -13,8 +13,10 @@ import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { markRelatedNotificationsRead } from '../../services/notifications'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 export function ClaimDetailScreen({ route, navigation }: any) {
+  useScreenProtection()
   const params = route.params || {}
   const { claimId } = params as any
   const [claim, setClaim] = useState<any>(null)

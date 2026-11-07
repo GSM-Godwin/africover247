@@ -368,13 +368,10 @@ export default function QuoteDetailPage() {
               onClick={async () => {
                 try {
                   const appRes = await api.get<ApplicationRecord[]>(
-                    "/applications/my",
+                    "/applications",
+                    { params: { quoteId: quote.id } },
                   );
-                  const quoteApp = appRes.data.find(
-                    (a) =>
-                      (a.formData as { quoteId?: string } | null)?.quoteId ===
-                      quote.id,
-                  );
+                  const quoteApp = appRes.data[0];
                   if (quoteApp) {
                     router.push(
                       `/apply/${quote.product.id}/${quoteApp.id}/payment`,

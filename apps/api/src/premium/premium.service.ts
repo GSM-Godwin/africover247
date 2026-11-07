@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PaymentPlan, Prisma, PricingType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { linkedQuoteId } from '../common/helpers/linked-quote-id';
 
 const VALUE_FIELD_KEYWORDS = ['value', 'amount', 'assured', 'salary'];
 
@@ -88,10 +89,7 @@ export class PremiumService {
   }
 
   private async findAcceptedQuoteAmount(application: PremiumApplication): Promise<number | null> {
-    const formData = isRecord(application.formData) ? application.formData : {};
-    const quoteId = [formData.fromQuoteId, formData.quoteId].find(
-      (id): id is string => typeof id === 'string' && id.length > 0,
-    );
+    const quoteId = linkedQuoteId(application.formData);
     if (!quoteId) return null;
 
     const quote = await this.prisma.quote.findFirst({

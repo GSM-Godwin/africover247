@@ -19,6 +19,7 @@ import { StorageService } from '../storage/storage.service';
 import { KycService, type KycResult } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 import { PremiumService } from '../premium/premium.service';
+import { linkedQuoteId } from '../common/helpers/linked-quote-id';
 
 const LOCKED_APPLICATION_MESSAGES: Record<string, string> = {
   pending_payment: 'This application is awaiting payment and can no longer be edited.',
@@ -116,10 +117,7 @@ export class ApplicationsService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return applications.filter((app) => {
-      const formData = app.formData as Record<string, unknown> | null;
-      return formData?.quoteId === quoteId;
-    });
+    return applications.filter((app) => linkedQuoteId(app.formData) === quoteId);
   }
 
   // --- Get single application ---

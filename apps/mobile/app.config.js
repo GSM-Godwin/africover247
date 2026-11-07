@@ -57,6 +57,7 @@ export default {
     ],
     extra: {
       apiUrl: "https://africover247.onrender.com",
+      screenProtection: process.env.APP_SCREEN_PROTECTION === "true",
       eas: {
         projectId: "436de704-ba6f-46e8-a6b9-0c7286ce59e1"
       }

@@ -16,11 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import DateTimePicker from '@react-native-community/datetimepicker'
 import * as DocumentPicker from 'expo-document-picker'
-import * as ScreenCapture from 'expo-screen-capture'
 import { Button } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser } from '../../services/auth'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 const NIGERIAN_STATES = [
   'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
@@ -365,6 +365,7 @@ interface FormData {
 }
 
 export function ApplicationWizardScreen({ route, navigation }: any) {
+  useScreenProtection()
   const params = route.params || {}
   const { applicationId, product } = params as any
   const [step, setStep] = useState(0)
@@ -451,13 +452,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
     }
     loadDraft()
   }, [applicationId])
-
-  // useEffect(() => {
-  //   ScreenCapture.preventScreenCaptureAsync()
-  //   return () => {
-  //     ScreenCapture.allowScreenCaptureAsync()
-  //   }
-  // }, [])
 
   function update(key: keyof FormData, value: string) {
     setFormData((prev) => ({ ...prev, [key]: value }))

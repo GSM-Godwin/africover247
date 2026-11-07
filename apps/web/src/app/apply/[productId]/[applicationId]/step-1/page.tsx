@@ -19,6 +19,13 @@ const GENDER_OPTIONS = [
   { value: "Prefer not to say", label: "Prefer not to say" },
 ];
 
+const MARITAL_STATUS_OPTIONS = [
+  { value: "Single", label: "Single" },
+  { value: "Married", label: "Married" },
+  { value: "Divorced", label: "Divorced" },
+  { value: "Widowed", label: "Widowed" },
+];
+
 function isAtLeast18(dateStr: string): boolean {
   const dob = new Date(dateStr);
   if (Number.isNaN(dob.getTime())) return false;
@@ -39,10 +46,12 @@ const step1Schema = z.object({
     .min(1, "Date of birth is required")
     .refine(isAtLeast18, "You must be at least 18 years old"),
   gender: z.string().min(1, "Gender is required"),
+  maritalStatus: z.string().min(1, "Marital status is required"),
   email: z.string().email("Enter a valid email address"),
   phone: z
     .string()
     .regex(/^(\+234|0)[789][01]\d{8}$/, "Enter a valid Nigerian phone number"),
+  alternativePhone: z.string().optional(),
 });
 
 type Step1FormData = z.infer<typeof step1Schema>;
@@ -54,8 +63,10 @@ function buildDefaults(formData: Record<string, unknown>): Step1FormData {
     lastName: String(formData.lastName ?? user?.lastName ?? ""),
     dateOfBirth: String(formData.dateOfBirth ?? ""),
     gender: String(formData.gender ?? ""),
+    maritalStatus: String(formData.maritalStatus ?? ""),
     email: String(formData.email ?? user?.email ?? ""),
     phone: String(formData.phone ?? user?.phone ?? ""),
+    alternativePhone: String(formData.alternativePhone ?? ""),
   };
 }
 
@@ -65,10 +76,11 @@ function toStep1Payload(data: Step1FormData) {
     lastName: data.lastName,
     dateOfBirth: data.dateOfBirth,
     gender: data.gender,
+    maritalStatus: data.maritalStatus,
     nationality: "Nigerian",
     email: data.email,
     phone: data.phone,
-    alternativePhone: undefined,
+    alternativePhone: data.alternativePhone?.trim() ?? "",
   };
 }
 
@@ -180,6 +192,14 @@ export default function Step1Page() {
         />
       </div>
 
+      <WizardSelect
+        label="Marital status"
+        placeholder="Marital status"
+        registration={register("maritalStatus")}
+        options={MARITAL_STATUS_OPTIONS}
+        error={errors.maritalStatus?.message}
+      />
+
       <AuthInput
         label="Email"
         type="email"
@@ -195,6 +215,14 @@ export default function Step1Page() {
         placeholder="Enter your phone number"
         registration={register("phone")}
         error={errors.phone?.message}
+      />
+
+      <AuthInput
+        label="Alternative phone (optional)"
+        type="tel"
+        placeholder="08012345678"
+        registration={register("alternativePhone")}
+        error={errors.alternativePhone?.message}
       />
 
       <WizardActions

@@ -15,8 +15,10 @@ import { Button, Input } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser, setUser } from '../../services/auth'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 export function EditProfileScreen({ navigation }: any) {
+  useScreenProtection()
   const [loading, setLoading] = useState(false)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')

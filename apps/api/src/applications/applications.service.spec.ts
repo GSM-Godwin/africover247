@@ -29,6 +29,7 @@ describe('ApplicationsService', () => {
     application: {
       findUnique: jest.Mock;
       findFirst: jest.Mock;
+      findMany: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
     };
@@ -42,6 +43,7 @@ describe('ApplicationsService', () => {
       application: {
         findUnique: jest.fn().mockResolvedValue(buildApplication()),
         findFirst: jest.fn().mockResolvedValue(null),
+        findMany: jest.fn().mockResolvedValue([]),
         create: jest.fn().mockImplementation(({ data }) => Promise.resolve(data)),
         update: jest.fn().mockImplementation(({ data }) =>
           Promise.resolve({ ...buildApplication(), ...data }),
@@ -163,6 +165,54 @@ describe('ApplicationsService', () => {
       await expect(attempt).rejects.toThrow(message);
       expect(prisma.application.update).not.toHaveBeenCalled();
       expect(redisService.saveDraft).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('findByQuoteId', () => {
+    const acceptedQuoteApplication = {
+      id: 'application-from-quote',
+      formData: { fromQuoteId: 'quote-1', calculatedPremium: 250000 },
+    };
+    const legacyQuoteApplication = {
+      id: 'application-legacy',
+      formData: { quoteId: 'quote-2', fromQuote: true, quotedPremium: 90000 },
+    };
+    const unrelatedApplication = {
+      id: 'application-other',
+      formData: { fromQuoteId: 'quote-3' },
+    };
+
+    beforeEach(() => {
+      prisma.application.findMany.mockResolvedValue([
+        acceptedQuoteApplication,
+        legacyQuoteApplication,
+        unrelatedApplication,
+        { id: 'application-no-form', formData: null },
+      ]);
+    });
+
+    it('finds the application created by quote acceptance through fromQuoteId', async () => {
+      await expect(service.findByQuoteId(USER_ID, 'quote-1')).resolves.toEqual([
+        acceptedQuoteApplication,
+      ]);
+    });
+
+    it('still finds older applications that stored quoteId', async () => {
+      await expect(service.findByQuoteId(USER_ID, 'quote-2')).resolves.toEqual([
+        legacyQuoteApplication,
+      ]);
+    });
+
+    it('returns nothing for a quote with no linked application', async () => {
+      await expect(service.findByQuoteId(USER_ID, 'quote-9')).resolves.toEqual([]);
+    });
+
+    it("only searches the current user's applications awaiting payment", async () => {
+      await service.findByQuoteId(USER_ID, 'quote-1');
+
+      expect(prisma.application.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ where: { userId: USER_ID, status: 'pending_payment' } }),
+      );
     });
   });
 

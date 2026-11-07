@@ -17,6 +17,7 @@ import { z } from 'zod'
 import { Button, Input } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 const schema = z.object({
   currentPassword: z.string().min(1, 'Current password is required'),
@@ -33,6 +34,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export function ChangePasswordScreen({ navigation }: any) {
+  useScreenProtection()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 

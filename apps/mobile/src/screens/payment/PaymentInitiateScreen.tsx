@@ -10,17 +10,18 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as WebBrowser from 'expo-web-browser'
-import * as ScreenCapture from 'expo-screen-capture'
 import { Button, Card } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { monthlyInstalment, resolveAnnualPremium } from '../../utils/premium'
 import { ReauthModal } from '../../components/shared/ReauthModal'
+import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 const REAUTH_WINDOW_MS = 10 * 60 * 1000
 const STEP_UP_TOKEN_HEADER = 'X-Step-Up-Token'
 
 export function PaymentInitiateScreen({ route, navigation }: any) {
+  useScreenProtection()
   const params = route.params || {}
   const { applicationId, product, amount: presetAmount } = params as any
   const [loading, setLoading] = useState(false)
@@ -53,13 +54,6 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   useEffect(() => {
     return () => clearInterval(pollRef.current)
   }, [])
-
-  // useEffect(() => {
-  //   ScreenCapture.preventScreenCaptureAsync()
-  //   return () => {
-  //     ScreenCapture.allowScreenCaptureAsync()
-  //   }
-  // }, [])
 
   if (!applicationId) {
     return (
