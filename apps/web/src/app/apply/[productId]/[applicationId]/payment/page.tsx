@@ -142,6 +142,7 @@ export default function PaymentPage() {
         onSuccess={onSuccess}
         onCancel={onCancel}
         reason="Please confirm your password before proceeding to payment."
+        allowEmailCode
       />
     </div>
   );

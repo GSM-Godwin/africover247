@@ -126,6 +126,20 @@ model User {
   supportTickets     SupportTicket[]
   appointments       Appointment[]
   callLogs           CallLog[]
+  stepUpCode         StepUpCode?
+}
+
+model StepUpCode {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  codeHash        String
+  expiresAt       DateTime
+  attempts        Int      @default(0)
+  sendCount       Int      @default(1)
+  windowStartedAt DateTime @default(now())
+  lastSentAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model PhoneOtp {

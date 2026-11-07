@@ -1,0 +1,17 @@
+CREATE TABLE "StepUpCode" (
+    "id" TEXT NOT NULL,
+    "userId" TEXT NOT NULL,
+    "codeHash" TEXT NOT NULL,
+    "expiresAt" TIMESTAMP(3) NOT NULL,
+    "attempts" INTEGER NOT NULL DEFAULT 0,
+    "sendCount" INTEGER NOT NULL DEFAULT 1,
+    "windowStartedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "lastSentAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "StepUpCode_pkey" PRIMARY KEY ("id")
+);
+
+CREATE UNIQUE INDEX "StepUpCode_userId_key" ON "StepUpCode"("userId");
+
+ALTER TABLE "StepUpCode" ADD CONSTRAINT "StepUpCode_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

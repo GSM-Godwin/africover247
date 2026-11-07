@@ -15,6 +15,9 @@ import { Button, Card } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { monthlyInstalment, resolveAnnualPremium } from '../../utils/premium'
+import { ReauthModal } from '../../components/shared/ReauthModal'
+
+const REAUTH_WINDOW_MS = 10 * 60 * 1000
 
 export function PaymentInitiateScreen({ route, navigation }: any) {
   const params = route.params || {}
@@ -25,6 +28,8 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   const [appAmount, setAppAmount] = useState<string | null>(presetAmount || null)
   const [appData, setAppData] = useState<any>(null)
   const [error, setError] = useState('')
+  const [reauthVisible, setReauthVisible] = useState(false)
+  const [lastReauthAt, setLastReauthAt] = useState<number | null>(null)
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   useEffect(() => {
@@ -65,6 +70,20 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
         </View>
       </SafeAreaView>
     )
+  }
+
+  function handlePayPress() {
+    if (lastReauthAt && Date.now() - lastReauthAt < REAUTH_WINDOW_MS) {
+      void handleInitiatePayment()
+      return
+    }
+    setReauthVisible(true)
+  }
+
+  function handleReauthSuccess() {
+    setLastReauthAt(Date.now())
+    setReauthVisible(false)
+    void handleInitiatePayment()
   }
 
   async function handleInitiatePayment() {
@@ -266,7 +285,7 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
           <>
             <Button
               title={loading ? 'Opening Checkout...' : 'Pay Now'}
-              onPress={handleInitiatePayment}
+              onPress={handlePayPress}
               loading={loading}
               style={{ marginTop: 8 }}
             />
@@ -287,6 +306,13 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
           🔒 Secured by Monnify · Card & bank transfer accepted
         </Text>
       </View>
+
+      <ReauthModal
+        visible={reauthVisible}
+        onSuccess={handleReauthSuccess}
+        onCancel={() => setReauthVisible(false)}
+        reason="Please confirm your password before proceeding to payment."
+      />
     </SafeAreaView>
   )
 }

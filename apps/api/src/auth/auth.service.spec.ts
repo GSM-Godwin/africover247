@@ -154,6 +154,34 @@ describe('AuthService', () => {
     });
   });
 
+  describe('verifyPassword', () => {
+    it('returns the verified proof for the correct password', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser());
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.verifyPassword('user-1', 'correct-password')).resolves.toEqual({
+        verified: true,
+      });
+      expect(bcrypt.compare).toHaveBeenCalledWith('correct-password', FAKE_PASSWORD_HASH);
+    });
+
+    it('rejects an incorrect password', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser());
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.verifyPassword('user-1', 'wrong')).rejects.toThrow(/Incorrect password/);
+    });
+
+    it('still accepts a password for a social account that set one through Forgot password', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser({ googleId: 'google-sub-1' }));
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+      await expect(service.verifyPassword('user-1', 'chosen-password')).resolves.toEqual({
+        verified: true,
+      });
+    });
+  });
+
   describe('logout', () => {
     it('increments the tokenVersion so existing sessions are invalidated', async () => {
       prisma.user.update.mockResolvedValue({});

@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { StepUpService } from './step-up.service';
+import { VerifyStepUpCodeDto } from './dto/verify-step-up-code.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -22,7 +24,10 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 @Throttle({ default: { limit: 10, ttl: 60000 } })
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(
+    private authService: AuthService,
+    private stepUpService: StepUpService,
+  ) {}
 
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   @Post('register')
@@ -114,5 +119,24 @@ export class AuthController {
     @Body() body: { password: string },
   ) {
     return this.authService.verifyPassword(user.id, body.password);
+  }
+
+  @Throttle({ default: { limit: 3, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('step-up/email/send')
+  @HttpCode(HttpStatus.OK)
+  sendStepUpEmailCode(@CurrentUser() user: { id: string }) {
+    return this.stepUpService.sendEmailCode(user.id);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseGuards(JwtAuthGuard)
+  @Post('step-up/email/verify')
+  @HttpCode(HttpStatus.OK)
+  verifyStepUpEmailCode(
+    @CurrentUser() user: { id: string },
+    @Body() dto: VerifyStepUpCodeDto,
+  ) {
+    return this.stepUpService.verifyEmailCode(user.id, dto.code);
   }
 }
