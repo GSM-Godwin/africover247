@@ -16,7 +16,7 @@ import api from '../../services/api'
 
 interface ReauthModalProps {
   visible: boolean
-  onSuccess: () => void
+  onSuccess: (stepUpToken?: string) => void
   onCancel: () => void
   reason?: string
 }
@@ -98,10 +98,10 @@ export function ReauthModal({ visible, onSuccess, onCancel, reason }: ReauthModa
     setLoading(true)
     setError('')
     try {
-      await api.post('/auth/verify-password', { password })
+      const res = await api.post('/auth/verify-password', { password })
       setPassword('')
       setLoading(false)
-      onSuccess()
+      onSuccess(res.data?.stepUpToken)
     } catch {
       setError('Incorrect password. Please try again.')
       setLoading(false)
@@ -116,10 +116,10 @@ export function ReauthModal({ visible, onSuccess, onCancel, reason }: ReauthModa
     setLoading(true)
     setError('')
     try {
-      await api.post('/auth/step-up/email/verify', { code })
+      const res = await api.post('/auth/step-up/email/verify', { code })
       setCode('')
       setLoading(false)
-      onSuccess()
+      onSuccess(res.data?.stepUpToken)
     } catch (err: any) {
       setError(serverMessage(err, 'We could not verify that code. Please try again.'))
       setCode('')

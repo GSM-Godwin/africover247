@@ -5,6 +5,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { AppleTokenService } from './apple-token.service';
 import { StepUpService } from './step-up.service';
+import { StepUpTokenService } from './step-up-token.service';
+import { PasswordAttemptLimiterService } from './password-attempt-limiter.service';
+import { PaymentStepUpGuard } from './guards/payment-step-up.guard';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailModule } from '../email/email.module';
@@ -31,8 +34,16 @@ import { PrismaModule } from '../prisma/prisma.module';
       }),
     }),
   ],
-  providers: [AuthService, AppleTokenService, StepUpService, JwtStrategy],
+  providers: [
+    AuthService,
+    AppleTokenService,
+    StepUpService,
+    StepUpTokenService,
+    PasswordAttemptLimiterService,
+    PaymentStepUpGuard,
+    JwtStrategy,
+  ],
   controllers: [AuthController],
-  exports: [AuthService, AppleTokenService],
+  exports: [AuthService, AppleTokenService, StepUpTokenService, PaymentStepUpGuard],
 })
 export class AuthModule {}

@@ -1,5 +1,6 @@
 export const PAYMENT_ID_STORAGE_KEY = "africover_payment_id";
 export const PENDING_APPLICATION_ID_KEY = "africover_pending_application_id";
+export const STEP_UP_TOKEN_HEADER = "X-Step-Up-Token";
 
 export interface InitiatePaymentResponse {
   checkoutUrl: string;

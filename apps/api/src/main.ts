@@ -28,7 +28,7 @@ async function bootstrap() {
     origin: true,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'x-paystack-signature'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'x-paystack-signature', 'X-Step-Up-Token'],
   })
 
   // --- Swagger API documentation ---

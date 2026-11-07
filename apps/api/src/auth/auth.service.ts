@@ -22,6 +22,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { APPLE_ISSUER, AppleTokenService } from './apple-token.service';
 import { safeUser } from '../common/helpers/safe-user';
+import { StepUpTokenService } from './step-up-token.service';
+import { PasswordAttemptLimiterService } from './password-attempt-limiter.service';
 
 const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
 
@@ -38,6 +40,8 @@ export class AuthService {
     private emailService: EmailService,
     private smsService: SmsService,
     private appleTokenService: AppleTokenService,
+    private stepUpTokenService: StepUpTokenService,
+    private passwordAttemptLimiter: PasswordAttemptLimiterService,
   ) {}
 
   private getGoogleAudience(): string[] {
@@ -340,11 +344,16 @@ export class AuthService {
   }
 
   async verifyPassword(userId: string, password: string) {
+    this.passwordAttemptLimiter.assertAllowed(userId);
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new UnauthorizedException('User not found');
+    if (!user || user.deletedAt) throw new UnauthorizedException('User not found');
     const match = await bcrypt.compare(password, user.passwordHash);
-    if (!match) throw new UnauthorizedException('Incorrect password');
-    return { verified: true };
+    if (!match) {
+      this.passwordAttemptLimiter.recordFailure(userId);
+      throw new UnauthorizedException('Incorrect password');
+    }
+    this.passwordAttemptLimiter.reset(userId);
+    return { verified: true, stepUpToken: this.stepUpTokenService.issue(user) };
   }
 
   async sendPhoneOtp(phone: string) {

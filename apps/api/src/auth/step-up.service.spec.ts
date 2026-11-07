@@ -11,6 +11,7 @@ import {
 } from './step-up.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { StepUpTokenService } from './step-up-token.service';
 
 const USER_ID = 'user-1';
 
@@ -34,6 +35,7 @@ function buildUser(overrides: Partial<Record<string, unknown>> = {}) {
     appleId: null,
     suspended: false,
     deletedAt: null,
+    tokenVersion: 0,
     ...overrides,
   };
 }
@@ -72,6 +74,7 @@ describe('StepUpService', () => {
   let service: StepUpService;
   let fake: ReturnType<typeof createFakePrisma>;
   let emailService: { sendOtpEmail: jest.Mock };
+  let stepUpTokenService: { issue: jest.Mock };
   let logSpy: jest.SpyInstance;
   let now: number;
 
@@ -81,12 +84,14 @@ describe('StepUpService', () => {
     logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     fake = createFakePrisma();
     emailService = { sendOtpEmail: jest.fn().mockResolvedValue(undefined) };
+    stepUpTokenService = { issue: jest.fn().mockReturnValue('step-up-token') };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StepUpService,
         { provide: PrismaService, useValue: fake.prisma },
         { provide: EmailService, useValue: emailService },
+        { provide: StepUpTokenService, useValue: stepUpTokenService },
         {
           provide: ConfigService,
           useValue: { getOrThrow: jest.fn().mockReturnValue('unit-test-jwt-secret') },
@@ -166,7 +171,7 @@ describe('StepUpService', () => {
       if (firstCode !== secondCode) {
         await expect(service.verifyEmailCode(USER_ID, firstCode)).rejects.toThrow(/Incorrect code/);
       }
-      await expect(service.verifyEmailCode(USER_ID, secondCode)).resolves.toEqual({ verified: true });
+      await expect(service.verifyEmailCode(USER_ID, secondCode)).resolves.toMatchObject({ verified: true });
     });
 
     it('limits the number of codes per user within the send window', async () => {
@@ -224,10 +229,17 @@ describe('StepUpService', () => {
 
   describe('verifyEmailCode', () => {
     it('returns the same proof as the password check for the correct code and consumes it', async () => {
+      fake.prisma.user.findUnique.mockResolvedValue(buildUser({ tokenVersion: 4 }));
       await service.sendEmailCode(USER_ID);
       const code = lastEmailedCode();
 
-      await expect(service.verifyEmailCode(USER_ID, code)).resolves.toEqual({ verified: true });
+      await expect(service.verifyEmailCode(USER_ID, code)).resolves.toEqual({
+        verified: true,
+        stepUpToken: 'step-up-token',
+      });
+      expect(stepUpTokenService.issue).toHaveBeenCalledWith(
+        expect.objectContaining({ id: USER_ID, tokenVersion: 4 }),
+      );
       expect(fake.codes.has(USER_ID)).toBe(false);
       await expect(service.verifyEmailCode(USER_ID, code)).rejects.toThrow(/No active code/);
     });

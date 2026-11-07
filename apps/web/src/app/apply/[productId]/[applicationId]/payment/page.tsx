@@ -4,7 +4,11 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useApplicationWizard } from "@/contexts/application-wizard-context";
-import { initiateAndRedirect } from "@/lib/payment";
+import {
+  initiateAndRedirect,
+  isStepUpRejection,
+  paymentErrorMessage,
+} from "@/lib/payment";
 import { PENDING_APPLICATION_ID_KEY } from "@/types/payment";
 import { formatNaira } from "@/lib/utils";
 import { monthlyInstalment, resolveAnnualPremium } from "@/lib/premium";
@@ -17,7 +21,7 @@ export default function PaymentPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [paymentPlan, setPaymentPlan] = useState<"monthly" | "annual">("annual");
-  const { showModal, requireReauth, onSuccess, onCancel } = useReauth();
+  const { showModal, requireReauth, onSuccess, onCancel, resetReauth } = useReauth();
 
   const productName = application?.product?.name ?? "Insurance";
   const annualAmount = resolveAnnualPremium(
@@ -28,16 +32,21 @@ export default function PaymentPage() {
   const displayAmount =
     paymentPlan === "monthly" ? monthlyAmount : annualAmount;
 
-  async function handleProceed() {
+  async function handleProceed(stepUpToken?: string) {
     setLoading(true);
     setError("");
     try {
       sessionStorage.setItem(PENDING_APPLICATION_ID_KEY, applicationId);
-      const url = await initiateAndRedirect(applicationId, paymentPlan);
+      const url = await initiateAndRedirect(applicationId, paymentPlan, stepUpToken);
       setLoading(false);
       if (url) window.location.href = url;
-    } catch {
-      setError("Something went wrong. Please try again.");
+    } catch (err) {
+      if (isStepUpRejection(err)) {
+        resetReauth();
+        setError(paymentErrorMessage(err, "Please confirm your identity again."));
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
       setLoading(false);
     }
   }

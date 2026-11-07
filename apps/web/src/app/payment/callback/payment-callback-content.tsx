@@ -14,6 +14,13 @@ import {
   type PaymentStatusResponse,
 } from "@/types/payment";
 import { formatPolicyDate, type PolicyRecord } from "@/types/policy";
+import { ReauthModal } from "@/components/shared/reauth-modal";
+import { useReauth } from "@/hooks/use-reauth";
+import {
+  initiateAndRedirect,
+  isStepUpRejection,
+  paymentErrorMessage,
+} from "@/lib/payment";
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_POLL_DURATION_MS = 5 * 60 * 1000;
@@ -40,6 +47,29 @@ export function PaymentCallbackContent() {
   const [policy, setPolicy] = useState<PolicyRecord | null>(null);
   const [policyPending, setPolicyPending] = useState(false);
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { showModal, requireReauth, onSuccess, onCancel, resetReauth } = useReauth();
+
+  async function retryPayment(stepUpToken?: string) {
+    const pendingApplicationId = sessionStorage.getItem(PENDING_APPLICATION_ID_KEY);
+    if (!pendingApplicationId) {
+      router.push("/dashboard");
+      return;
+    }
+    try {
+      window.location.href = await initiateAndRedirect(
+        pendingApplicationId,
+        "annual",
+        stepUpToken,
+      );
+    } catch (err) {
+      if (isStepUpRejection(err)) {
+        resetReauth();
+        toast.error(paymentErrorMessage(err, "Please confirm your identity again."));
+        return;
+      }
+      toast.error("Could not initiate payment. Please try from your dashboard.");
+    }
+  }
 
   const productName = policy?.product?.name ?? "Insurance";
 
@@ -208,29 +238,7 @@ export function PaymentCallbackContent() {
 
           <div className="flex flex-col gap-3">
             <button
-              onClick={async () => {
-                try {
-                  const applicationId = sessionStorage.getItem(
-                    PENDING_APPLICATION_ID_KEY,
-                  );
-                  if (!applicationId) {
-                    router.push("/dashboard");
-                    return;
-                  }
-                  const res = await api.post("/payments/initiate", {
-                    applicationId,
-                  });
-                  sessionStorage.setItem(
-                    PENDING_APPLICATION_ID_KEY,
-                    applicationId,
-                  );
-                  window.location.href = res.data.checkoutUrl;
-                } catch {
-                  toast.error(
-                    "Could not initiate payment. Please try from your dashboard.",
-                  );
-                }
-              }}
+              onClick={() => requireReauth((token) => void retryPayment(token))}
               className="w-full bg-daybreak text-midnight font-body font-bold text-base py-4 rounded-lg hover:bg-[#D4921A] transition-colors duration-200"
             >
               Try again
@@ -248,6 +256,13 @@ export function PaymentCallbackContent() {
             Secured by Monnify · Your data is safe
           </p>
         </div>
+        <ReauthModal
+          open={showModal}
+          onSuccess={onSuccess}
+          onCancel={onCancel}
+          reason="Please confirm your password before trying the payment again."
+          allowEmailCode
+        />
       </div>
     );
   }

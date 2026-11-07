@@ -19,12 +19,14 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { PaymentStepUpGuard } from '../auth/guards/payment-step-up.guard';
 
 @UseGuards(JwtAuthGuard)
 @Controller('payments')
 export class PaymentsController {
   constructor(private paymentsService: PaymentsService) {}
 
+  @UseGuards(PaymentStepUpGuard)
   @Post('initiate')
   @HttpCode(HttpStatus.OK)
   initiate(

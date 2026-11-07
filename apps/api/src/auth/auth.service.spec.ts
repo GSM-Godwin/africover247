@@ -33,6 +33,12 @@ import * as bcrypt from 'bcrypt';
 import { jwtVerify } from 'jose';
 import { AuthService } from './auth.service';
 import { AppleTokenService } from './apple-token.service';
+import { StepUpTokenService } from './step-up-token.service';
+import {
+  PASSWORD_ATTEMPT_WINDOW_MS,
+  PASSWORD_MAX_FAILED_ATTEMPTS,
+  PasswordAttemptLimiterService,
+} from './password-attempt-limiter.service';
 import { decryptField } from '../common/crypto/field-encryption';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
@@ -47,6 +53,7 @@ describe('AuthService', () => {
     passwordReset: { findFirst: jest.Mock; update: jest.Mock };
   };
   let jwtService: { sign: jest.Mock };
+  let stepUpTokenService: { issue: jest.Mock };
   let configService: { get: jest.Mock };
 
   beforeEach(async () => {
@@ -56,6 +63,7 @@ describe('AuthService', () => {
       passwordReset: { findFirst: jest.fn(), update: jest.fn() },
     };
     jwtService = { sign: jest.fn().mockReturnValue('signed-jwt') };
+    stepUpTokenService = { issue: jest.fn().mockReturnValue('step-up-token') };
     configService = { get: jest.fn().mockReturnValue(undefined) };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -70,6 +78,8 @@ describe('AuthService', () => {
         },
         { provide: SmsService, useValue: { sendOtpSms: jest.fn() } },
         AppleTokenService,
+        PasswordAttemptLimiterService,
+        { provide: StepUpTokenService, useValue: stepUpTokenService },
       ],
     }).compile();
 
@@ -155,14 +165,107 @@ describe('AuthService', () => {
   });
 
   describe('verifyPassword', () => {
-    it('returns the verified proof for the correct password', async () => {
-      prisma.user.findUnique.mockResolvedValue(buildUser());
+    it('returns the verified flag and a step-up token for the correct password', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser({ tokenVersion: 2 }));
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await expect(service.verifyPassword('user-1', 'correct-password')).resolves.toEqual({
         verified: true,
+        stepUpToken: 'step-up-token',
       });
       expect(bcrypt.compare).toHaveBeenCalledWith('correct-password', FAKE_PASSWORD_HASH);
+      expect(stepUpTokenService.issue).toHaveBeenCalledWith(
+        expect.objectContaining({ id: 'user-1', tokenVersion: 2 }),
+      );
+    });
+
+    it('does not issue a step-up token for a wrong password', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser());
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+
+      await expect(service.verifyPassword('user-1', 'wrong')).rejects.toThrow(UnauthorizedException);
+      expect(stepUpTokenService.issue).not.toHaveBeenCalled();
+    });
+
+    it('refuses a deleted account', async () => {
+      prisma.user.findUnique.mockResolvedValue(buildUser({ deletedAt: new Date() }));
+
+      await expect(service.verifyPassword('user-1', 'anything')).rejects.toThrow(
+        UnauthorizedException,
+      );
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    describe('brute-force limit', () => {
+      let now: number;
+
+      beforeEach(() => {
+        now = Date.UTC(2026, 10, 7, 9, 0, 0);
+        jest.spyOn(Date, 'now').mockImplementation(() => now);
+        prisma.user.findUnique.mockResolvedValue(buildUser());
+      });
+
+      afterEach(() => {
+        (Date.now as jest.Mock).mockRestore();
+      });
+
+      async function failAttempts(count: number, userId = 'user-1') {
+        (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+        for (let i = 0; i < count; i += 1) {
+          await expect(service.verifyPassword(userId, 'wrong')).rejects.toThrow(
+            /Incorrect password/,
+          );
+        }
+      }
+
+      async function expectTooManyRequests(promise: Promise<unknown>) {
+        try {
+          await promise;
+          throw new Error('expected a 429');
+        } catch (err) {
+          expect((err as { getStatus?: () => number }).getStatus?.()).toBe(429);
+          expect((err as Error).message).toMatch(/Too many incorrect password attempts/);
+        }
+      }
+
+      it(`returns 429 after ${PASSWORD_MAX_FAILED_ATTEMPTS} wrong passwords, even for the right one`, async () => {
+        await failAttempts(PASSWORD_MAX_FAILED_ATTEMPTS);
+        (bcrypt.compare as jest.Mock).mockClear().mockResolvedValue(true);
+
+        await expectTooManyRequests(service.verifyPassword('user-1', 'correct-password'));
+        expect(bcrypt.compare).not.toHaveBeenCalled();
+        expect(stepUpTokenService.issue).not.toHaveBeenCalled();
+      });
+
+      it('allows attempts again once the 15-minute window has passed', async () => {
+        await failAttempts(PASSWORD_MAX_FAILED_ATTEMPTS);
+        now += PASSWORD_ATTEMPT_WINDOW_MS;
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+        await expect(service.verifyPassword('user-1', 'correct-password')).resolves.toMatchObject({
+          verified: true,
+        });
+      });
+
+      it('resets the failure count after a successful verification', async () => {
+        await failAttempts(PASSWORD_MAX_FAILED_ATTEMPTS - 1);
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+        await service.verifyPassword('user-1', 'correct-password');
+
+        await failAttempts(PASSWORD_MAX_FAILED_ATTEMPTS - 1);
+        await expect(service.verifyPassword('user-1', 'wrong')).rejects.toThrow(
+          /Incorrect password/,
+        );
+      });
+
+      it('counts failures per user', async () => {
+        await failAttempts(PASSWORD_MAX_FAILED_ATTEMPTS, 'user-1');
+        (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+
+        await expect(service.verifyPassword('user-2', 'correct-password')).resolves.toMatchObject({
+          verified: true,
+        });
+      });
     });
 
     it('rejects an incorrect password', async () => {
@@ -178,6 +281,7 @@ describe('AuthService', () => {
 
       await expect(service.verifyPassword('user-1', 'chosen-password')).resolves.toEqual({
         verified: true,
+        stepUpToken: 'step-up-token',
       });
     });
   });

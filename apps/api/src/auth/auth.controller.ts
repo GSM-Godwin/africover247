@@ -11,6 +11,7 @@ import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { StepUpService } from './step-up.service';
 import { VerifyStepUpCodeDto } from './dto/verify-step-up-code.dto';
+import { VerifyPasswordDto } from './dto/verify-password.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -111,14 +112,14 @@ export class AuthController {
     return this.authService.logout(user.id);
   }
 
-  @SkipThrottle()
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
   @UseGuards(JwtAuthGuard)
   @Post('verify-password')
   verifyPassword(
     @CurrentUser() user: { id: string },
-    @Body() body: { password: string },
+    @Body() dto: VerifyPasswordDto,
   ) {
-    return this.authService.verifyPassword(user.id, body.password);
+    return this.authService.verifyPassword(user.id, dto.password);
   }
 
   @Throttle({ default: { limit: 3, ttl: 60000 } })

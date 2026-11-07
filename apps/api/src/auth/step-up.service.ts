@@ -10,6 +10,7 @@ import { ConfigService } from '@nestjs/config';
 import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
+import { StepUpTokenService } from './step-up-token.service';
 
 export const STEP_UP_CODE_TTL_MS = 10 * 60 * 1000;
 export const STEP_UP_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -26,6 +27,7 @@ interface StepUpUser {
   appleId: string | null;
   suspended: boolean;
   deletedAt: Date | null;
+  tokenVersion: number;
 }
 
 function tooManyRequests(message: string) {
@@ -50,6 +52,7 @@ export class StepUpService {
     private prisma: PrismaService,
     private emailService: EmailService,
     private configService: ConfigService,
+    private stepUpTokenService: StepUpTokenService,
   ) {}
 
   async sendEmailCode(userId: string) {
@@ -105,7 +108,7 @@ export class StepUpService {
   }
 
   async verifyEmailCode(userId: string, code: string) {
-    await this.loadEligibleUser(userId);
+    const user = await this.loadEligibleUser(userId);
     const record = await this.prisma.stepUpCode.findUnique({ where: { userId } });
 
     if (!record || !record.codeHash) {
@@ -133,7 +136,7 @@ export class StepUpService {
     }
 
     await this.prisma.stepUpCode.delete({ where: { userId } });
-    return { verified: true };
+    return { verified: true, stepUpToken: this.stepUpTokenService.issue(user) };
   }
 
   private async loadEligibleUser(userId: string): Promise<StepUpUser> {
@@ -148,6 +151,7 @@ export class StepUpService {
         appleId: true,
         suspended: true,
         deletedAt: true,
+        tokenVersion: true,
       },
     });
 

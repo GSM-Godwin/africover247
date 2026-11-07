@@ -18,6 +18,7 @@ import { monthlyInstalment, resolveAnnualPremium } from '../../utils/premium'
 import { ReauthModal } from '../../components/shared/ReauthModal'
 
 const REAUTH_WINDOW_MS = 10 * 60 * 1000
+const STEP_UP_TOKEN_HEADER = 'X-Step-Up-Token'
 
 export function PaymentInitiateScreen({ route, navigation }: any) {
   const params = route.params || {}
@@ -30,6 +31,7 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
   const [error, setError] = useState('')
   const [reauthVisible, setReauthVisible] = useState(false)
   const [lastReauthAt, setLastReauthAt] = useState<number | null>(null)
+  const [stepUpToken, setStepUpToken] = useState<string | undefined>(undefined)
   const pollRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined)
 
   useEffect(() => {
@@ -74,19 +76,20 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
 
   function handlePayPress() {
     if (lastReauthAt && Date.now() - lastReauthAt < REAUTH_WINDOW_MS) {
-      void handleInitiatePayment()
+      void handleInitiatePayment(stepUpToken)
       return
     }
     setReauthVisible(true)
   }
 
-  function handleReauthSuccess() {
+  function handleReauthSuccess(token?: string) {
     setLastReauthAt(Date.now())
+    setStepUpToken(token)
     setReauthVisible(false)
-    void handleInitiatePayment()
+    void handleInitiatePayment(token)
   }
 
-  async function handleInitiatePayment() {
+  async function handleInitiatePayment(token?: string) {
     if (!applicationId) {
       setError('Missing application ID. Please go back and try again.')
       return
@@ -96,10 +99,11 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
     setError('')
 
     try {
-      const res = await api.post('/payments/initiate', {
-        applicationId: String(applicationId),
-        paymentPlan,
-      })
+      const res = await api.post(
+        '/payments/initiate',
+        { applicationId: String(applicationId), paymentPlan },
+        token ? { headers: { [STEP_UP_TOKEN_HEADER]: token } } : undefined,
+      )
 
       const checkoutUrl = res.data?.checkoutUrl
       const amount = res.data?.amount
@@ -118,6 +122,10 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
       startPolling(String(applicationId))
     } catch (err: any) {
       setLoading(false)
+      if (err?.response?.status === 403) {
+        setLastReauthAt(null)
+        setStepUpToken(undefined)
+      }
       const message = err?.response?.data?.message
       const errorText = Array.isArray(message)
         ? message[0]
