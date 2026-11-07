@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { WizardActions } from "@/components/application/wizard-actions";
 import { useApplicationWizard } from "@/contexts/application-wizard-context";
+import api from "@/lib/api";
 import { formatNaira } from "@/lib/utils";
 import { applyStepPath } from "@/types/application";
 
@@ -18,7 +19,10 @@ export default function Step4Page() {
   const { productId, applicationId, application, formData } =
     useApplicationWizard();
 
-  function handleProceedToPayment() {
+  async function handleProceedToPayment() {
+    try {
+      await api.put(`/applications/${applicationId}`, { stepCompleted: 4 });
+    } catch {}
     router.push(`/apply/${productId}/${applicationId}/payment`);
   }
 

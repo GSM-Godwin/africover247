@@ -1,4 +1,6 @@
-import { IsObject, IsOptional } from 'class-validator';
+import { IsInt, IsObject, IsOptional, Max, Min } from 'class-validator';
+
+export const APPLICATION_WIZARD_STEPS = 4;
 
 const ALLOWED_FORM_DATA_KEYS = [
   'firstName',
@@ -33,6 +35,12 @@ export class UpdateApplicationDto {
   @IsObject()
   @IsOptional()
   formData?: Record<string, unknown>;
+
+  @IsInt()
+  @Min(1)
+  @Max(APPLICATION_WIZARD_STEPS)
+  @IsOptional()
+  stepCompleted?: number;
 }
 
 export function sanitizeFormData(

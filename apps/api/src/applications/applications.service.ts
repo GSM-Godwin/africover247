@@ -133,12 +133,17 @@ export class ApplicationsService {
         }
       : undefined;
 
+    const advancesStep =
+      dto.stepCompleted !== undefined &&
+      dto.stepCompleted > application.stepCompleted;
+
     const updated = await this.prisma.application.update({
       where: { id },
       data: {
         ...(cleanFormData
           ? { formData: cleanFormData as Prisma.InputJsonValue }
           : {}),
+        ...(advancesStep ? { stepCompleted: dto.stepCompleted } : {}),
       },
       include: { product: true },
     });

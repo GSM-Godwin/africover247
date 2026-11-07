@@ -568,7 +568,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
             ...formData,
             streetAddress: formData.address,
             employerName: formData.employer,
-            stepCompleted: step + 1,
           },
           stepCompleted: step + 1,
         })
@@ -589,7 +588,6 @@ export function ApplicationWizardScreen({ route, navigation }: any) {
           ...formData,
           streetAddress: formData.address,
           employerName: formData.employer,
-          stepCompleted: 4,
         },
         stepCompleted: 4,
       })
