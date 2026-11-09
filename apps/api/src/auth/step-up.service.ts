@@ -11,6 +11,14 @@ import { createHmac, randomInt, timingSafeEqual } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { StepUpTokenService } from './step-up-token.service';
+import { PremiumService } from '../premium/premium.service';
+import { describeDevice } from '../email/verification-email';
+
+export interface StepUpSendContext {
+  applicationId?: string;
+  paymentPlan?: 'monthly' | 'annual';
+  userAgent?: string;
+}
 
 export const STEP_UP_CODE_TTL_MS = 10 * 60 * 1000;
 export const STEP_UP_RESEND_COOLDOWN_MS = 60 * 1000;
@@ -53,9 +61,10 @@ export class StepUpService {
     private emailService: EmailService,
     private configService: ConfigService,
     private stepUpTokenService: StepUpTokenService,
+    private premiumService: PremiumService,
   ) {}
 
-  async sendEmailCode(userId: string) {
+  async sendEmailCode(userId: string, context: StepUpSendContext = {}) {
     const user = await this.loadEligibleUser(userId);
     const now = Date.now();
     const existing = await this.prisma.stepUpCode.findUnique({ where: { userId } });
@@ -96,7 +105,15 @@ export class StepUpService {
       update: codeFields,
     });
 
-    await this.emailService.sendOtpEmail(user.email, code, user.firstName);
+    await this.emailService.sendVerificationCodeEmail(user.email, {
+      firstName: user.firstName,
+      code,
+      purpose: 'payment_step_up',
+      requestedAt: new Date(now),
+      expiresInMinutes: STEP_UP_CODE_TTL_MS / 60_000,
+      device: describeDevice(context.userAgent),
+      payment: await this.describePayment(userId, context),
+    });
     this.logger.log(`Step-up code issued for user ${userId}`);
 
     return {
@@ -137,6 +154,28 @@ export class StepUpService {
 
     await this.prisma.stepUpCode.delete({ where: { userId } });
     return { verified: true, stepUpToken: this.stepUpTokenService.issue(user) };
+  }
+
+  private async describePayment(
+    userId: string,
+    context: StepUpSendContext,
+  ): Promise<{ productName: string; amount: number } | null> {
+    if (!context.applicationId) return null;
+    try {
+      const application = await this.prisma.application.findFirst({
+        where: { id: context.applicationId, userId },
+        include: { product: true },
+      });
+      if (!application) return null;
+      const annualPremium = await this.premiumService.resolveAnnualPremium(application);
+      if (!annualPremium) return null;
+      return {
+        productName: application.product.name,
+        amount: this.premiumService.amountForPlan(annualPremium, context.paymentPlan ?? 'annual'),
+      };
+    } catch {
+      return null;
+    }
   }
 
   private async loadEligibleUser(userId: string): Promise<StepUpUser> {

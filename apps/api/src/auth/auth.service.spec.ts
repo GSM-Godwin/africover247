@@ -74,7 +74,10 @@ describe('AuthService', () => {
         { provide: ConfigService, useValue: configService },
         {
           provide: EmailService,
-          useValue: { sendOtpEmail: jest.fn(), sendEmail: jest.fn() },
+          useValue: {
+            sendVerificationCodeEmail: jest.fn().mockResolvedValue(undefined),
+            sendEmail: jest.fn().mockResolvedValue(undefined),
+          },
         },
         { provide: SmsService, useValue: { sendOtpSms: jest.fn() } },
         AppleTokenService,

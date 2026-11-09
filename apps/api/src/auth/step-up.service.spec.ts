@@ -12,6 +12,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { EmailService } from '../email/email.service';
 import { StepUpTokenService } from './step-up-token.service';
+import { PremiumService } from '../premium/premium.service';
 
 const USER_ID = 'user-1';
 
@@ -67,13 +68,15 @@ function createFakePrisma() {
       return Promise.resolve({});
     }),
   };
-  return { codes, prisma: { user, stepUpCode } };
+  const application = { findFirst: jest.fn().mockResolvedValue(null) };
+  return { codes, prisma: { user, stepUpCode, application } };
 }
 
 describe('StepUpService', () => {
   let service: StepUpService;
   let fake: ReturnType<typeof createFakePrisma>;
-  let emailService: { sendOtpEmail: jest.Mock };
+  let emailService: { sendVerificationCodeEmail: jest.Mock };
+  let premiumService: { resolveAnnualPremium: jest.Mock; amountForPlan: jest.Mock };
   let stepUpTokenService: { issue: jest.Mock };
   let logSpy: jest.SpyInstance;
   let now: number;
@@ -83,7 +86,13 @@ describe('StepUpService', () => {
     jest.spyOn(Date, 'now').mockImplementation(() => now);
     logSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
     fake = createFakePrisma();
-    emailService = { sendOtpEmail: jest.fn().mockResolvedValue(undefined) };
+    emailService = { sendVerificationCodeEmail: jest.fn().mockResolvedValue(undefined) };
+    premiumService = {
+      resolveAnnualPremium: jest.fn().mockResolvedValue(120000),
+      amountForPlan: jest.fn((annual: number, plan: string) =>
+        plan === 'monthly' ? Math.ceil(annual / 12) : annual,
+      ),
+    };
     stepUpTokenService = { issue: jest.fn().mockReturnValue('step-up-token') };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -92,6 +101,7 @@ describe('StepUpService', () => {
         { provide: PrismaService, useValue: fake.prisma },
         { provide: EmailService, useValue: emailService },
         { provide: StepUpTokenService, useValue: stepUpTokenService },
+        { provide: PremiumService, useValue: premiumService },
         {
           provide: ConfigService,
           useValue: { getOrThrow: jest.fn().mockReturnValue('unit-test-jwt-secret') },
@@ -107,8 +117,8 @@ describe('StepUpService', () => {
   });
 
   function lastEmailedCode(): string {
-    const calls = emailService.sendOtpEmail.mock.calls;
-    return calls[calls.length - 1][1];
+    const calls = emailService.sendVerificationCodeEmail.mock.calls;
+    return calls[calls.length - 1][1].code;
   }
 
   function advance(ms: number) {
@@ -132,7 +142,17 @@ describe('StepUpService', () => {
 
       const code = lastEmailedCode();
       expect(code).toMatch(/^\d{6}$/);
-      expect(emailService.sendOtpEmail).toHaveBeenCalledWith('ada@example.com', code, 'Ada');
+      expect(emailService.sendVerificationCodeEmail).toHaveBeenCalledWith(
+        'ada@example.com',
+        expect.objectContaining({
+          code,
+          firstName: 'Ada',
+          purpose: 'payment_step_up',
+          expiresInMinutes: 10,
+          payment: null,
+          device: null,
+        }),
+      );
       const stored = fake.codes.get(USER_ID)!;
       expect(stored.codeHash).toMatch(/^[0-9a-f]{64}$/);
       expect(stored.codeHash).not.toContain(code);
@@ -158,7 +178,7 @@ describe('StepUpService', () => {
       advance(STEP_UP_RESEND_COOLDOWN_MS - 5_000);
 
       await expectStatus(service.sendEmailCode(USER_ID), HttpStatus.TOO_MANY_REQUESTS, /wait 5 seconds/);
-      expect(emailService.sendOtpEmail).toHaveBeenCalledTimes(1);
+      expect(emailService.sendVerificationCodeEmail).toHaveBeenCalledTimes(1);
     });
 
     it('replaces the previous code on resend so only one code is active', async () => {
@@ -185,7 +205,7 @@ describe('StepUpService', () => {
         HttpStatus.TOO_MANY_REQUESTS,
         /Too many codes requested/,
       );
-      expect(emailService.sendOtpEmail).toHaveBeenCalledTimes(STEP_UP_MAX_SENDS_PER_WINDOW);
+      expect(emailService.sendVerificationCodeEmail).toHaveBeenCalledTimes(STEP_UP_MAX_SENDS_PER_WINDOW);
     });
 
     it('allows sending again once the send window has passed', async () => {
@@ -213,7 +233,47 @@ describe('StepUpService', () => {
 
       await expect(attempt).rejects.toThrow(errorType);
       await expect(attempt).rejects.toThrow(message);
-      expect(emailService.sendOtpEmail).not.toHaveBeenCalled();
+      expect(emailService.sendVerificationCodeEmail).not.toHaveBeenCalled();
+    });
+
+    it('describes the payment, plan amount and device in the email', async () => {
+      fake.prisma.application.findFirst.mockResolvedValue({
+        id: 'application-1',
+        userId: USER_ID,
+        product: { name: 'Motor Comprehensive Insurance' },
+      });
+
+      await service.sendEmailCode(USER_ID, {
+        applicationId: 'application-1',
+        paymentPlan: 'monthly',
+        userAgent:
+          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36',
+      });
+
+      expect(fake.prisma.application.findFirst).toHaveBeenCalledWith({
+        where: { id: 'application-1', userId: USER_ID },
+        include: { product: true },
+      });
+      const model = emailService.sendVerificationCodeEmail.mock.calls[0][1];
+      expect(model.payment).toEqual({ productName: 'Motor Comprehensive Insurance', amount: 10000 });
+      expect(model.device).toBe('Chrome on Windows');
+      expect(model.requestedAt).toEqual(new Date(now));
+    });
+
+    it("leaves the payment out for an application that isn't the user's", async () => {
+      await service.sendEmailCode(USER_ID, { applicationId: 'someone-elses-application' });
+
+      expect(emailService.sendVerificationCodeEmail.mock.calls[0][1].payment).toBeNull();
+    });
+
+    it('still sends the code when the premium cannot be resolved', async () => {
+      fake.prisma.application.findFirst.mockResolvedValue({ product: { name: 'Marine' } });
+      premiumService.resolveAnnualPremium.mockRejectedValue(new Error('db'));
+
+      await service.sendEmailCode(USER_ID, { applicationId: 'application-1' });
+
+      expect(emailService.sendVerificationCodeEmail).toHaveBeenCalledTimes(1);
+      expect(emailService.sendVerificationCodeEmail.mock.calls[0][1].payment).toBeNull();
     });
 
     it('works for Apple accounts', async () => {

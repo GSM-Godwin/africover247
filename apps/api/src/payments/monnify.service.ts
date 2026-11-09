@@ -164,11 +164,19 @@ export class MonnifyService {
     }
 
     const token = await this.getAccessToken();
-    const encodedReference = encodeURIComponent(reference);
-    const response = await axios.get(
-      `${this.baseUrl}/api/v2/transactions/${encodedReference}`,
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
+    const headers = { Authorization: `Bearer ${token}` };
+    let response;
+    try {
+      response = await axios.get(`${this.baseUrl}/api/v2/merchant/transactions/query`, {
+        headers,
+        params: { paymentReference: reference },
+      });
+    } catch {
+      response = await axios.get(
+        `${this.baseUrl}/api/v2/transactions/${encodeURIComponent(reference)}`,
+        { headers },
+      );
+    }
 
     const data = response.data.responseBody;
     return {

@@ -6,12 +6,14 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  Headers,
 } from '@nestjs/common';
 import { Throttle, SkipThrottle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { StepUpService } from './step-up.service';
 import { VerifyStepUpCodeDto } from './dto/verify-step-up-code.dto';
 import { VerifyPasswordDto } from './dto/verify-password.dto';
+import { SendStepUpCodeDto } from './dto/send-step-up-code.dto';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -126,8 +128,16 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Post('step-up/email/send')
   @HttpCode(HttpStatus.OK)
-  sendStepUpEmailCode(@CurrentUser() user: { id: string }) {
-    return this.stepUpService.sendEmailCode(user.id);
+  sendStepUpEmailCode(
+    @CurrentUser() user: { id: string },
+    @Body() dto: SendStepUpCodeDto,
+    @Headers('user-agent') userAgent?: string,
+  ) {
+    return this.stepUpService.sendEmailCode(user.id, {
+      applicationId: dto.applicationId,
+      paymentPlan: dto.paymentPlan,
+      userAgent,
+    });
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })

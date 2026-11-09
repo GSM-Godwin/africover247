@@ -102,10 +102,14 @@ export class AuthService {
     phone?: string | null,
   ) {
     void this.emailService
-      .sendOtpEmail(email, otp, firstName)
-      .catch((err) =>
-        this.logger.error(`OTP email failed for ${email}`, err),
-      );
+      .sendVerificationCodeEmail(email, {
+        firstName,
+        code: otp,
+        purpose: 'email_verification',
+        requestedAt: new Date(),
+        expiresInMinutes: 10,
+      })
+      .catch(() => this.logger.error('Verification code email failed'));
 
     if (phone) {
       void this.smsService
@@ -116,16 +120,16 @@ export class AuthService {
     }
   }
 
-  private dispatchPasswordResetEmail(email: string, otp: string) {
+  private dispatchPasswordResetEmail(email: string, otp: string, firstName: string) {
     void this.emailService
-      .sendEmail({
-        to: email,
-        subject: 'Reset your AfriCover247 password',
-        html: `<p>Your password reset code is: <strong>${otp}</strong></p><p>It expires in 10 minutes.</p>`,
+      .sendVerificationCodeEmail(email, {
+        firstName,
+        code: otp,
+        purpose: 'password_reset',
+        requestedAt: new Date(),
+        expiresInMinutes: 10,
       })
-      .catch((err) =>
-        this.logger.error(`Password reset email failed for ${email}`, err),
-      );
+      .catch(() => this.logger.error('Password reset code email failed'));
   }
 
   // --- Register ---
@@ -160,7 +164,7 @@ export class AuthService {
     });
 
     const otp = this.generateOtp();
-    this.logger.log(`[AUTH] OTP generated for ${user.email}`);
+    this.logger.log(`[AUTH] Verification code issued for user ${user.id}`);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
     await this.prisma.emailVerification.create({
       data: { userId: user.id, otpCode: otp, expiresAt },
@@ -238,7 +242,7 @@ export class AuthService {
 
     this.dispatchVerificationOtp(user.email, otp, user.firstName, user.phone);
 
-    this.logger.log(`[AUTH] Resent OTP for ${email}`);
+    this.logger.log(`[AUTH] Verification code re-issued for user ${user.id}`);
 
     return { message: 'A new verification code has been sent.' };
   }
@@ -288,7 +292,7 @@ export class AuthService {
       await this.prisma.passwordReset.create({
         data: { userId: user.id, token: otp, expiresAt },
       });
-      this.dispatchPasswordResetEmail(user.email, otp);
+      this.dispatchPasswordResetEmail(user.email, otp, user.firstName);
     }
 
     return {

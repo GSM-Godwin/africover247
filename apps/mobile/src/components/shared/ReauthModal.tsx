@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Modal,
   View,
@@ -19,6 +19,7 @@ interface ReauthModalProps {
   onSuccess: (stepUpToken?: string) => void
   onCancel: () => void
   reason?: string
+  paymentContext?: { applicationId: string; paymentPlan?: 'monthly' | 'annual' }
 }
 
 type ReauthMode = 'loading' | 'password' | 'code'
@@ -29,7 +30,15 @@ function serverMessage(err: any, fallback: string): string {
   return typeof message === 'string' && message ? message : fallback
 }
 
-export function ReauthModal({ visible, onSuccess, onCancel, reason }: ReauthModalProps) {
+export function ReauthModal({
+  visible,
+  onSuccess,
+  onCancel,
+  reason,
+  paymentContext,
+}: ReauthModalProps) {
+  const paymentContextRef = useRef(paymentContext)
+  paymentContextRef.current = paymentContext
   const [mode, setMode] = useState<ReauthMode>('loading')
   const [isSocialAccount, setIsSocialAccount] = useState(false)
   const [password, setPassword] = useState('')
@@ -45,7 +54,7 @@ export function ReauthModal({ visible, onSuccess, onCancel, reason }: ReauthModa
     setSending(true)
     setError('')
     try {
-      const res = await api.post('/auth/step-up/email/send')
+      const res = await api.post('/auth/step-up/email/send', paymentContextRef.current ?? {})
       setCodeSent(true)
       setSentTo(res.data?.maskedEmail || '')
       setResendIn(res.data?.resendAvailableInSeconds || 60)

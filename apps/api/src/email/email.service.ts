@@ -1,11 +1,13 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as postmark from 'postmark'
+import { buildVerificationEmail, type VerificationEmailModel } from './verification-email'
 
 interface SendEmailOptions {
   to: string
   subject: string
   html: string
+  text?: string
   from?: string
 }
 
@@ -35,7 +37,7 @@ export class EmailService {
   // --- Send email ---
   async sendEmail(options: SendEmailOptions): Promise<void> {
     if (this.isStub) {
-      this.logger.log(`[STUB] Email to ${options.to}: ${options.subject}`)
+      this.logger.log(`[STUB] Email suppressed: ${options.subject}`)
       return
     }
 
@@ -45,46 +47,29 @@ export class EmailService {
         To: options.to,
         Subject: options.subject,
         HtmlBody: options.html,
-        TextBody: options.html.replace(/<[^>]*>/g, ''),
+        TextBody: options.text ?? options.html.replace(/<[^>]*>/g, ''),
         MessageStream: 'outbound',
       })
-      this.logger.log(`Email sent to ${options.to}: ${options.subject}`)
+      this.logger.log(`Email sent: ${options.subject}`)
     } catch (err) {
-      this.logger.error(`Failed to send email to ${options.to}:`, err)
+      this.logger.error(
+        `Failed to send email: ${options.subject}`,
+        (err as { message?: string })?.message,
+      )
     }
   }
 
-  // --- Send OTP email ---
-  async sendOtpEmail(email: string, otp: string, firstName: string): Promise<void> {
+  async sendVerificationCodeEmail(to: string, model: VerificationEmailModel): Promise<void> {
+    const content = buildVerificationEmail(model)
     if (this.isStub) {
-      this.logger.log(`[STUB] OTP email suppressed for ${email}`)
+      this.logger.log(`[STUB] Verification code email suppressed (${model.purpose})`)
       return
     }
-
     await this.sendEmail({
-      to: email,
-      subject: 'Your AfriCover247 verification code',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: #15679b; padding: 24px; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">AfriCover247</h1>
-            <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
-          </div>
-          <div style="padding: 32px;">
-            <p>Dear ${firstName},</p>
-            <p>Your verification code is:</p>
-            <div style="background: #F0F4F8; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
-              <span style="font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #15679b;">${otp}</span>
-            </div>
-            <p style="color: #5C6478; font-size: 14px;">This code expires in 10 minutes. Do not share it with anyone.</p>
-          </div>
-          <div style="background: #F0F4F8; padding: 16px; text-align: center;">
-            <p style="color: #5C6478; font-size: 12px; margin: 0;">
-              Powered by AfriGlobal Insurance Brokers Limited · Secured by Monnify
-            </p>
-          </div>
-        </div>
-      `,
+      to,
+      subject: content.subject,
+      html: content.html,
+      text: content.text,
     })
   }
 

@@ -152,6 +152,7 @@ export default function PaymentPage() {
         onCancel={onCancel}
         reason="Please confirm your password before proceeding to payment."
         allowEmailCode
+        paymentContext={{ applicationId, paymentPlan }}
       />
     </div>
   );

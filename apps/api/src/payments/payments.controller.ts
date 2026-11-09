@@ -37,8 +37,11 @@ export class PaymentsController {
   }
 
   @Get('by-reference/:reference')
-  getByReference(@Param('reference') reference: string) {
-    return this.paymentsService.getPaymentByReference(reference);
+  getByReference(
+    @CurrentUser() user: { id: string },
+    @Param('reference') reference: string,
+  ) {
+    return this.paymentsService.getPaymentByReference(reference, user.id);
   }
 
   @SkipThrottle()

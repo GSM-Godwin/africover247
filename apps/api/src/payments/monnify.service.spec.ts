@@ -1,3 +1,6 @@
+jest.mock('axios');
+
+import axios from 'axios';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
@@ -109,6 +112,60 @@ describe('MonnifyService', () => {
     it('is false when real credentials are configured', async () => {
       const service = await createMonnifyService();
       expect(service.isStubMode()).toBe(false);
+    });
+  });
+
+  describe('verifyTransaction', () => {
+    const reference = 'payment-1-1700000000000';
+    const transaction = {
+      paymentStatus: 'PAID',
+      amountPaid: 5000,
+      paymentReference: reference,
+    };
+
+    beforeEach(() => {
+      jest.clearAllMocks();
+      (axios.post as jest.Mock).mockResolvedValue({
+        data: { responseBody: { accessToken: 'monnify-access-token' } },
+      });
+    });
+
+    it('queries Monnify by our payment reference', async () => {
+      (axios.get as jest.Mock).mockResolvedValue({ data: { responseBody: transaction } });
+      const service = await createMonnifyService();
+
+      const result = await service.verifyTransaction(reference);
+
+      expect(axios.get).toHaveBeenCalledTimes(1);
+      expect((axios.get as jest.Mock).mock.calls[0][0]).toMatch(
+        /\/api\/v2\/merchant\/transactions\/query$/,
+      );
+      expect((axios.get as jest.Mock).mock.calls[0][1].params).toEqual({
+        paymentReference: reference,
+      });
+      expect(result).toMatchObject({ status: 'PAID', amount: 5000, reference });
+    });
+
+    it('falls back to the transaction-reference endpoint when the query fails', async () => {
+      (axios.get as jest.Mock)
+        .mockRejectedValueOnce(new Error('not found'))
+        .mockResolvedValueOnce({ data: { responseBody: transaction } });
+      const service = await createMonnifyService();
+
+      const result = await service.verifyTransaction(reference);
+
+      expect(axios.get).toHaveBeenCalledTimes(2);
+      expect((axios.get as jest.Mock).mock.calls[1][0]).toMatch(
+        new RegExp(`/api/v2/transactions/${reference}$`),
+      );
+      expect(result.status).toBe('PAID');
+    });
+
+    it('fails when neither endpoint answers', async () => {
+      (axios.get as jest.Mock).mockRejectedValue(new Error('down'));
+      const service = await createMonnifyService();
+
+      await expect(service.verifyTransaction(reference)).rejects.toThrow('down');
     });
   });
 });

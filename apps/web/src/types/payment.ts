@@ -9,14 +9,31 @@ export interface InitiatePaymentResponse {
   currency: string;
 }
 
+export type PaymentOutcome = "successful" | "cancelled" | "failed" | "pending" | "none";
+
 export interface PaymentStatusResponse {
   applicationStatus: string;
+  productId?: string;
+  outcome?: PaymentOutcome;
+  failureReason?: string | null;
   payment: {
     id: string;
     status: string;
     amount: string | number;
     applicationId: string;
+    paymentPlan?: "monthly" | "annual";
+    gatewayReference?: string | null;
   } | null;
+}
+
+export type PaymentCallbackOutcome = "success" | "cancelled" | "failed" | "not_found";
+
+export function callbackOutcomeFor(status: PaymentStatusResponse): PaymentCallbackOutcome | null {
+  if (status.outcome === "successful" || isPaymentSuccessful(status)) return "success";
+  if (status.outcome === "cancelled") return "cancelled";
+  if (status.outcome === "failed" || isPaymentFailed(status)) return "failed";
+  if (status.outcome === "none") return "not_found";
+  return null;
 }
 
 export function isPaymentSuccessful(status: PaymentStatusResponse): boolean {

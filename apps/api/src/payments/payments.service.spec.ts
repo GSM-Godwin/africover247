@@ -67,6 +67,7 @@ describe('PaymentsService', () => {
       findFirst: jest.Mock;
       create: jest.Mock;
       update: jest.Mock;
+      updateMany: jest.Mock;
     };
     application: { findUnique: jest.Mock; update: jest.Mock };
     quote: { findFirst: jest.Mock };
@@ -88,6 +89,7 @@ describe('PaymentsService', () => {
           Promise.resolve({ id: PAYMENT_ID, ...data }),
         ),
         update: jest.fn().mockResolvedValue({}),
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
       },
       application: {
         findUnique: jest.fn().mockResolvedValue(buildApplication()),
@@ -432,6 +434,195 @@ describe('PaymentsService', () => {
       );
 
       expect(policiesService.generatePolicy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('getPaymentStatus', () => {
+    const reference = `${PAYMENT_ID}-1700000000000`;
+
+    function pendingPayment(overrides: Partial<Record<string, unknown>> = {}) {
+      return {
+        id: PAYMENT_ID,
+        applicationId: APPLICATION_ID,
+        amount: 5000,
+        paymentPlan: 'annual',
+        status: 'pending',
+        gatewayReference: reference,
+        gatewayResponse: null,
+        createdAt: new Date(),
+        ...overrides,
+      };
+    }
+
+    function mockApplication(status = 'pending_payment') {
+      prisma.application.findUnique.mockResolvedValue(
+        buildApplication({ status, productId: 'product-1' }),
+      );
+    }
+
+    it('reports cancelled when Monnify says the customer cancelled, and keeps the payment retryable', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+      prisma.payment.findUnique.mockResolvedValue(pendingPayment());
+      monnifyService.verifyTransaction.mockResolvedValue({
+        status: 'USER_CANCELLED',
+        amount: 0,
+        reference,
+        gatewayResponse: {},
+      });
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(result.outcome).toBe('cancelled');
+      expect(result.failureReason).toBeNull();
+      expect(result.productId).toBe('product-1');
+      expect(prisma.payment.updateMany).not.toHaveBeenCalled();
+      expect(policiesService.generatePolicy).not.toHaveBeenCalled();
+    });
+
+    it('marks the payment failed with a safe reason when Monnify reports it expired', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+      prisma.payment.findUnique.mockResolvedValue(
+        pendingPayment({ status: 'failed', gatewayResponse: { paymentStatus: 'EXPIRED' } }),
+      );
+      monnifyService.verifyTransaction.mockResolvedValue({
+        status: 'EXPIRED',
+        amount: 0,
+        reference,
+        gatewayResponse: { cardNumber: 'should-not-be-stored' },
+      });
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(prisma.payment.updateMany).toHaveBeenCalledWith({
+        where: { id: PAYMENT_ID, status: 'pending' },
+        data: { status: 'failed', gatewayResponse: { paymentStatus: 'EXPIRED' } },
+      });
+      expect(result.outcome).toBe('failed');
+      expect(result.failureReason).toBe('The payment session expired before it was completed.');
+    });
+
+    it('issues the policy when Monnify confirms PAID with the right amount, without waiting for the webhook', async () => {
+      prisma.application.findUnique
+        .mockResolvedValueOnce(buildApplication({ status: 'pending_payment' }))
+        .mockResolvedValueOnce(buildApplication({ status: 'pending_payment' }))
+        .mockResolvedValueOnce({ status: 'issued' });
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+      prisma.payment.findUnique.mockResolvedValue(pendingPayment({ status: 'successful' }));
+      monnifyService.verifyTransaction.mockResolvedValue({
+        status: 'PAID',
+        amount: 5000,
+        reference,
+        gatewayResponse: { verified: true },
+      });
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(policiesService.generatePolicy).toHaveBeenCalledWith(
+        APPLICATION_ID,
+        PAYMENT_ID,
+        { verified: true },
+      );
+      expect(result.outcome).toBe('successful');
+    });
+
+    it('stays pending when Monnify says PAID but the amount does not match the server premium', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+      prisma.payment.findUnique.mockResolvedValue(pendingPayment());
+      monnifyService.verifyTransaction.mockResolvedValue({
+        status: 'PAID',
+        amount: 1,
+        reference,
+        gatewayResponse: {},
+      });
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(policiesService.generatePolicy).not.toHaveBeenCalled();
+      expect(result.outcome).toBe('pending');
+    });
+
+    it('stays pending when Monnify cannot be reached', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+      prisma.payment.findUnique.mockResolvedValue(pendingPayment());
+      monnifyService.verifyTransaction.mockRejectedValue(new Error('timeout'));
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(result.outcome).toBe('pending');
+    });
+
+    it('does not query Monnify in stub mode', async () => {
+      monnifyService.isStubMode.mockReturnValue(true);
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(pendingPayment());
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(monnifyService.verifyTransaction).not.toHaveBeenCalled();
+      expect(result.outcome).toBe('pending');
+    });
+
+    it('reports a payment already failed by the webhook without calling Monnify', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(
+        pendingPayment({ status: 'failed', gatewayResponse: { paymentStatus: 'FAILED' } }),
+      );
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(monnifyService.verifyTransaction).not.toHaveBeenCalled();
+      expect(result.outcome).toBe('failed');
+      expect(result.failureReason).toBe('The payment was declined or could not be processed.');
+    });
+
+    it('reports none when no payment has been started', async () => {
+      mockApplication('draft');
+      prisma.payment.findFirst.mockResolvedValue(null);
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(result.outcome).toBe('none');
+      expect(result.payment).toBeNull();
+    });
+
+    it('does not expose the raw gateway response', async () => {
+      mockApplication();
+      prisma.payment.findFirst.mockResolvedValue(
+        pendingPayment({ status: 'successful', gatewayResponse: { secretish: true } }),
+      );
+
+      const result = await service.getPaymentStatus(APPLICATION_ID, USER_ID);
+
+      expect(result.payment).not.toHaveProperty('gatewayResponse');
+    });
+  });
+
+  describe('getPaymentByReference', () => {
+    it("matches the exact reference and only within the user's own applications", async () => {
+      prisma.payment.findFirst.mockResolvedValue({
+        id: PAYMENT_ID,
+        applicationId: APPLICATION_ID,
+        status: 'pending',
+      });
+
+      await service.getPaymentByReference('ref-1', USER_ID);
+
+      expect(prisma.payment.findFirst).toHaveBeenCalledWith({
+        where: { gatewayReference: 'ref-1', application: { userId: USER_ID } },
+        select: { id: true, applicationId: true, status: true },
+      });
+    });
+
+    it('returns 404 for a reference that does not belong to the user', async () => {
+      prisma.payment.findFirst.mockResolvedValue(null);
+
+      await expect(service.getPaymentByReference('ref-1', USER_ID)).rejects.toThrow(
+        /Payment not found/,
+      );
     });
   });
 });

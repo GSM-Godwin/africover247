@@ -13,10 +13,12 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { EmailModule } from '../email/email.module';
 import { SmsModule } from '../sms/sms.module';
 import { PrismaModule } from '../prisma/prisma.module';
+import { PremiumModule } from '../premium/premium.module';
 
 @Module({
   imports: [
     PrismaModule,
+    PremiumModule,
     EmailModule,
     SmsModule,
     PassportModule,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Lock, Mail } from "lucide-react";
 import { AuthInput } from "@/components/auth/auth-input";
 import { OtpInput } from "@/components/auth/otp-input";
@@ -12,6 +12,7 @@ interface ReauthModalProps {
   onCancel: () => void;
   reason?: string;
   allowEmailCode?: boolean;
+  paymentContext?: { applicationId: string; paymentPlan?: "monthly" | "annual" };
 }
 
 type ReauthMode = "loading" | "password" | "code";
@@ -35,7 +36,10 @@ export function ReauthModal({
   onCancel,
   reason,
   allowEmailCode = false,
+  paymentContext,
 }: ReauthModalProps) {
+  const paymentContextRef = useRef(paymentContext);
+  paymentContextRef.current = paymentContext;
   const [mode, setMode] = useState<ReauthMode>("loading");
   const [isSocialAccount, setIsSocialAccount] = useState(false);
   const [password, setPassword] = useState("");
@@ -51,7 +55,10 @@ export function ReauthModal({
     setSending(true);
     setError("");
     try {
-      const res = await api.post<SendCodeResponse>("/auth/step-up/email/send");
+      const res = await api.post<SendCodeResponse>(
+        "/auth/step-up/email/send",
+        paymentContextRef.current ?? {},
+      );
       setCodeSent(true);
       setSentTo(res.data.maskedEmail);
       setResendIn(res.data.resendAvailableInSeconds);

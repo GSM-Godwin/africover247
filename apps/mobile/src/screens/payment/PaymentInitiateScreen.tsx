@@ -314,6 +314,7 @@ export function PaymentInitiateScreen({ route, navigation }: any) {
         onSuccess={handleReauthSuccess}
         onCancel={() => setReauthVisible(false)}
         reason="Please confirm your password before proceeding to payment."
+        paymentContext={applicationId ? { applicationId: String(applicationId), paymentPlan } : undefined}
       />
     </SafeAreaView>
   )

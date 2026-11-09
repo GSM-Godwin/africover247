@@ -14,6 +14,14 @@ import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { PoliciesService } from '../policies/policies.service';
 import { ApplicationsService } from '../applications/applications.service';
 import { PremiumService } from '../premium/premium.service';
+import {
+  failureReasonFor,
+  gatewayStatusToOutcome,
+  resolvePaymentOutcome,
+  storedGatewayStatus,
+} from './payment-outcome';
+
+type VerifiedTransaction = Awaited<ReturnType<MonnifyService['verifyTransaction']>>;
 
 @Injectable()
 export class PaymentsService {
@@ -185,38 +193,47 @@ export class PaymentsService {
       return;
     }
 
-    let gatewayResponse: Prisma.InputJsonValue = data as Prisma.InputJsonValue;
-
-    if (!this.monnifyService.isStubMode()) {
-      const verification = await this.monnifyService.verifyTransaction(
-        payment.gatewayReference || monnifyReference,
+    if (this.monnifyService.isStubMode()) {
+      this.logger.log(`Payment ${paymentId} verified — issuing policy`);
+      await this.policiesService.generatePolicy(
+        payment.applicationId,
+        paymentId,
+        data as Prisma.InputJsonValue,
       );
-
-      const expectedAmount = await this.resolveExpectedAmount(payment);
-      const verifiedAmount = Number(verification.amount);
-
-      if (
-        verification.status !== 'PAID' ||
-        !expectedAmount ||
-        Math.abs(verifiedAmount - expectedAmount) > 0.01
-      ) {
-        this.logger.warn(
-          `Payment ${paymentId} failed Monnify verification — refusing to issue policy`,
-        );
-        return;
-      }
-
-      gatewayResponse = verification.gatewayResponse as Prisma.InputJsonValue;
+      return;
     }
 
-    this.logger.log(
-      `Payment ${paymentId} verified — issuing policy`,
+    const verification = await this.monnifyService.verifyTransaction(
+      payment.gatewayReference || monnifyReference,
     );
+    await this.issuePolicyIfVerified(payment, verification);
+  }
+
+  private async issuePolicyIfVerified(
+    payment: { id: string; applicationId: string; paymentPlan: 'monthly' | 'annual' },
+    verification: VerifiedTransaction,
+  ): Promise<boolean> {
+    const expectedAmount = await this.resolveExpectedAmount(payment);
+    const verifiedAmount = Number(verification.amount);
+
+    if (
+      verification.status !== 'PAID' ||
+      !expectedAmount ||
+      Math.abs(verifiedAmount - expectedAmount) > 0.01
+    ) {
+      this.logger.warn(
+        `Payment ${payment.id} failed Monnify verification — refusing to issue policy`,
+      );
+      return false;
+    }
+
+    this.logger.log(`Payment ${payment.id} verified — issuing policy`);
     await this.policiesService.generatePolicy(
       payment.applicationId,
-      paymentId,
-      gatewayResponse,
+      payment.id,
+      verification.gatewayResponse as Prisma.InputJsonValue,
     );
+    return true;
   }
 
   private async resolveExpectedAmount(payment: {
@@ -273,20 +290,96 @@ export class PaymentsService {
         'You do not have access to this application',
       );
 
-    const payment = await this.prisma.payment.findFirst({
+    let payment = await this.prisma.payment.findFirst({
       where: { applicationId },
       orderBy: { createdAt: 'desc' },
     });
+    let applicationStatus: string = application.status;
+    let liveGatewayStatus: string | null = null;
+
+    if (
+      payment?.status === 'pending' &&
+      payment.gatewayReference &&
+      !this.monnifyService.isStubMode()
+    ) {
+      liveGatewayStatus = await this.reconcilePendingPayment(payment);
+      const [refreshedPayment, refreshedApplication] = await Promise.all([
+        this.prisma.payment.findUnique({ where: { id: payment.id } }),
+        this.prisma.application.findUnique({
+          where: { id: applicationId },
+          select: { status: true },
+        }),
+      ]);
+      payment = refreshedPayment ?? payment;
+      applicationStatus = refreshedApplication?.status ?? applicationStatus;
+    }
+
+    const outcome = resolvePaymentOutcome({
+      applicationStatus,
+      paymentStatus: payment?.status ?? null,
+      liveGatewayStatus,
+    });
 
     return {
-      applicationStatus: application.status,
-      payment: payment || null,
+      applicationStatus,
+      productId: application.productId,
+      outcome,
+      failureReason:
+        outcome === 'failed'
+          ? failureReasonFor(storedGatewayStatus(payment?.gatewayResponse))
+          : null,
+      payment: payment
+        ? {
+            id: payment.id,
+            applicationId: payment.applicationId,
+            status: payment.status,
+            amount: payment.amount,
+            paymentPlan: payment.paymentPlan,
+            gatewayReference: payment.gatewayReference,
+            createdAt: payment.createdAt,
+          }
+        : null,
     };
   }
 
-  async getPaymentByReference(reference: string) {
+  private async reconcilePendingPayment(payment: {
+    id: string;
+    applicationId: string;
+    paymentPlan: 'monthly' | 'annual';
+    gatewayReference: string | null;
+  }): Promise<string | null> {
+    let verification: VerifiedTransaction;
+    try {
+      verification = await this.monnifyService.verifyTransaction(
+        payment.gatewayReference as string,
+      );
+    } catch {
+      this.logger.warn(`Could not query Monnify status for payment ${payment.id}`);
+      return null;
+    }
+
+    const gatewayOutcome = gatewayStatusToOutcome(verification.status);
+    try {
+      if (gatewayOutcome === 'paid') {
+        await this.issuePolicyIfVerified(payment, verification);
+      } else if (gatewayOutcome === 'failed') {
+        await this.prisma.payment.updateMany({
+          where: { id: payment.id, status: 'pending' },
+          data: {
+            status: 'failed',
+            gatewayResponse: { paymentStatus: verification.status },
+          },
+        });
+      }
+    } catch {
+      this.logger.warn(`Could not reconcile payment ${payment.id} from Monnify status`);
+    }
+    return verification.status ?? null;
+  }
+
+  async getPaymentByReference(reference: string, userId: string) {
     const payment = await this.prisma.payment.findFirst({
-      where: { gatewayReference: { contains: reference } },
+      where: { gatewayReference: reference, application: { userId } },
       select: { id: true, applicationId: true, status: true },
     });
     if (!payment) throw new NotFoundException('Payment not found');
