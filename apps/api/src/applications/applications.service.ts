@@ -16,6 +16,10 @@ import {
   sanitizeFormData,
 } from './dto/update-application.dto';
 import { StorageService } from '../storage/storage.service';
+import {
+  hasMissingOrPlaceholderName,
+  normalizePersonName,
+} from '../common/helpers/person-name';
 import { KycService, type KycResult } from '../kyc/kyc.service';
 import { VerifyIdentityDto } from '../kyc/dto/verify-identity.dto';
 import { PremiumService } from '../premium/premium.service';
@@ -174,9 +178,27 @@ export class ApplicationsService {
 
     if (cleanFormData) {
       await this.redisService.saveDraft(id, cleanFormData);
+      await this.fillMissingUserName(userId, cleanFormData);
     }
 
     return updated;
+  }
+
+  private async fillMissingUserName(userId: string, formData: Record<string, unknown>) {
+    const firstName = normalizePersonName(formData.firstName);
+    const lastName = normalizePersonName(formData.lastName);
+    if (!firstName || !lastName) return;
+
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
+    if (!user || !hasMissingOrPlaceholderName(user)) return;
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { firstName, lastName },
+    });
   }
 
   // --- Get all drafts ---

@@ -22,6 +22,10 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { APPLE_ISSUER, AppleTokenService } from './apple-token.service';
 import { safeUser } from '../common/helpers/safe-user';
+import {
+  hasMissingOrPlaceholderName,
+  normalizePersonName,
+} from '../common/helpers/person-name';
 import { StepUpTokenService } from './step-up-token.service';
 import { PasswordAttemptLimiterService } from './password-attempt-limiter.service';
 
@@ -471,6 +475,15 @@ export class AuthService {
 
     const googleId = payload.sub;
     const email = payload.email;
+    const tokenName = normalizePersonName(payload.name);
+    const resolvedFirstName =
+      normalizePersonName(payload.given_name) ||
+      normalizePersonName(tokenName.split(' ')[0]) ||
+      normalizePersonName(firstName);
+    const resolvedLastName =
+      normalizePersonName(payload.family_name) ||
+      normalizePersonName(tokenName.split(' ').slice(1).join(' ')) ||
+      normalizePersonName(lastName);
 
     let user = await this.prisma.user.findUnique({ where: { email } });
 
@@ -478,8 +491,8 @@ export class AuthService {
       user = await this.prisma.user.create({
         data: {
           email,
-          firstName,
-          lastName,
+          firstName: resolvedFirstName,
+          lastName: resolvedLastName,
           passwordHash: await bcrypt.hash(Math.random().toString(36), 12),
           emailVerified: true,
           role: 'customer',
@@ -526,9 +539,17 @@ export class AuthService {
       throw new UnauthorizedException('Invalid Apple sign-in token');
     }
 
-    const user =
-      (await this.prisma.user.findUnique({ where: { appleId } })) ??
-      (await this.linkOrCreateAppleUser(appleId, verifiedPayload, firstName, lastName));
+    const suppliedName = {
+      firstName: normalizePersonName(firstName),
+      lastName: normalizePersonName(lastName),
+    };
+
+    const existingAppleUser = await this.prisma.user.findUnique({ where: { appleId } });
+    if (existingAppleUser) this.assertSocialAccountActive(existingAppleUser);
+
+    const user = existingAppleUser
+      ? await this.fillPlaceholderName(existingAppleUser, suppliedName)
+      : await this.linkOrCreateAppleUser(appleId, verifiedPayload, suppliedName);
 
     this.assertSocialAccountActive(user);
 
@@ -545,11 +566,21 @@ export class AuthService {
     return { accessToken, user: this.sanitizeUser(user) };
   }
 
+  private async fillPlaceholderName<
+    T extends { id: string; firstName: string; lastName: string },
+  >(user: T, suppliedName: { firstName: string; lastName: string }): Promise<T> {
+    if (!suppliedName.firstName && !suppliedName.lastName) return user;
+    if (!hasMissingOrPlaceholderName(user)) return user;
+    return (await this.prisma.user.update({
+      where: { id: user.id },
+      data: suppliedName,
+    })) as unknown as T;
+  }
+
   private async linkOrCreateAppleUser(
     appleId: string,
     payload: JWTPayload,
-    firstName: string,
-    lastName: string,
+    suppliedName: { firstName: string; lastName: string },
   ) {
     const email =
       typeof payload.email === 'string' ? payload.email.trim() : '';
@@ -570,9 +601,12 @@ export class AuthService {
           'This email is already linked to a different Apple ID.',
         );
       }
+      const fillName =
+        hasMissingOrPlaceholderName(existing) &&
+        (suppliedName.firstName || suppliedName.lastName);
       return this.prisma.user.update({
         where: { id: existing.id },
-        data: { appleId },
+        data: fillName ? { appleId, ...suppliedName } : { appleId },
       });
     }
 
@@ -585,8 +619,8 @@ export class AuthService {
     return this.prisma.user.create({
       data: {
         email,
-        firstName: firstName.trim() || 'Apple',
-        lastName: lastName.trim() || 'User',
+        firstName: suppliedName.firstName,
+        lastName: suppliedName.lastName,
         passwordHash: await bcrypt.hash(randomBytes(32).toString('hex'), 12),
         emailVerified,
         role: 'customer',

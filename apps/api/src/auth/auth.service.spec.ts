@@ -407,6 +407,56 @@ describe('AuthService', () => {
     });
   });
 
+  describe('googleAuth name resolution', () => {
+    function mockGooglePayload(claims: Record<string, unknown>) {
+      configService.get.mockReturnValue('configured-client-id');
+      const googleClient = (service as unknown as {
+        googleClient: { verifyIdToken: jest.Mock };
+      }).googleClient;
+      googleClient.verifyIdToken.mockResolvedValue({
+        getPayload: () => ({
+          sub: 'google-sub-1',
+          email: 'ada@example.com',
+          email_verified: true,
+          ...claims,
+        }),
+      });
+      prisma.user.findUnique.mockResolvedValue(null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(FAKE_PASSWORD_HASH);
+      prisma.user.create.mockImplementation(({ data }) => Promise.resolve(buildUser({ ...data })));
+    }
+
+    it('uses the verified token name claims over client-supplied names', async () => {
+      mockGooglePayload({ given_name: 'Ada', family_name: 'Okafor', name: 'Ada Okafor' });
+
+      await service.googleAuth('id-token', 'Spoofed', 'Name');
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ firstName: 'Ada', lastName: 'Okafor' }),
+      });
+    });
+
+    it('splits the name claim when given and family names are absent', async () => {
+      mockGooglePayload({ name: 'Ada Ngozi Okafor' });
+
+      await service.googleAuth('id-token', '', '');
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ firstName: 'Ada', lastName: 'Ngozi Okafor' }),
+      });
+    });
+
+    it('falls back to client names only when the token has no name claims', async () => {
+      mockGooglePayload({});
+
+      await service.googleAuth('id-token', 'Ada', 'Okafor');
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ firstName: 'Ada', lastName: 'Okafor' }),
+      });
+    });
+  });
+
   describe('appleAuth failure paths', () => {
     it('rejects an Apple identity token that fails JWKS verification', async () => {
       (jwtVerify as jest.Mock).mockRejectedValue(new Error('signature invalid'));
@@ -630,12 +680,97 @@ describe('AuthService', () => {
       expect(prisma.user.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
           email: 'fresh@example.com',
-          firstName: 'Apple',
-          lastName: 'User',
+          firstName: '',
+          lastName: '',
           emailVerified: false,
         }),
       });
       expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('never stores the Apple placeholder name when Apple shares no name', async () => {
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(null, null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(FAKE_PASSWORD_HASH);
+      prisma.user.create.mockImplementation(({ data }) => Promise.resolve(buildUser({ ...data })));
+
+      const result = await service.appleAuth('identity-token', '  ', '');
+
+      const { data } = prisma.user.create.mock.calls[0][0];
+      expect(data.firstName).toBe('');
+      expect(data.lastName).toBe('');
+      expect(result.user.firstName).not.toBe('Apple');
+    });
+
+    it('trims and collapses whitespace in the name Apple shares', async () => {
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(null, null);
+      (bcrypt.hash as jest.Mock).mockResolvedValue(FAKE_PASSWORD_HASH);
+      prisma.user.create.mockImplementation(({ data }) => Promise.resolve(buildUser({ ...data })));
+
+      await service.appleAuth('identity-token', '  Mary  Jane ', ' Okafor ');
+
+      expect(prisma.user.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ firstName: 'Mary Jane', lastName: 'Okafor' }),
+      });
+    });
+
+    it.each([
+      ['the Apple placeholder', { firstName: 'Apple', lastName: 'User' }],
+      ['an empty name', { firstName: '', lastName: '' }],
+    ])('fills in the name for an existing Apple user stored with %s', async (_label, name) => {
+      const user = buildUser({ appleId: 'apple-sub-1', ...name });
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(user, null);
+      prisma.user.update.mockImplementation(({ data }) => Promise.resolve({ ...user, ...data }));
+
+      const result = await service.appleAuth('identity-token', 'Ada', 'Okafor');
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: user.id },
+        data: { firstName: 'Ada', lastName: 'Okafor' },
+      });
+      expect(result.user.firstName).toBe('Ada');
+      expect(result.user.lastName).toBe('Okafor');
+    });
+
+    it('leaves a placeholder user unchanged when Apple sends no name again', async () => {
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(
+        buildUser({ appleId: 'apple-sub-1', firstName: 'Apple', lastName: 'User' }),
+        null,
+      );
+
+      await service.appleAuth('identity-token', '', '');
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('never overwrites a real name the user has set', async () => {
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(
+        buildUser({ appleId: 'apple-sub-1', firstName: 'Chidi', lastName: 'Eze' }),
+        null,
+      );
+
+      const result = await service.appleAuth('identity-token', 'Ada', 'Okafor');
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(result.user.firstName).toBe('Chidi');
+    });
+
+    it('fills an empty name when linking an existing account by verified email', async () => {
+      const existing = buildUser({ email: relayEmail, firstName: '', lastName: '' });
+      mockApplePayload({ email: relayEmail, email_verified: true });
+      mockUserLookups(null, existing);
+      prisma.user.update.mockImplementation(({ data }) => Promise.resolve({ ...existing, ...data }));
+
+      await service.appleAuth('identity-token', 'Ada', 'Okafor');
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: existing.id },
+        data: { appleId: 'apple-sub-1', firstName: 'Ada', lastName: 'Okafor' },
+      });
     });
 
     it('refuses a deleted user found by appleId', async () => {

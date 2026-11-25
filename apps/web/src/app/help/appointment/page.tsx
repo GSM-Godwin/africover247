@@ -7,6 +7,7 @@ import { Navbar } from "@/components/layout/navbar";
 import { Footer } from "@/components/layout/footer";
 import { AuthInput } from "@/components/auth/auth-input";
 import { getUser, isAuthenticated } from "@/lib/auth";
+import { realFullName } from "@/lib/person-name";
 import api from "@/lib/api";
 
 const TOPICS = [
@@ -28,7 +29,7 @@ export default function AppointmentPage() {
   const authenticated = isAuthenticated();
 
   const [form, setForm] = useState({
-    name: user ? `${user.firstName} ${user.lastName}` : "",
+    name: realFullName(user),
     email: (user?.email as string) || "",
     phone: "",
     preferredDate: "",

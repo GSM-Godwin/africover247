@@ -1,3 +1,5 @@
+import { greetingName } from '../common/helpers/person-name';
+
 export const VERIFICATION_EMAIL_SUBJECT = 'Your AfriCover247 verification code';
 export const SUPPORT_EMAIL = 'info@afriglobal.com.ng';
 export const SUPPORT_PHONE = '08101315330 / 09063675032';
@@ -119,7 +121,7 @@ export function buildVerificationEmail(model: VerificationEmailModel): Verificat
         <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
       </div>
       <div style="padding: 32px;">
-        <p>Dear ${escapeHtml(model.firstName || 'Customer')},</p>
+        <p>Dear ${escapeHtml(greetingName(model.firstName))},</p>
         <p>${escapeHtml(purposeLine)}</p>
         <p>Your verification code is:</p>
         <div style="background: #F0F4F8; border-radius: 8px; padding: 24px; text-align: center; margin: 24px 0;">
@@ -139,7 +141,7 @@ export function buildVerificationEmail(model: VerificationEmailModel): Verificat
   `;
 
   const text = [
-    `Dear ${model.firstName || 'Customer'},`,
+    `Dear ${greetingName(model.firstName)},`,
     '',
     purposeLine,
     '',

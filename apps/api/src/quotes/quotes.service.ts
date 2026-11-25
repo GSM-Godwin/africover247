@@ -10,6 +10,7 @@ import { Prisma, QuoteStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from '../admin/admin.service';
 import { EmailService } from '../email/email.service';
+import { greetingName } from '../common/helpers/person-name';
 import { SmsService } from '../sms/sms.service';
 import { CreateQuoteDto } from './dto/create-quote.dto';
 import { RespondQuoteDto } from './dto/respond-quote.dto';
@@ -294,7 +295,7 @@ export class QuotesService {
         to: user!.email,
         subject: `Quote request received — ${product.name}`,
         html: `
-          <p>Dear ${user!.firstName},</p>
+          <p>Dear ${greetingName(user!.firstName)},</p>
           <p>Your quote request for <strong>${product.name}</strong> has been received.</p>
           <p>AfriGlobal Insurance Brokers will review your request and respond within <strong>3 business days</strong>.</p>
           <p>You can track your quote status on your dashboard.</p>

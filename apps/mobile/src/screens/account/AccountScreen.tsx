@@ -19,6 +19,7 @@ import { Card, ConfirmModal } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser, logout } from '../../services/auth'
+import { realFirstName, realFullName, realLastName } from '../../utils/personName'
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -153,7 +154,8 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
 
   function getUserInitials(): string {
     if (!user) return '?'
-    return `${user.firstName[0]}${user.lastName[0]}`.toUpperCase()
+    const initials = `${realFirstName(user).charAt(0)}${realLastName(user).charAt(0)}`
+    return (initials || (user.email || '?').charAt(0)).toUpperCase()
   }
 
   const menuItems: MenuItem[] = [
@@ -227,7 +229,7 @@ export function AccountScreen({ navigation, onLogout }: AccountScreenProps) {
             <Text style={styles.avatarText}>{getUserInitials()}</Text>
           </View>
           <Text style={styles.userName}>
-            {user?.firstName} {user?.lastName}
+            {realFullName(user) || 'Add your name'}
           </Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
           {user?.emailVerified && (

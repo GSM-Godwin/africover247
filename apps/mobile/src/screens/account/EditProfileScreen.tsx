@@ -15,6 +15,7 @@ import { Button, Input } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser, setUser } from '../../services/auth'
+import { realFirstName, realLastName } from '../../utils/personName'
 import { useScreenProtection } from '../../hooks/useScreenProtection'
 
 export function EditProfileScreen({ navigation }: any) {
@@ -31,15 +32,15 @@ export function EditProfileScreen({ navigation }: any) {
     async function load() {
       const u = await getUser()
       if (u) {
-        setFirstName(u.firstName || '')
-        setLastName(u.lastName || '')
+        setFirstName(realFirstName(u))
+        setLastName(realLastName(u))
         setPhone(u.phone || '')
         setEmail(u.email || '')
       }
       try {
         const res = await api.get('/users/me')
-        setFirstName(res.data.firstName || '')
-        setLastName(res.data.lastName || '')
+        setFirstName(realFirstName(res.data))
+        setLastName(realLastName(res.data))
         setPhone(res.data.phone || '')
         setAlternativePhone(res.data.alternativePhone || '')
         setEmail(res.data.email || '')

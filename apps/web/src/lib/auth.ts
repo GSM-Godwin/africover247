@@ -1,3 +1,5 @@
+import { realFirstName, realLastName } from "@/lib/person-name";
+
 const TOKEN_KEY = "africover_token";
 const USER_KEY = "africover_user";
 
@@ -63,16 +65,15 @@ export function clearAuth(): void {
 }
 
 export function getUserDisplayName(user: Record<string, unknown>): string {
-  const firstName = String(user.firstName ?? "");
-  const lastName = String(user.lastName ?? "");
-  const initial = lastName.charAt(0);
+  const firstName = realFirstName(user);
+  if (!firstName) return "My account";
+  const initial = realLastName(user).charAt(0);
   return initial ? `${firstName} ${initial}.` : firstName;
 }
 
 export function getUserInitials(user: Record<string, unknown>): string {
-  const firstName = String(user.firstName ?? "");
-  const lastName = String(user.lastName ?? "");
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const initials = `${realFirstName(user).charAt(0)}${realLastName(user).charAt(0)}`;
+  return (initials || String(user.email ?? "?").charAt(0)).toUpperCase();
 }
 
 function dispatchAuthChange(): void {

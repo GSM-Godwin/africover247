@@ -14,6 +14,7 @@ import { Card, StatusBadge } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser } from '../../services/auth'
+import { realFirstName } from '../../utils/personName'
 import type { User, Policy, Claim, Quote, Product } from '../../types'
 
 interface Application {
@@ -113,7 +114,7 @@ export function HomeScreen({ navigation }: any) {
             <Text style={styles.greeting}>
               Good {new Date().getHours() < 12 ? 'morning' : new Date().getHours() < 17 ? 'afternoon' : 'evening'},
             </Text>
-            <Text style={styles.name}>{user?.firstName} 👋</Text>
+            <Text style={styles.name}>{realFirstName(user) || 'there'} 👋</Text>
           </View>
           <TouchableOpacity
             style={styles.notifButton}

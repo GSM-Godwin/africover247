@@ -14,6 +14,7 @@ import { InitiatePaymentDto } from './dto/initiate-payment.dto';
 import { PoliciesService } from '../policies/policies.service';
 import { ApplicationsService } from '../applications/applications.service';
 import { PremiumService } from '../premium/premium.service';
+import { customerFullName } from '../common/helpers/person-name';
 import {
   failureReasonFor,
   gatewayStatusToOutcome,
@@ -113,7 +114,7 @@ export class PaymentsService {
       email: application.user.email,
       amount,
       reference: monnifyReference,
-      name: `${application.user.firstName} ${application.user.lastName}`,
+      name: customerFullName(application.user),
       callbackUrl,
       description: `${application.product.name} — AfriCover247`,
     });

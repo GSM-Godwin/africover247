@@ -9,6 +9,7 @@ import { Prisma, PolicyStatus } from '@prisma/client';
 import { randomInt } from 'crypto';
 import PDFDocument from 'pdfkit';
 import { PrismaService } from '../prisma/prisma.service';
+import { customerFullName } from '../common/helpers/person-name';
 import { EmailService } from '../email/email.service';
 import { SmsService } from '../sms/sms.service';
 import { StorageService } from '../storage/storage.service';
@@ -338,7 +339,7 @@ export class PoliciesService {
       startDate: params.startDate,
       expiryDate: params.expiryDate,
       premiumPaid: Number(params.premiumAmount),
-      customerName: `${params.application.user.firstName} ${params.application.user.lastName}`,
+      customerName: customerFullName(params.application.user),
       customerEmail: params.application.user.email,
       customerPhone: params.application.user.phone || '',
       productName: params.application.product.name,

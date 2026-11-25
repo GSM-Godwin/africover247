@@ -11,6 +11,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { useAutoRefresh } from "@/hooks/use-auto-refresh";
 import api from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { realFirstName } from "@/lib/person-name";
 import {
   applicationStep,
   formatDate,
@@ -53,7 +54,7 @@ export function DashboardContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const quotesSectionRef = useRef<HTMLElement>(null);
-  const firstName = String(getUser()?.firstName ?? "there");
+  const firstName = realFirstName(getUser()) || "there";
 
   const [draftApp, setDraftApp] = useState<ApplicationRecord | null>(null);
   const [draftCount, setDraftCount] = useState(0);

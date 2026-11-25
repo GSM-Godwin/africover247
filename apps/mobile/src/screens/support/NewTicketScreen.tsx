@@ -16,6 +16,7 @@ import { Button } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser } from '../../services/auth'
+import { realFullName } from '../../utils/personName'
 
 const CATEGORIES = [
   { value: 'claim_support', label: 'Claim Support' },
@@ -47,7 +48,7 @@ export function NewTicketScreen({ navigation, route }: any) {
       if (user) {
         setForm((prev) => ({
           ...prev,
-          name: `${user.firstName} ${user.lastName}`,
+          name: realFullName(user),
           email: user.email,
         }))
       }

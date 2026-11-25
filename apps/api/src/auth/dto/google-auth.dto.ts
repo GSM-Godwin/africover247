@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MaxLength } from 'class-validator';
+import { PERSON_NAME_MAX_LENGTH } from '../../common/helpers/person-name';
 
 export class GoogleAuthDto {
   @IsString()
@@ -7,9 +8,11 @@ export class GoogleAuthDto {
 
   @IsString()
   @IsOptional()
+  @MaxLength(PERSON_NAME_MAX_LENGTH)
   firstName?: string;
 
   @IsString()
   @IsOptional()
+  @MaxLength(PERSON_NAME_MAX_LENGTH)
   lastName?: string;
 }

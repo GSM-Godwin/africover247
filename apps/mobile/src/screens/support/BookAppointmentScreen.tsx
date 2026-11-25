@@ -17,6 +17,7 @@ import { Button } from '../../components/ui'
 import { Colors } from '../../constants'
 import api from '../../services/api'
 import { getUser } from '../../services/auth'
+import { realFullName } from '../../utils/personName'
 
 const TOPICS = [
   'Product advice — which insurance is right for me',
@@ -52,7 +53,7 @@ export function BookAppointmentScreen({ navigation }: any) {
       if (user) {
         setForm((prev) => ({
           ...prev,
-          name: `${user.firstName} ${user.lastName}`,
+          name: realFullName(user),
           email: user.email,
         }))
       }

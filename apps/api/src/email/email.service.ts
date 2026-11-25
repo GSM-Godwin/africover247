@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import * as postmark from 'postmark'
 import { buildVerificationEmail, type VerificationEmailModel } from './verification-email'
+import { greetingName } from '../common/helpers/person-name'
 
 interface SendEmailOptions {
   to: string
@@ -91,7 +92,7 @@ export class EmailService {
             <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
           </div>
           <div style="padding: 32px;">
-            <p>Dear ${firstName},</p>
+            <p>Dear ${greetingName(firstName)},</p>
             <p>Your insurance policy has been issued successfully.</p>
             <div style="background: #E8F5F0; border-radius: 8px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0; font-size: 12px; color: #5C6478; text-transform: uppercase; letter-spacing: 1px;">Policy Number</p>
@@ -140,7 +141,7 @@ export class EmailService {
             <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
           </div>
           <div style="padding: 32px;">
-            <p>Dear ${firstName},</p>
+            <p>Dear ${greetingName(firstName)},</p>
             <p>There's an update on your quote for <strong>${productName}</strong>.</p>
             <div style="background: #EBF4FA; border-radius: 8px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0; font-size: 12px; color: #5C6478; text-transform: uppercase; letter-spacing: 1px;">Status</p>
@@ -186,7 +187,7 @@ export class EmailService {
             <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
           </div>
           <div style="padding: 32px;">
-            <p>Dear ${firstName},</p>
+            <p>Dear ${greetingName(firstName)},</p>
             <p>There's an update on your claim <strong>${claimReference}</strong> for ${productName}.</p>
             <div style="background: #EBF4FA; border-radius: 8px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0; font-size: 12px; color: #5C6478; text-transform: uppercase; letter-spacing: 1px;">Status</p>
@@ -228,7 +229,7 @@ export class EmailService {
             <p style="color: rgba(255,255,255,0.8); margin: 4px 0 0;">AfriGlobal Insurance Brokers</p>
           </div>
           <div style="padding: 32px;">
-            <p>Dear ${firstName},</p>
+            <p>Dear ${greetingName(firstName)},</p>
             <p>Your insurance policy is expiring soon. Please renew to stay protected.</p>
             <div style="background: ${daysLeft <= 7 ? '#FDEAEA' : '#EBF4FA'}; border-radius: 8px; padding: 20px; margin: 24px 0;">
               <p style="margin: 0; font-size: 12px; color: #5C6478; text-transform: uppercase; letter-spacing: 1px;">Policy</p>

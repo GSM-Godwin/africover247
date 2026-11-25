@@ -13,6 +13,7 @@ import { ReauthModal } from "@/components/shared/reauth-modal";
 import { useReauth } from "@/hooks/use-reauth";
 import api from "@/lib/api";
 import { getUser, setUser, logout } from "@/lib/auth";
+import { realFirstName, realLastName } from "@/lib/person-name";
 import type { UserProfile } from "@/types/user";
 
 const nigerianPhoneRegex = /^(\+234|0)[789][01]\d{8}$/;
@@ -102,8 +103,8 @@ export function AccountContent() {
     const storedUser = getUser();
     if (storedUser) {
       profileForm.reset({
-        firstName: String(storedUser.firstName ?? ""),
-        lastName: String(storedUser.lastName ?? ""),
+        firstName: realFirstName(storedUser),
+        lastName: realLastName(storedUser),
         phone: String(storedUser.phone ?? ""),
         alternativePhone: String(storedUser.alternativePhone ?? ""),
       });

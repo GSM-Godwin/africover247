@@ -35,6 +35,7 @@ describe('ApplicationsService', () => {
     };
     product: { findUnique: jest.Mock };
     kycDocument: { findMany: jest.Mock };
+    user: { findUnique: jest.Mock; update: jest.Mock };
   };
   let redisService: { saveDraft: jest.Mock };
 
@@ -57,6 +58,10 @@ describe('ApplicationsService', () => {
         }),
       },
       kycDocument: { findMany: jest.fn().mockResolvedValue([]) },
+      user: {
+        findUnique: jest.fn().mockResolvedValue({ firstName: 'Ada', lastName: 'Okafor' }),
+        update: jest.fn().mockResolvedValue({}),
+      },
     };
     redisService = { saveDraft: jest.fn() };
 
@@ -165,6 +170,38 @@ describe('ApplicationsService', () => {
       await expect(attempt).rejects.toThrow(message);
       expect(prisma.application.update).not.toHaveBeenCalled();
       expect(redisService.saveDraft).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('user name from the personal details step', () => {
+    const personalStep = { formData: { firstName: ' Chidi ', lastName: 'Eze' }, stepCompleted: 1 };
+
+    it.each([
+      ['the Apple placeholder', { firstName: 'Apple', lastName: 'User' }],
+      ['an empty name', { firstName: '', lastName: '' }],
+    ])('fills in the user name when the stored name is %s', async (_label, stored) => {
+      prisma.user.findUnique.mockResolvedValue(stored);
+
+      await service.update(APPLICATION_ID, USER_ID, personalStep);
+
+      expect(prisma.user.update).toHaveBeenCalledWith({
+        where: { id: USER_ID },
+        data: { firstName: 'Chidi', lastName: 'Eze' },
+      });
+    });
+
+    it('never overwrites a real name the user already has', async () => {
+      await service.update(APPLICATION_ID, USER_ID, personalStep);
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
+    });
+
+    it('does nothing when the step does not include both names', async () => {
+      prisma.user.findUnique.mockResolvedValue({ firstName: 'Apple', lastName: 'User' });
+
+      await service.update(APPLICATION_ID, USER_ID, { formData: { city: 'Lagos' } });
+
+      expect(prisma.user.update).not.toHaveBeenCalled();
     });
   });
 

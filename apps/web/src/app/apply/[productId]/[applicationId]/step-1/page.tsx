@@ -11,6 +11,7 @@ import { WizardActions } from "@/components/application/wizard-actions";
 import { useApplicationWizard } from "@/contexts/application-wizard-context";
 import api from "@/lib/api";
 import { getUser } from "@/lib/auth";
+import { realFirstName, realLastName } from "@/lib/person-name";
 import { applyStepPath } from "@/types/application";
 
 const GENDER_OPTIONS = [
@@ -59,8 +60,8 @@ type Step1FormData = z.infer<typeof step1Schema>;
 function buildDefaults(formData: Record<string, unknown>): Step1FormData {
   const user = getUser();
   return {
-    firstName: String(formData.firstName ?? user?.firstName ?? ""),
-    lastName: String(formData.lastName ?? user?.lastName ?? ""),
+    firstName: String(formData.firstName ?? realFirstName(user)),
+    lastName: String(formData.lastName ?? realLastName(user)),
     dateOfBirth: String(formData.dateOfBirth ?? ""),
     gender: String(formData.gender ?? ""),
     maritalStatus: String(formData.maritalStatus ?? ""),
